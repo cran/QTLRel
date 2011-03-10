@@ -1,5 +1,4 @@
 \name{pedRecode}
-\Rdversion{0.1}
 \alias{pedRecode}
 \title{
 Recode a Pedigree

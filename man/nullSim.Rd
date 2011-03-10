@@ -1,5 +1,4 @@
 \name{nullSim}
-\Rdversion{0.1}
 \alias{nullSim}
 \title{
 Simulate null distribution
@@ -8,8 +7,9 @@ Simulate null distribution
 Simulate distribution under the hypothesis of no QTL by permutation (of genotypic data) or gene dropping.
 }
 \usage{
-nullSim(y,x,gdat,ped,gmap,ids,method=c("permutation","gene dropping"),
-   vc=NULL,intcovar=NULL,minorGenoFreq=0.05,rmv=TRUE,nit=25,ntimes=10)
+nullSim(y,x,gdat,ped,gmap,ids,method=c("permutation",
+   "gene dropping"),vc=NULL,intcovar=NULL,test=c("None","F",
+   "Chisq"),minorGenoFreq=0.05,rmv=TRUE,ntimes=10)
 }
 \arguments{
   \item{y}{
@@ -39,14 +39,14 @@ an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated varia
   \item{intcovar}{
 Covariates that interact with QTL.
 }
+  \item{test}{
+"None", "F" or "Chisq".
+}
   \item{minorGenoFreq}{
 specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
 }
   \item{rmv}{
 a logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
-}
-  \item{nit}{
-number of iterations to call \code{\link{optim}} for optimization. Ignored if \code{vc} is NULL.
 }
   \item{ntimes}{
 number of simulations.

@@ -1,5 +1,4 @@
 \name{mAIC}
-\Rdversion{0.1}
 \alias{mAIC}
 \alias{mAIC.HK}
 \title{
@@ -9,9 +8,8 @@ Multiple QTL AIC
 Multiple QTL model selection by AIC criterion.
 }
 \usage{
-mAIC(y, x, gdat, prdat = NULL, vc=NULL, chrIdx, xin, k=2,
-   direction=c("both","backward", "forward"), nit=25,
-   ext=FALSE, verbose=FALSE)
+mAIC(y,x,gdat,prdat=NULL,vc=NULL,chrIdx,xin,k=2,
+   direction=c("both","backward","forward"),ext=FALSE,verbose=FALSE)
 }
 \arguments{
  \item{y}{
@@ -40,9 +38,6 @@ penalty on a parameter. The selection criterion is the known "AIC" if \code{k = 
 }
   \item{direction}{
 the mode of search: "both", "forward" or "backward" with default "both".
-}
-  \item{nit}{
-number of iterations to call \code{\link{optim}} for optimization.
 }
   \item{ext}{
 a logical variable. True if ones wants more exhaustive search.
@@ -91,11 +86,10 @@ gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
 prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
    gr=2, method="Haldane", verbose=TRUE)
 
-# not run
 llk.hk<- scanOne(y=y, x=x, prdat=prDat, vc=o)
-xin<- llk.hk$lr > 1.5
+xin<- llk.hk$p > 3
 mg<- mAIC(y=y, x=x, prdat=prDat, vc=o, xin=xin,
-   k=1.5,direction="back", nit=50, verbose=TRUE)
+   k=10,direction="back", verbose=TRUE)
 mg$model$value # likelihood of the final model
 }
 

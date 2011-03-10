@@ -1,5 +1,4 @@
 \name{genoProb}
-\Rdversion{0.1}
 \alias{genoProb}
 \title{
 Probability of a Genotype.
@@ -8,8 +7,8 @@ Probability of a Genotype.
 Calculate the probability of a genotype at a locus conditional on the genotypes of its flanking markers in advance intercross lines (AIL).
 }
 \usage{
-genoProb(gdat, gmap, step=Inf, gr=2, pos=NULL, method=c("Haldane",
-   "Kosambi"), verbose = FALSE)
+genoProb(gdat,gmap,step=Inf,gr=2,pos=NULL,method=c("Haldane",
+   "Kosambi"),verbose = FALSE)
 }
 \arguments{
   \item{gdat}{

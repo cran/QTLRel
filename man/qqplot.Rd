@@ -1,5 +1,4 @@
 \name{qqPlot}
-\Rdversion{0.1}
 \alias{qqPlot}
 \title{
 Quantile-Quantile Plots
@@ -8,12 +7,11 @@ Quantile-Quantile Plots
 Quantile-Quantile Plots With the Ability to Draw Confidence Bands.
 }
 \usage{
-qqPlot(y, x = "norm", ...,
-   xlab = if(is.numeric(x)) deparse(substitute(x)) else x,
-   ylab = deparse(substitute(y)), main = "Q-Q Plot",
-   type = "p", col = 1, lty = 2, lwd=1, pch=1, cex = 0.7,
-   plot.it = TRUE, confidence = .95,
-   qqline = c("observed", "expected", "none"))
+qqPlot(y,x="norm", ...,
+   xlab=if(is.numeric(x)) deparse(substitute(x)) else x,
+   ylab=deparse(substitute(y)),main="Q-Q Plot",
+   type="p",col=1,lty=2,lwd=1,pch=1,cex=0.7,plot.it=TRUE,
+   confidence=.95,qqline=c("observed","expected","none"))
 }
 \arguments{
   \item{y}{

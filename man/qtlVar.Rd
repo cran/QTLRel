@@ -1,5 +1,4 @@
 \name{qtlVar}
-\Rdversion{0.1}
 \alias{qtlVar}
 \title{
 QTL Variance
@@ -8,7 +7,7 @@ QTL Variance
 Estimate variance in a quantitative trait induced by QTL.
 }
 \usage{
-qtlVar(lrt, prdat, simulation=FALSE, nsim=25)
+qtlVar(lrt,prdat,simulation=FALSE,nsim=25)
 }
 \arguments{
   \item{lrt}{

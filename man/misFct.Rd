@@ -1,5 +1,4 @@
 \name{misFct}
-\Rdversion{0.1}
 \alias{fv}
 \alias{genoPos}
 \alias{gvar}

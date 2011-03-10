@@ -7,30 +7,37 @@ fv <- function(vv){
 # vv: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
    nms<- c("AA","DD","HH","AD","MH","EE")
    if(any(!is.element(nms,names(vv)))){
-      cat("Assume components are in correct order AA,DD,HH,AD,MH,EE...\n")
-   }else {
-      vv[1:6]<- list(AA=vv$AA,DD=vv$DD,HH=vv$HH,AD=vv$AD,MH=vv$MH,EE=vv$EE)
+      cat("Assume components are in the order AA,DD,HH,AD,MH,EE...\n")
       names(vv)[1:6]<- nms
    }
-   if(is.null(vv[[2]])){
-      if(!is.null(vv[[3]])){
-         vv[3]<- list(NULL)
+   vvTmp<- vv
+      vvTmp$AA<- vvTmp$DD<- vvTmp$HH<- vvTmp$AD<- vvTmp$MH<- vvTmp$EE<- NULL
+   vv<- list(AA=vv$AA,
+             DD=vv$DD,
+             HH=vv$HH,
+             AD=vv$AD,
+             MH=vv$MH,
+             EE=vv$EE)
+      vv<- c(vv,vvTmp)
+   if(is.null(vv[[nms[2]]])){
+      if(!is.null(vv[[nms[3]]])){
+         vv[nms[3]]<- list(NULL)
          cat(nms[3], "is set to null because", nms[2], "is null.\n")
       }
-      if(!is.null(vv[[5]])){
-         vv[5]<- list(NULL)
+      if(!is.null(vv[[nms[5]]])){
+         vv[nms[5]]<- list(NULL)
          cat(nms[5], "is set to null because", nms[2], "is null.\n")
       }
    }
-   if(is.null(vv[[1]])){
-      if(!is.null(vv[[4]])){
-        vv[4]<- list(NULL)
+   if(is.null(vv[[nms[1]]])){
+      if(!is.null(vv[[nms[4]]])){
+        vv[nms[4]]<- list(NULL)
         cat(nms[4], "is set to null because", nms[1], "is null.\n")
       }
    }
-   if(is.null(vv[[3]])){
-      if(!is.null(vv[[4]])){
-         vv[4]<- list(NULL)
+   if(is.null(vv[[nms[3]]])){
+      if(!is.null(vv[[nms[4]]])){
+         vv[nms[4]]<- list(NULL)
          cat(nms[4], "is set to null because", nms[3], "is null.\n")
       }
    }
@@ -137,7 +144,7 @@ estVC.1 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(fs*inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -237,7 +244,7 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(fs*inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -286,7 +293,7 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(fs*inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -322,7 +329,8 @@ estVC.2 <-
    }else{
       while(nit>0){
          pparTmp[1:nb]<- optfct.b(a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-         oo<- optim(pparTmp[-c(1:nb)],optfct.v,gr=NULL,a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),method=method,control=control,hessian=FALSE)
+         oo<- optim(pparTmp[-c(1:nb)],optfct.v,gr=NULL,a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),
+                    method=method,control=control,hessian=FALSE)
             pparTmp[-c(1:nb)]<- oo$par
             oo$par<- pparTmp
             if(ov$nnl[4]){
@@ -406,7 +414,7 @@ estVC.3 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -455,7 +463,7 @@ estVC.3 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -557,7 +565,7 @@ estVC.4 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(fs*inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -607,7 +615,7 @@ estVC.4 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(inf)
+      if(any(is.infinite(S)) || any(is.na(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -654,7 +662,8 @@ estVC.4 <-
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
          if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
       }
-   if(hessian) oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),method="Nelder-Mead",control=list(maxit=1),hessian=hessian)
+   oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),
+              method="Nelder-Mead",control=list(maxit=1),hessian=hessian)
       for(i in 1:ov$nv){
          if(ov$nnl[i]){
             if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])

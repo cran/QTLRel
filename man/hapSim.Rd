@@ -1,5 +1,4 @@
 \name{hapSim}
-\Rdversion{0.1}
 \alias{hapSim}
 \title{
 Generate Genotypic Data
@@ -8,7 +7,7 @@ Generate Genotypic Data
 Simulate gametic data from a pedigree.
 }
 \usage{
-hapSim(ped, gmap, ids, hap.data, method=c("Haldane","Kosambi"),
+hapSim(ped,gmap,ids,hap.data,method=c("Haldane","Kosambi"),
    recode.pedigree=FALSE)
 }
 \arguments{

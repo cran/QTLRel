@@ -5,29 +5,12 @@ plot.scanOne<- function(x,...){
    if(is.null(xTmp$main)) main<- ""
    if(is.null(xTmp$xlab)) xlab<- "Chromosome"
    cv<- xTmp$cv
-   if(is.element("llrHK",class(x))){
-      lrt<- data.frame(y=x$lr/(2*log(10)),chr=x$chr,dist=x$dist)
-   }else{
-      if(is.null(xTmp$gmap)) stop("need: gmap...")
-      gmap<- xTmp$gmap
-      idx<- match(x$snp,gmap$snp)
-      lrt<- data.frame(y=x$lr/(2*log(10)),chr=gmap$chr[idx],dist=gmap$dist[idx])
-   }
-   plot.lrt(lrt,cv,cex=cex,main=main,xlab=xlab,ylab="LOD")
-}
 
-plot.scanOne4p<- function(x,...){
-   xTmp<- list(...)
-   if(is.null(xTmp$cex)) cex<- 0.3
-   if(is.null(xTmp$main)) main<- ""
-   if(is.null(xTmp$xlab)) xlab<- "Chromosome"
-   cv<- xTmp$cv
-
-   lrt<- data.frame(y=x$P)
+   lrt<- data.frame(y=x$p)
    if(is.null(x$chr)){
       if(is.null(xTmp$gmap)) stop("need: gmap...")
       gmap<- xTmp$gmap
-      idx<- match(names(x$P),gmap$snp)
+      idx<- match(names(x$p),gmap$snp)
       lrt$chr<- gmap$chr[idx]
       lrt$dist<- gmap$dist[idx]
    }else{
@@ -35,10 +18,10 @@ plot.scanOne4p<- function(x,...){
       lrt$dist=x$dist
    }
    if(is.element("None",class(x))){
-      lrt$y<- x$P/(2*log(10))
+      lrt$y<- x$p/(2*log(10))
       plot.lrt(lrt,cv,cex=cex,main=main,xlab=xlab,ylab="LOD")
    }else{
-      lrt$y<- -log10(x$P)
+      lrt$y<- -log10(x$p)
       plot.lrt(lrt,cv,cex=cex,main=main,xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
    }
 }

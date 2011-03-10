@@ -1,4 +1,20 @@
 
+machineEps<- (.Machine$double.eps)^(2/4)
+inf<- max(1e+38,sqrt(.Machine$double.xmax))
+
+estRR <-
+   function(yy, xx, dd)
+{
+   g<- lm(yy~xx-1, w=1/dd)
+   b<- g$coef
+   s2<- sum(g$res^2/dd)/length(g$res)
+   loglik<- logLik(g)
+   if(loglik > 1e+12) loglik<- -1e+12
+
+   lst<- list(value=loglik,parameters=c(b,s2))
+   lst
+}
+
 print.aic <- function(x,...)
 {
    cat("aic:",x$aic,"\n")   
@@ -106,7 +122,7 @@ aicVCf <-
              trace = NULL)
 
    if(verbose)
-      cat("\nModel with genetic and environmental variances:",names(ov$v)[ov$nnl],"\n")
+      cat("\nModel with variance components:",names(ov$v)[ov$nnl],"\n")
    oo<- estVC(y=y,x=x,v=ov$v,initpar=initpar,nit=nit,method=method,control=control,hessian=hessian)
    ob$aic<- -2*oo$value+length(oo$par)*k
    ob$model<- oo
@@ -130,7 +146,7 @@ aicVCf <-
          ov0<- fv(v0)
          if(all(ov$nnl == ov0$nnl)) next
          if(verbose)
-            cat("Model with genetic and environmental variances:",names(ov0$v)[ov0$nnl],"\n")
+            cat("Model with variance components:",names(ov0$v)[ov0$nnl],"\n")
          o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,method=method,control=control,hessian=hessian)
          ob$lik<- c(lik=o0$value,ob$lik)
          ob$trace<- rbind(ov0$nnl,ob$trace)
@@ -197,7 +213,7 @@ aicVCb <-
              trace = NULL)
 
    if(verbose)
-      cat("\nModel with genetic and environmental variances:",names(ov$v)[ov$nnl],"\n")
+      cat("\nModel with variance components:",names(ov$v)[ov$nnl],"\n")
    oo<- estVC(y=y,x=x,v=ov$v,initpar=initpar,nit=nit,method=method,control=control,hessian=hessian)
    ob$aic<- -2*oo$value+length(oo$par)*k
    ob$model<- oo
@@ -220,7 +236,7 @@ aicVCb <-
          v0[ns[i]]<- list(NULL)
          ov0<- fv(v0)
          if(verbose)
-            cat("Model with genetic and environmental variances:",names(ov0$v)[ov0$nnl],"\n")
+            cat("Model with variance components:",names(ov0$v)[ov0$nnl],"\n")
          o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,method=method,control=control,hessian=hessian)
          ob$lik<- c(lik=o0$value,ob$lik)
          ob$trace<- rbind(ov0$nnl,ob$trace)
@@ -235,8 +251,6 @@ aicVCb <-
          ov<- vv0
          ob$aic<- -2*oo$value+length(oo$par)*k
          ob$model<- oo
-#         ob$lik<- c(lik=oo$value,ob$lik)
-#         ob$trace<- rbind(ov$nnl,ob$trace)
          go<- TRUE
          if(sum(ov$nnl & kpt)<1) go<- FALSE
 
@@ -252,8 +266,6 @@ aicVCb <-
          v0<- ov$v
          v0[1:(length(v0)-1)]<- vector("list",length(v0)-1)
          ov0<- fv(v0)
-#         if(verbose)
-#            cat("\nModel with genetic and environmental variances:",names(ov0$v)[ov0$nnl],"\n")
          o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,method=method,control=control,hessian=hessian)
          ob$lik<- c(lik=o0$value,ob$lik)
          ob$trace<- rbind(ov0$nnl,ob$trace)
@@ -272,134 +284,6 @@ blup.aic<- function(object){
    blup(object$model)
 }
 
-assAIC <-
-   function(y,
-            x,
-            random,
-            k=2,
-            nit=25,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
-            control = list(),
-            hessian = FALSE)
-{
-# x: covariates to consider
-# random: list of matrices associated with random effect covariates to consider
-# k: panelty for each parameter
-# nit: number of iterations to call optim()
-# method: the method to be used
-# control: A list of control parameters
-# hessian: logical. should a numerically differentiated Hessian matrix be returned?
-   if(!missing(x)){
-      oTmp<- data.frame(y=y,x)
-   }else oTmp<- data.frame(y=y)
-   oTmp<- model.frame(y~.,oTmp)
-   y<- model.response(oTmp)
-   x<- model.matrix(y~.,oTmp)
-
-   xin<- rep(FALSE,ncol(x)); xin[1]<- TRUE
-   rin<- rep(FALSE,length(random))
-   vv<- list(AA=NULL,DD=NULL,AD=NULL,HH=NULL,MH=NULL,EE=diag(nrow(y)))
-   nnx<- length(xin)
-   nnr<- length(rin)
-   nn<- nnx + nnr
-   npar<- nn + 1 # number of parameters in the model
-
-   if(!missing(x)){
-      gg<- estVC(y=y,x=x[,xin],v=c(vv,random[rin]),nit=nit,method=method,control=control,hessian=hessian)
-   }else{
-      gg<- estVC(y=y,v=c(vv,random[rin]),nit=nit,method=method,control=control,hessian=hessian)
-   }
-   aic<- -2*gg$value + k*(npar+1)
-
-   nn0<- Inf; if(nn<2) nn0<- 1 # which one should be dropped or added
-   go<- TRUE # move forward
-   while(nn0>1){
-      nn0<- 1
-      if(go){
-         go<- FALSE
-         for(n in 2:nn){
-            yes<- FALSE # any term to add?
-            xin0<- xin
-            rin0<- rin
-            if(n>nnx){
-               if(!rin[n-nnx]){
-                  rin0[n-nnx]<- TRUE
-                  yes<- TRUE
-               }
-            }else{
-               if(!xin[n]){
-                  xin0[n]<- TRUE
-                  yes<- TRUE
-               }
-            }
-            if(yes){
-               if(!missing(x)){
-                  g<- estVC(y=y,x=x[,xin0],v=c(vv,random[rin0]),nit=nit,method=method,control=control,hessian=hessian)
-               }else{
-                  g<- estVC(y=y,v=c(vv,random[rin0]),nit=nit,method=method,control=control,hessian=hessian)
-               }
-               aic1<- -2*g$value + k*(npar+1)
-               if(aic1 < aic - 1e-5){
-                  aic<- aic1
-                  nn0<- n
-                  gg<- g
-               }
-            }
-         }
-         if(nn0>1){
-            if(nn0>nnx){
-               rin[nn0-nnx]<- TRUE
-            }else{
-               xin[nn0]<- TRUE
-            }
-            npar<- npar + 1
-            go<- TRUE
-         }
-      }else{
-         go<- TRUE
-         for(n in 2:nn){
-            yes<- FALSE # any term to drop?
-            xin0<- xin
-            rin0<- rin
-            if(n>nnx){
-               if(rin[n-nnx]){
-                  rin0[n-nnx]<- FALSE
-                  yes<- TRUE
-               }
-            }else{
-               if(xin[n]){
-                  xin0[n]<- FALSE
-                  yes<- TRUE
-               }
-            }
-            if(yes){
-               if(!missing(x)){
-                  g<- estVC(y=y,x=x[,xin0],v=c(vv,random[rin0]),nit=nit,method=method,control=control,hessian=hessian)
-               }else{
-                  g<- estVC(y=y,v=c(vv,random[rin0]),nit=nit,method=method,control=control,hessian=hessian)
-               }
-               aic1<- -2*g$value + k*(npar-1)
-               if(aic1 < aic - 1e-5){
-                  aic<- aic1
-                  nn0<- n
-                  gg<- g
-               }
-            }
-         }
-         if(nn0>1){
-            if(nn0>nnx){
-               rin[nn0-nnx]<- FALSE
-            }else{
-               xin[nn0]<- FALSE
-            }
-            npar<- npar - 1
-            go<- FALSE
-         }
-      }
-   }
-   list(fixed=xin,random=rin,model=gg,aic=aic)
-}
-
 # backward elemination
 AICb <-
    function(aic,
@@ -410,7 +294,6 @@ AICb <-
             uu,
             dd,
             kk,
-            nit = 25,
             verbose = FALSE)
 {
    xx<- t(uu)%*%xx
@@ -436,7 +319,7 @@ AICb <-
                xxx<- t(uu)%*%xxx
             }else xxx<- NULL
             xxx<- cbind(xx,xxx)
-            oo0<- estRR(yy,xxx,dd,nit=nit)
+            oo0<- estRR(yy,xxx,dd)
             aic0<- -2*oo0$value + kk*length(oo0$par)
             if(aic0 < aic1 - 1e-5){
                oo1<- oo0
@@ -471,7 +354,6 @@ AICf <-
             dd,
             kk,
             scope,
-            nit = 25,
             verbose = FALSE)
 {
    xx<- t(uu)%*%xx
@@ -495,7 +377,7 @@ AICf <-
          xxx<- model.matrix(~.,oTmp)[,-1]
             xxx<- t(uu)%*%xxx
             xxx<- cbind(xx,xxx)
-         oo0<- estRR(yy,xxx,dd,nit=nit)
+         oo0<- estRR(yy,xxx,dd)
          aic0<- -2*oo0$value + kk*length(oo0$par)
          if(aic0 < aic2 - 1e-5){
             oo2<- oo0
@@ -528,7 +410,6 @@ AICmove <-
             uu,
             dd,
             kk,
-            nit = 25,
             verbose=FALSE)
 {
    xx<- t(uu)%*%xx
@@ -560,7 +441,7 @@ AICmove <-
             xxx<- model.matrix(~.,oTmp)[,-1]
                xxx<- t(uu)%*%xxx
                xxx<- cbind(xx,xxx)
-            oo0<- estRR(yy,xxx,dd,nit=nit)
+            oo0<- estRR(yy,xxx,dd)
             aic0<- -2*oo0$value + kk*length(oo0$par)
             if(aic0 < aic1 - 1e-5){
                oo1<- oo0
@@ -592,13 +473,11 @@ mAIC.default <-
             xin,
             k = 2,
             direction = c("both", "backward", "forward"),
-            nit = 25,
             ext = FALSE,
             verbose = FALSE)
 {
 # y: single trait
 # x: covariates
-# gcov: n by n genetic variance-covariance matrix
 # gdat: n by ? matrix, marker data. Markers in columes!!!
 # chrIdx: chromsome index of markers in columns of gdat
 # xin: indicator of gdat columns at start
@@ -607,19 +486,19 @@ mAIC.default <-
       if(is.element("bgv",attr(vc,"class"))){
          nb<- length(vc$par) - sum(vc$nnl)
          nr<- nrow(vc$y)
-         gcov<- matrix(0,nrow=nr,ncol=nr)
+         vcov<- matrix(0,nrow=nr,ncol=nr)
          for(i in 1:vc$nv)
-            if(vc$nnl[i] && names(vc$v[i])!="EE") gcov<- gcov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+            if(vc$nnl[i]) vcov<- vcov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
          if(!is.matrix(vc)) stop("vc should be a matrix.")
          if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
-         gcov<- vc
+         vcov<- vc
       }
-   }else gcov<- diag(0,nrow(as.matrix(y)))
-#   dd<- svd(gcov); uu<- dd$u; dd<- dd$d
-   dd<- eigen(gcov,symmetric=T); uu<- dd$vec; dd<- dd$val
-      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("gcov: may not be positive definite.")
+   }else vcov<- diag(0,nrow(as.matrix(y)))
+#   dd<- svd(vcov); uu<- dd$u; dd<- dd$d
+   dd<- eigen(vcov,symmetric=T); uu<- dd$vec; dd<- dd$val
+      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance may not be positive definite.")
    dd<- abs(dd)
 
    if(!missing(x)){
@@ -642,14 +521,14 @@ mAIC.default <-
          xxx<- cbind(x,xxx)
    }else xxx<- x
       xxx<- t(uu)%*%xxx
-   oo<- estRR(yy,xxx,dd,nit=nit)
+   oo<- estRR(yy,xxx,dd)
    aic<- -2*oo$value + k*length(oo$par)
 
    loci.idx<- 1:length(xin)
 if(ext){
    if(verbose)
       cat("Remove extraneous QTL...\n")
-   tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+   tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,verbose=verbose)
    if(verbose) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
@@ -664,7 +543,7 @@ if(ext){
 
    if(verbose)
       cat("Move QTL to the best locations...\n")
-   tmp<- AICmove(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,chrIdx=chrIdx,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+   tmp<- AICmove(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,chrIdx=chrIdx,uu=uu,dd=dd,kk=k,verbose=verbose)
    if(verbose) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
@@ -690,7 +569,7 @@ if(ext){
    while(go){
       go<- FALSE
       if(backward){
-         tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+         tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,verbose=verbose)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
@@ -708,7 +587,7 @@ if(ext){
       }
 
       if(forward){# scope will be missing
-         tmp<- AICf(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+         tmp<- AICf(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,verbose=verbose)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
@@ -759,7 +638,6 @@ AICb.HK <-
             uu,
             dd,
             kk,
-            nit = 25,
             verbose = FALSE)
 {
    xx<- t(uu)%*%xx
@@ -783,7 +661,7 @@ AICb.HK <-
                xxx<- t(uu)%*%xxx
             }else xxx<- NULL
             xxx<- cbind(xx,xxx)
-            oo0<- estRR(yy,xxx,dd,nit=nit)
+            oo0<- estRR(yy,xxx,dd)
             aic0<- -2*oo0$value + kk*length(oo0$par)
             if(aic0 < aic1 - 1e-5){
                oo1<- oo0
@@ -818,7 +696,6 @@ AICf.HK <-
             dd,
             kk,
             scope,
-            nit = 25,
             verbose = FALSE)
 {
    xx<- t(uu)%*%xx
@@ -840,7 +717,7 @@ AICf.HK <-
          xxx<- fxx.hk(prdat,xin0)
             xxx<- t(uu)%*%xxx
             xxx<- cbind(xx,xxx)
-         oo0<- estRR(yy,xxx,dd,nit=nit)
+         oo0<- estRR(yy,xxx,dd)
          aic0<- -2*oo0$value + kk*length(oo0$par)
          if(aic0 < aic2 - 1e-5){
             oo2<- oo0
@@ -872,7 +749,6 @@ AICmove.HK <-
             uu,
             dd,
             kk,
-            nit = 25,
             verbose = FALSE)
 {
    xx<- t(uu)%*%xx
@@ -902,7 +778,7 @@ AICmove.HK <-
             xxx<- fxx.hk(prdat,xin0)
                xxx<- t(uu)%*%xxx
                xxx<- cbind(xx,xxx)
-            oo0<- estRR(yy,xxx,dd,nit=nit)
+            oo0<- estRR(yy,xxx,dd)
             aic0<- -2*oo0$value + kk*length(oo0$par)
             if(aic0 < aic1 - 1e-5){
                oo1<- oo0
@@ -933,13 +809,11 @@ mAIC.HK <-
             xin,
             k = 2,
             direction = c("both", "backward", "forward"),
-            nit = 25,
             ext = FALSE,
             verbose = FALSE)
 {
 # y: single trait
 # x: covariates
-# gcov: n by n genetic variance-covariance matrix
 # prdat: prdat$pr: n by 3 by ? matrix, conditional probabilities
 # xin: indicator of prdat$pr columns at start
 # k: panelty,e.g., 0.05 threshold/number of parameters
@@ -947,19 +821,19 @@ mAIC.HK <-
       if(is.element("bgv",attr(vc,"class"))){
          nb<- length(vc$par) - sum(vc$nnl)
          nr<- nrow(vc$y)
-         gcov<- matrix(0,nrow=nr,ncol=nr)
+         vcov<- matrix(0,nrow=nr,ncol=nr)
          for(i in 1:vc$nv)
-            if(vc$nnl[i] && names(vc$v[i])!="EE") gcov<- gcov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+            if(vc$nnl[i]) vcov<- vcov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
          if(!is.matrix(vc)) stop("vc should be a matrix.")
          if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
-         gcov<- vc
+         vcov<- vc
       }
-   }else gcov<- diag(0,nrow(as.matrix(y)))
-#   dd<- svd(gcov); uu<- dd$u; dd<- dd$d
-   dd<- eigen(gcov,symmetric=T); uu<- dd$vec; dd<- dd$val
-      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("gcov: may not be positive definite.")
+   }else vcov<- diag(0,nrow(as.matrix(y)))
+#   dd<- svd(vcov); uu<- dd$u; dd<- dd$d
+   dd<- eigen(vcov,symmetric=T); uu<- dd$vec; dd<- dd$val
+      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance: may not be positive definite.")
    dd<- abs(dd)
 
    if(!missing(x)){
@@ -977,14 +851,14 @@ mAIC.HK <-
          xxx<- cbind(x,xxx)
    }else xxx<- x
    xxx<- t(uu)%*%xxx
-   oo<- estRR(yy,xxx,dd,nit=nit)
+   oo<- estRR(yy,xxx,dd)
    aic<- -2*oo$value + k*length(oo$par)
 
    loci.idx<- 1:length(xin)
 if(ext){
    if(verbose)
       cat("Remove extraneous QTL...\n")
-   tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+   tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
    if(verbose) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
@@ -999,7 +873,7 @@ if(ext){
 
    if(verbose)
       cat("Move QTL to the best locations...\n")
-   tmp<- AICmove.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+   tmp<- AICmove.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
    if(verbose) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
@@ -1025,7 +899,7 @@ if(ext){
    while(go){
       go<- FALSE
       if(backward){
-         tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+         tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
@@ -1043,7 +917,7 @@ if(ext){
       }
 
       if(forward){# scope will be missing
-         tmp<- AICf.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,nit=nit,verbose=verbose)
+         tmp<- AICf.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
@@ -1078,7 +952,6 @@ mAIC<-
             xin,
             k = 2,
             direction = c("both", "backward", "forward"),
-            nit = 25,
             ext = FALSE,
             verbose = FALSE)
 {
@@ -1091,7 +964,6 @@ mAIC<-
                    xin = xin,
                    k = k,
                    direction = direction,
-                   nit = nit,
                    ext = ext,
                    verbose = verbose)
    }else{
@@ -1102,7 +974,6 @@ mAIC<-
               xin = xin,
               k = k,
               direction = direction,
-              nit = nit,
               ext = ext,
               verbose = verbose)
    }

@@ -1,5 +1,4 @@
 \name{blup}
-\Rdversion{0.1}
 \alias{blup}
 \title{
 Best Linear Unbiased Prediction

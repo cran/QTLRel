@@ -1,5 +1,4 @@
 \name{aicVC}
-\Rdversion{0.1}
 \alias{aicVC}
 \title{
 AIC Model Selection
@@ -8,10 +7,10 @@ AIC Model Selection
 Select genetic variance components via Akaike's information criterion (AIC).
 }
 \usage{
-aicVC(y, x, v = vector("list", 6), initpar, k=2, init = 6, keep = 6,
-   direction=c("forward","backward"), nit = 25, verbose = FALSE,
-   method = c("Nelder-Mead", "BFGS", "CG", "SANN"), control = list(),
-   hessian = FALSE)
+aicVC(y,x,v=vector("list",6),initpar,k=2,init=6,keep=6,
+   direction=c("forward","backward"),nit=25,verbose=FALSE,
+   method=c("Nelder-Mead","BFGS","CG","SANN"),control=list(),
+   hessian=FALSE)
 }
 \arguments{
   \item{y}{
@@ -69,7 +68,7 @@ Function \code{\link{estVC}} is called by the above function to estimate the par
 Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components of quantitative traits in inbred populations. Am. J. Hum. Genet. 141, 629-650.
 }
 \seealso{
-\code{\link{estVC}} and \code{\link{genoImpute}} for more information.
+\code{\link{estVC}} for more information.
 }
 \examples{
 data(miscEx)

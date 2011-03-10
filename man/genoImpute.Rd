@@ -1,5 +1,4 @@
 \name{genoImpute}
-\Rdversion{0.1}
 \alias{genoImpute}
 \title{
 Impute Genotypic Data
@@ -8,8 +7,8 @@ Impute Genotypic Data
 Impute missing genotypic data in advance intercross lines (AIL).
 }
 \usage{
-genoImpute(gdat, gmap, prd=NULL, step=Inf, gr=2, pos=NULL,
-   method=c("Haldane","Kosambi"), na.str="NA", verbose=FALSE)
+genoImpute(gdat,gmap,prd=NULL,step=Inf,gr=2,pos=NULL,
+   method=c("Haldane","Kosambi"),na.str="NA",verbose=FALSE)
 }
 \arguments{
   \item{gdat}{

@@ -1,5 +1,4 @@
 \name{plotit}
-\Rdversion{0.1}
 \alias{plot}
 \alias{plotit}
 \alias{plot.scanOne}
@@ -12,12 +11,12 @@ Plot mapping results.
 \usage{
 \method{plot}{scanOne}(x,...)
 
-plotit(lrt, cv, bychr = FALSE, chr.labels = TRUE,
-   type="p", lty=NULL, col=NULL, pch=NULL, cex=NULL,...)
+plotit(lrt,cv,bychr=FALSE,chr.labels=TRUE,type="p",lty=NULL,
+   col=NULL,pch=NULL,cex=NULL,...)
 }
 \arguments{
   \item{x}{
-object from \code{\link{scanOne}} or \code{\link{scanOne4p}}.
+object from \code{\link{scanOne}}.
 }
   \item{cv}{
 threshold to be drawn on the plot.
@@ -38,7 +37,7 @@ a logical variable. If true, the chromosome names will be drawn.
 See \code{\link{plot.default}}.
 }
   \item{\dots}{
-other options passed to R plot function. To call \code{\link{plot}} to plot results of \code{\link{scanOne}} or \code{\link{scanOne4p}}, one may need to provide a genetic map \code{gmap} that should be data frame (snp, chr, dist, ...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the leftmost SNP (marker) on the chromosome.
+other options passed to R plot function. To call \code{\link{plot}} to plot results of \code{\link{scanOne}}, one may need to provide a genetic map \code{gmap} that should be data frame (snp, chr, dist, ...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the leftmost SNP (marker) on the chromosome.
 
 }
 }
@@ -61,7 +60,7 @@ llk<- scanOne(y=y, x=x, vc=gcv, gdat=gdat.imp[,1:20])
 plot(llk,gmap=genMap) # gmap is needed
 
 idx<- match(colnames(gdat.imp[,1:20]),genMap$snp)
-tmp<- data.frame(chr=genMap$chr[idx],dist=genMap$dist[idx],y=llk$lr)
+tmp<- data.frame(chr=genMap$chr[idx],dist=genMap$dist[idx],y=llk$p)
 plotit(tmp, main="Mapping Plot", xlab="Chromosome", ylab="LRT",
    col=as.integer(tmp$ch)\%\%2+2,type="b")
 }

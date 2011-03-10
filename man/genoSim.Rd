@@ -1,5 +1,4 @@
 \name{genoSim}
-\Rdversion{0.1}
 \alias{genoSim}
 \title{
 Generate Genotypic Data
@@ -8,7 +7,7 @@ Generate Genotypic Data
 Simulate genotypic data from a pedigree in advanced intercross lines (AIL).
 }
 \usage{
-genoSim(ped, gmap, ids, hap.data, method=c("Haldane","Kosambi"),
+genoSim(ped,gmap,ids,hap.data,method=c("Haldane","Kosambi"),
    recode.pedigree=FALSE)
 }
 \arguments{

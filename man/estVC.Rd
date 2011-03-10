@@ -1,16 +1,15 @@
 \name{estVC}
-\Rdversion{0.1}
 \alias{estVC}
 \title{
-Estimate Genetic Variance Component Parameters
+Estimate Variance Component Parameters
 }
 \description{
 Estimate model parameters for covariates, genetic variance components and residual effect.
 }
 \usage{
-estVC(y, x, v=vector("list", 6), initpar, nit = 25, 
-   method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
-   control = list(), hessian = FALSE)
+estVC(y,x,v=vector("list",6),initpar,nit=25,
+   method=c("Nelder-Mead","BFGS","CG","SANN"),
+   control=list(),hessian=FALSE)
 }
 \arguments{
   \item{y}{
@@ -53,14 +52,29 @@ Normality is assumed for the random effects. Input data should be free of missin
 }
 
 \seealso{
-\code{\link{optim}} and \code{\link{genoImpute}}.
+\code{\link{optim}} and \code{\link{rem}}.
 }
 \examples{
-y<- rnorm(100)
 x<- sample(c("M","F"),100,replace=TRUE)
+y<- rnorm(100) + (x=="M")*1.0
 v<- cov(matrix(rnorm(10^6),ncol=100))
-o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
+
+# no sex effect
+o<- estVC(y, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,EE=diag(100)),method="BFGS")
 o
+
+# sex as fixed effect
+fo<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
+   MH=NULL,EE=diag(100)),method="BFGS")
+fo
+2*(fo$value-o$value) # log-likelihood test statistic
+
+# sex as random effect
+SM<- rem(~x,data.frame(x=x))
+ro<- estVC(y, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
+   MH=NULL,SE=SM$x,EE=diag(100)),method="BFGS")
+ro
+2*(ro$value-o$value) # log-likelihood test statistic
 }
 

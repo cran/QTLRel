@@ -1,5 +1,4 @@
 \name{lodci}
-\Rdversion{0.1}
 \alias{lodci}
 \title{
 Estimate LOD Support Intervals
@@ -8,7 +7,7 @@ Estimate LOD Support Intervals
 Estimate LOD support intervals.
 }
 \usage{
-lodci(llk, cv = 0, lod = 1.5, drop = 3)
+lodci(llk,cv=0,lod=1.5,drop=3)
 }
 \arguments{
   \item{llk}{
@@ -46,7 +45,7 @@ o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
 gcv<- v*o$par["AA"]
 llk.hk<- scanOne(y=y, x=x, vc=gcv, prdat=prDat)
 
-tmp<- data.frame(y=llk.hk$lr,chr=llk.hk$chr,dist=llk.hk$dist)
+tmp<- data.frame(y=llk.hk$p,chr=llk.hk$chr,dist=llk.hk$dist)
 lodci(tmp, cv=5, lod=1.5, drop=3)
 }
 
