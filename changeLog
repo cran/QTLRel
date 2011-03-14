@@ -1,4 +1,6 @@
 
+2011/3/14 fopen64 and fseeko64 are respectively replaced by fopen and fseeko to enable installation on macosx and solaris systems.
+
 2011/3/10 replace scanOne with scanOne4p; add functions to calculate identity coefficients from pedigrees; add a function to create matrices that are associated with non-genetic random effects.
 
 2010/11/10 remove "R (>= 2.9.0)"

@@ -8,14 +8,11 @@
   compile with option:
      g++  -D_FILE_OFFSET_BITS=64 idcoef.cc
      R CMD SHLIB -D_FILE_OFFSET_BITS=64 idcoef.cc
-  the following seem fine with "#define _FILE_OFFSET_BITS 64",
-  --which seems crucial for large file writing:
-       g++ idcoef.cc
-       R CMD SHLIB idcoef.cc
   long long type can hold an integer as large as
   ULLONG_MAX 18446744073709551615ULL
 ****************************************************/
 
+#define _FILE_OFFSET_BITS 64 //must on top
 #include <R_ext/Error.h>
 #include <R_ext/Memory.h>
 #ifdef ENABLE_NLS
@@ -31,7 +28,6 @@
 #include "string.h"
 #include "stdlib.h"
 using namespace std;
-#define _FILE_OFFSET_BITS 64
 
 typedef int INT;
 
@@ -74,14 +70,14 @@ extern "C"{
    void phicw(INT* pedigree,INT& nr,int& nc,INT* id,INT& nid, int* top, char** infs, char** outfs){
          FILE* ifs[4];
          if(top[0]!=-999) for(int i=0; i<4; i++){
-            ifs[i] = fopen64(infs[i],"rb+");
+            ifs[i] = fopen(infs[i],"rb+");
             if(!ifs[i]){
                error(_("In_file failed to open.\n"));
             }
          }
          FILE* ofs[4];
          for(int i=0; i<4; i++){
-            ofs[i] = fopen64(outfs[i],"wb");
+            ofs[i] = fopen(outfs[i],"wb");
             if(!ofs[i]){
                error(_("Out_file failed to open.\n"));
             }
@@ -103,7 +99,7 @@ extern "C"{
    void phicr(INT* pedigree,INT& nr,int& nc,INT* id,INT& nid, int* top, char** infs, double* idcf,int& verbose){
          FILE* ifs[4];
          if(top[0]!=-999) for(int i=0; i<4; i++){
-            ifs[i] = fopen64(infs[i],"rb+");
+            ifs[i] = fopen(infs[i],"rb+");
             if(!ifs[i]){
                error(_("In_file failed to open.\n"));
             }
@@ -416,11 +412,11 @@ double phi(INT a, INT b, INT** ped, int* top, FILE** ifs)
       o0[0]=a; o0[1]=b;
       sort(o0,2,o,false);
       jj = s2(o);
-      fseekerr = fseeko64(ifs[0],jj*sizeof(double),SEEK_SET);
+      fseekerr = fseeko(ifs[0],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         fseekerr = fseeko64(ifs[0],jj*sizeof(double),SEEK_SET);
+         fseekerr = fseeko(ifs[0],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){
@@ -462,12 +458,12 @@ double phi(INT a, INT b, INT c, INT** ped, int* top, FILE** ifs)
       sort(o0,3,o,false);
       jj = s3(o);
 
-      fseekerr = fseeko64(ifs[1],jj*sizeof(double),SEEK_SET);
+      fseekerr = fseeko(ifs[1],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
          cout<<"."<<flush;
-         fseekerr = fseeko64(ifs[1],jj*sizeof(double),SEEK_SET);
+         fseekerr = fseeko(ifs[1],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){
@@ -512,11 +508,11 @@ double phi(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
       sort(o0,4,o,false);
       jj = s4(o);
 
-      fseekerr = fseeko64(ifs[2],jj*sizeof(double),SEEK_SET);
+      fseekerr = fseeko(ifs[2],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         fseekerr = fseeko64(ifs[2],jj*sizeof(double),SEEK_SET);
+         fseekerr = fseeko(ifs[2],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){
@@ -565,11 +561,11 @@ double phi22(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
       sort22(o0,4,o);
       jj = s22(o);
 
-      fseekerr = fseeko64(ifs[3],jj*sizeof(double),SEEK_SET);
+      fseekerr = fseeko(ifs[3],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         fseekerr = fseeko64(ifs[3],jj*sizeof(double),SEEK_SET);
+         fseekerr = fseeko(ifs[3],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){

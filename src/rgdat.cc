@@ -5,6 +5,7 @@
      R CMD SHLIB -D_FILE_OFFSET_BITS=64 rgdat.cc
 ****************************************************/
 
+#define _FILE_OFFSET_BITS 64
 #include <R_ext/Error.h>
 #include <R_ext/Memory.h>
 #ifdef ENABLE_NLS
@@ -25,7 +26,6 @@
 #include "cmath"
 #include <stdio.h>
 using namespace std;
-#define _FILE_OFFSET_BITS 64
 
 void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,unsigned long seed=0);
 void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,bool xchr=true,unsigned long seed=0);

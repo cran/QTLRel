@@ -43,7 +43,7 @@ Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components o
 \note{
 It is better to remove the working directory if the program is interrupted by external forces (e.g. killed by users).
 
-If you run this function in a windows system, make sure the working directory is under system volume C and you have the write privilege.
+Warnings: It may require your operating system support "long long" integer type in C++. If you run this function in a windows system, make sure the working directory is under system volume C and you have the write privilege.
 }
 \examples{
 data(miscEx)

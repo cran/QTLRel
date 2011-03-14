@@ -4,6 +4,8 @@
      g++  -D_FILE_OFFSET_BITS=64 imFn.cc
      R CMD SHLIB -D_FILE_OFFSET_BITS=64 imFn.cc
 ****************************************************/
+
+#define _FILE_OFFSET_BITS 64 //must on top
 #include <R_ext/Error.h>
 #include <R_ext/Memory.h>
 #ifdef ENABLE_NLS
