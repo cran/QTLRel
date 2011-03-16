@@ -30,9 +30,10 @@ Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components o
 data(miscEx)
 
 id<- sample(ped$id[300:500],20)
+\dontrun{
 oo<- cic(ped,id,df=0)
-
 ksp<- kinship(ped,ids=id)
 y<- genMatrix(oo)
 sum((y$AA-2*ksp)>1e-7) # same results
+}
 }

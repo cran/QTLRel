@@ -25,7 +25,7 @@ fns4.2<- function(byte=4){
 }
 
 fmaxSize<- function(){
-   k<- -1
+   k<- 0
    k<- .C("getsize",k=as.integer(k))$k
    
    fns4.2(k) # true if trackable
@@ -33,6 +33,16 @@ fmaxSize<- function(){
 
 # c(fns4.2(2),fns4.2(4),fns4.2(8)) # 15   255 65535
 # fmaxSize() # 65535
+
+##########################
+# long long type support #
+##########################
+
+is.ll<- function(){
+   s<- 0
+   s<- .C("llints",s=as.integer(s))$s
+   !(s<8)
+}
 
 ###################
 # free disk space #
@@ -169,7 +179,7 @@ ped.opt<- function(ped,ids,ns,df=2){
       }
    }
 
-   cat("   Total free disk space needed:", totdiskspace,"Mb.\n")
+   cat("  Total free disk space needed:", totdiskspace,"Mb...\n")
    if(is.factor(ped$generation))
       ped$generation<- reorder(ped$generation)
    grsTmp<- sort(unique(ped$generation),decreasing=FALSE)
@@ -228,6 +238,7 @@ cic<- function(ped,ids,inter,df=2,ask=FALSE,verbose=FALSE){
 }
 
 cicTmp<- function(ped,ids,inter,df=2,ask=TRUE,verbose=TRUE){
+   if(!is.ll()) cat("Warning: your system does not seem to support integers of 8+ bytes.\n") 
    if(missing(ids)) ids<- ped$id
    ped<- pedRecode(ped=ped,ids=ids)
    ped.No<- ped.local.no(ped,oids=ids)
@@ -311,7 +322,7 @@ cicTmp<- function(ped,ids,inter,df=2,ask=TRUE,verbose=TRUE){
                       verbose=as.integer(verbose))$idcf
           }
       }
-      if(verbose) cat(" Done.\n")
+      if(verbose) cat("Done\n")
    }
    idcf<- matrix(idcf,ncol=9,byrow=TRUE)
       colnames(idcf)<- paste("d",1:9,sep="")

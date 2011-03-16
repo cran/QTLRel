@@ -11,7 +11,7 @@ rem(formula,data)
 }
 \arguments{
  \item{formula}{
-a formula of the form: ~ Z | G1/.../Gk + ..., corresponding to random effects Z*G_i + Z*G_{ij} + ... in a mixed effect model. If Z=1 as in most cases, then it can be ~ G1/.../Gk + ...
+a formula of the form: ~ Z | G1/.../Gk + ..., corresponding to random effects Z*G_i + Z*G_\{ij\} + ... in a mixed effect model. If Z=1 as in most cases, then it can be ~ G1/.../Gk + ...
 }
   \item{data}{
 a data frame that contains all the variables in the formula.

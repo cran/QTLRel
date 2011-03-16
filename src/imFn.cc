@@ -1,31 +1,5 @@
 
-/***************************************************
-  compile with option:
-     g++  -D_FILE_OFFSET_BITS=64 imFn.cc
-     R CMD SHLIB -D_FILE_OFFSET_BITS=64 imFn.cc
-****************************************************/
-
-#define _FILE_OFFSET_BITS 64 //must on top
-#include <R_ext/Error.h>
-#include <R_ext/Memory.h>
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) dgettext ("stats", String)
-#else
-#define _(String) (String)
-#endif
-
-#include "iostream"
-#include "fstream"
-#include "iomanip"
-#include "string"
-#include "stdlib.h"
-#include "time.h"
-#include "math.h"
-#include "limits.h"
-#include "cmath"
-#include <stdio.h>
-using namespace std;
+#include "xxx.h"
 
 /*--------------------------------
  mapping function
@@ -36,7 +10,7 @@ double mappingFunc(double r,int method){
    double d;
 
    if(r<0 || r>0.5){
-//      printf("r in mappingFunc: out of range.\n"); exit(0);
+//      Rprintf("r in mappingFunc: out of range.\n"); exit(0);
       error(_("r in mappingFunc: out of range.\n"));
    }
 
@@ -58,7 +32,7 @@ double mappingFuncInv(double d,int method){
    double r;
 
    if(d<0){
-//      printf("d in mappingFuncInv: out of range.\n"); exit(0);
+//      Rprintf("d in mappingFuncInv: out of range.\n"); exit(0);
       error(_("d in mappingFuncInv: out of range.\n"));
    }
 
@@ -80,11 +54,11 @@ double rFn(double r,int n=2){
    double pr;
 
    if(r<0 || r>0.5){
-//      printf("r in rFn: out of range.\n"); exit(0);
+//      Rprintf("r in rFn: out of range.\n"); exit(0);
       error(_("r in rFn: out of range.\n"));
    }
    if(n<2){
-//      printf("n=%d in rFn: can't smaller than 2.\n"); exit(0);
+//      Rprintf("n=%d in rFn: can't smaller than 2.\n"); exit(0);
       error(_("n in rFn: can't smaller than 2."));
    }
 
@@ -102,7 +76,7 @@ double rFn(double r,int n=2){
 double conGenoPr(int g,int g0,double r){
    double pr;
    if(r<0 || r>0.5){
-//      printf("r in conGenoPr: out of range.\n"); exit(0);
+//      Rprintf("r in conGenoPr: out of range.\n"); exit(0);
       error(_("r in conGenoPr: out of range.\n"));
    }
    if(g0==1){
@@ -110,7 +84,7 @@ double conGenoPr(int g,int g0,double r){
       else if(g==2) pr = 2*r*(1.0-r);
       else if(g==3) pr = r*r;
       else {
-//         printf("g in conGenoPr: genotype error.\n"); exit(0);
+//         Rprintf("g in conGenoPr: genotype error.\n"); exit(0);
          error(_("g in conGenoPr: genotype error.\n"));
       }
    }else if(g0==2){
@@ -118,7 +92,7 @@ double conGenoPr(int g,int g0,double r){
       else if(g==2) pr = r*r + (1.0-r)*(1.0-r);
       else if(g==3) pr = r*(1.0-r);
       else {
-//         printf("g in conGenoPr: genotype error.\n"); exit(0);
+//         Rprintf("g in conGenoPr: genotype error.\n"); exit(0);
          error(_("g in conGenoPr: genotype error.\n"));
       }
    }else if(g0==3){
@@ -126,11 +100,11 @@ double conGenoPr(int g,int g0,double r){
       else if(g==2) pr = 2*r*(1.0-r);
       else if(g==3) pr = (1.0-r)*(1.0-r);
       else {
-//         printf("g in conGenoPr: genotype error.\n"); exit(0);
+//         Rprintf("g in conGenoPr: genotype error.\n"); exit(0);
          error(_("g in conGenoPr: genotype error.\n"));
       }
    }else {
-//      printf("g0 in conGenoPr: genotype error.\n"); exit(0);
+//      Rprintf("g0 in conGenoPr: genotype error.\n"); exit(0);
       error(_("g0 in conGenoPr: genotype error.\n"));
    }
 

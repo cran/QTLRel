@@ -1,31 +1,5 @@
 
-/***************************************************
-  compile with option:
-     g++  -D_FILE_OFFSET_BITS=64 rgdat.cc
-     R CMD SHLIB -D_FILE_OFFSET_BITS=64 rgdat.cc
-****************************************************/
-
-#define _FILE_OFFSET_BITS 64
-#include <R_ext/Error.h>
-#include <R_ext/Memory.h>
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) dgettext ("stats", String)
-#else
-#define _(String) (String)
-#endif
-
-#include "iostream"
-#include "fstream"
-#include "iomanip"
-#include "string"
-#include "stdlib.h"
-#include "time.h"
-#include "math.h"
-#include "limits.h"
-#include "cmath"
-#include <stdio.h>
-using namespace std;
+#include "xxx.h"
 
 void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,unsigned long seed=0);
 void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,bool xchr=true,unsigned long seed=0);
@@ -55,17 +29,17 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,unsigned long
    int ii,jj;
    if(seed == 0) srand ( time(NULL) ); else srand(seed); //printf("%d\n",seed);
    if(nr<2){
-//      printf("pedigree: at least 2 rows.\n"); exit(0);
+//      Rprintf("pedigree: at least 2 rows.\n"); exit(0);
       error(_("pedigree: at least 2 rows.\n"));
    }else if(nr>INT_MAX){
-//      printf("pedigree: too many rows.\n"); exit(0);
+//      Rprintf("pedigree: too many rows.\n"); exit(0);
       error(_("pedigree: too many rows.\n"));
    }
    if(nc<1){
-//      printf("recombinaton rate: at least 1 SNP.\n"); exit(0);
+//      Rprintf("recombinaton rate: at least 1 SNP.\n"); exit(0);
       error(_("recombinaton rate: at least 1 SNP.\n"));
    }else if(nc>(INT_MAX-1)/2){
-//      printf("recombinaton rate: too many SNPs.\n"); exit(0);
+//      Rprintf("recombinaton rate: too many SNPs.\n"); exit(0);
       error(_("recombinaton rate: too many SNPs.\n"));
    }
    for(i=ninit;i<nr;i++){
@@ -116,17 +90,17 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,bool xchr,uns
    int ii,jj;
    if(seed == 0) srand ( time(NULL) ); else srand(seed); //printf("%d\n",seed);
    if(nr<2){
-//      printf("pedigree: at least 2 rows.\n"); exit(0);
+//      Rprintf("pedigree: at least 2 rows.\n"); exit(0);
       error(_("pedigree: at least 2 rows.\n"));
    }else if(nr>INT_MAX){
-//      printf("pedigree: too many rows.\n"); exit(0);
+//      Rprintf("pedigree: too many rows.\n"); exit(0);
       error(_("pedigree: too many rows.\n"));
    }
    if(nc<1){
-//      printf("recombinaton rate: at least 1 SNP.\n"); exit(0);
+//      Rprintf("recombinaton rate: at least 1 SNP.\n"); exit(0);
       error(_("recombinaton rate: at least 1 SNP.\n"));
    }else if(nc>(INT_MAX-1)/2){
-//      printf("recombinaton rate: too many SNPs.\n"); exit(0);
+//      Rprintf("recombinaton rate: too many SNPs.\n"); exit(0);
       error(_("recombinaton rate: too many SNPs.\n"));
    }
    if(xchr){

@@ -12,32 +12,24 @@
   ULLONG_MAX 18446744073709551615ULL
 ****************************************************/
 
-#define _FILE_OFFSET_BITS 64 //must on top
-#include <R_ext/Error.h>
-#include <R_ext/Memory.h>
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) dgettext ("stats", String)
-#else
-#define _(String) (String)
+#include "xxx.h"
+#if defined(linux) || defined(__linux__) || defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+   #define FOPEN fopen64
+   #define FSEEK fseeko64
+   #define IS64 true
+#else //defined(__APPLE__) || defined(__MACH__) || defined(__SOLARIS__) || defined(SOLARIS)
+   #define FOPEN fopen
+   #define FSEEK fseek
+   #define IS64 false
 #endif
-
-#include "iostream"
-#include "fstream"
-#include "iomanip"
-#include "string.h"
-#include "stdlib.h"
-using namespace std;
-
-typedef int INT;
 
 int fseekerr;
 size_t frwsize;
 int counter;
 double buff;
-long long jj;
-long long o0[4];
-long long o[4];
+LONGLONG jj;
+LONGLONG o0[4];
+LONGLONG o[4];
 
 inline void checkages(INT &a, INT &b);
 void kinship(INT** ped, int nr, double** kc);
@@ -56,8 +48,13 @@ void gen_Matrix(double** idcf, int nn, double** ksp, double** DD, double** AD, d
 **************************************************************************/
 
 extern "C"{
+   void llints(int &s){
+      s = sizeof(LONGLONG);
+      if(IS64) Rprintf("  fopen64() and fseeko64() in use...\n");
+      else Rprintf("  fopen() and fseek() in use... you are advised to run this program on a 64-bit machine!\n");
+   }
    void getsize(int& n){
-      n=sizeof(long long);
+      n=sizeof(LONGLONG);
    }
 
    void kinship(INT* pedigree, INT &nr, INT& nc, double* ksp){
@@ -70,14 +67,14 @@ extern "C"{
    void phicw(INT* pedigree,INT& nr,int& nc,INT* id,INT& nid, int* top, char** infs, char** outfs){
          FILE* ifs[4];
          if(top[0]!=-999) for(int i=0; i<4; i++){
-            ifs[i] = fopen(infs[i],"rb+");
+            ifs[i] = FOPEN(infs[i],"rb+");
             if(!ifs[i]){
                error(_("In_file failed to open.\n"));
             }
          }
          FILE* ofs[4];
          for(int i=0; i<4; i++){
-            ofs[i] = fopen(outfs[i],"wb");
+            ofs[i] = FOPEN(outfs[i],"wb");
             if(!ofs[i]){
                error(_("Out_file failed to open.\n"));
             }
@@ -99,7 +96,7 @@ extern "C"{
    void phicr(INT* pedigree,INT& nr,int& nc,INT* id,INT& nid, int* top, char** infs, double* idcf,int& verbose){
          FILE* ifs[4];
          if(top[0]!=-999) for(int i=0; i<4; i++){
-            ifs[i] = fopen(infs[i],"rb+");
+            ifs[i] = FOPEN(infs[i],"rb+");
             if(!ifs[i]){
                error(_("In_file failed to open.\n"));
             }
@@ -185,14 +182,15 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, FILE** ofs){
 
 // store in idcf[i][j]
 void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, double* idcf,int verbose){
-   long long ii;
+   LONGLONG ii;
    double aa,bb,ab,aab,abb,aabb,aaxbb,abxab;
 
    ii = 0;
+   if(verbose) Rprintf("\nFinishing");
    for(INT i=0;i<nid;i++){
-      if(verbose) cout<<endl<<i+1<<flush;
+      if(verbose) Rprintf("."); //Rprintf("%d ",i+1);
       for(INT j=0;j<=i;j++){
-         if(verbose) cout<<"."<<flush;
+//         if(verbose) Rprintf(".");
 
          aa = 2.0*phi(id[i],id[i],ped,top,ifs);
          bb = 2.0*phi(id[j],id[j],ped,top,ifs);
@@ -215,7 +213,6 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, double* idcf
          idcf[ii] =   4.0 - 2.0*aa - 2.0*bb - 4.00*ab + 2.00*aab + 2.00*abb - 1.50*aabb + 1.0*aaxbb + 0.5*abxab; ii++;
       }
    }
-   if(verbose) cout<<endl;
 }
 
 
@@ -319,45 +316,45 @@ void sort22(T* x,INT n,T* arr){
  choose(n+k-1,k)
  accuracy won't come without trick!!!
  ----------------*/
-long long fn2(long long n){
-   long long s;
+LONGLONG fn2(LONGLONG n){
+   LONGLONG s;
    s = n*(n+1)/2;
    return s;
 }
-long long fn3(long long n){
-   long long s;
+LONGLONG fn3(LONGLONG n){
+   LONGLONG s;
    s = fn2(n)*(n+2)/3;
    return s;
 }
-long long fn4(long long n){//fn4(1000) = 41917125250, which is 312.3069 Gb
-   long long s;
+LONGLONG fn4(LONGLONG n){//fn4(1000) = 41917125250, which is 312.3069 Gb
+   LONGLONG s;
    s = fn3(n)*(n+3)/4;
    return s;
 }
 // special one
-long long fn4_2(long long n){//fn4_2(1000) = 125417041750, which is 934.4298 Gb.
-   long long s;
+LONGLONG fn4_2(LONGLONG n){//fn4_2(1000) = 125417041750, which is 934.4298 Gb.
+   LONGLONG s;
    s = fn3(n)*(3*n+1)/4;
    return s;
 }
 
-long long s2(long long* x){
-   long long s;
+LONGLONG s2(LONGLONG* x){
+   LONGLONG s;
    s = fn2(x[0]-1) + x[1] - 1;
    return s;
 }
-long long s3(long long* x){
-   long long s;
+LONGLONG s3(LONGLONG* x){
+   LONGLONG s;
    s = fn3(x[0]-1) + fn2(x[1]-1) + x[2] - 1;
    return s;
 }
-long long s4(long long* x){
-   long long s;
+LONGLONG s4(LONGLONG* x){
+   LONGLONG s;
    s = fn4(x[0]-1) + fn3(x[1]-1) + fn2(x[2]-1) + x[3] - 1;
    return s;
 }
-long long s22(long long* x){
-   long long s;
+LONGLONG s22(LONGLONG* x){
+   LONGLONG s;
    s = fn4_2(x[0]-1) + (x[1]-1)*fn2(x[0]) + fn2(x[2]-1) + x[3] - 1;
    return s;
 }
@@ -412,11 +409,11 @@ double phi(INT a, INT b, INT** ped, int* top, FILE** ifs)
       o0[0]=a; o0[1]=b;
       sort(o0,2,o,false);
       jj = s2(o);
-      fseekerr = fseeko(ifs[0],jj*sizeof(double),SEEK_SET);
+      fseekerr = FSEEK(ifs[0],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         fseekerr = fseeko(ifs[0],jj*sizeof(double),SEEK_SET);
+         fseekerr = FSEEK(ifs[0],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){
@@ -458,12 +455,12 @@ double phi(INT a, INT b, INT c, INT** ped, int* top, FILE** ifs)
       sort(o0,3,o,false);
       jj = s3(o);
 
-      fseekerr = fseeko(ifs[1],jj*sizeof(double),SEEK_SET);
+      fseekerr = FSEEK(ifs[1],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         cout<<"."<<flush;
-         fseekerr = fseeko(ifs[1],jj*sizeof(double),SEEK_SET);
+         Rprintf("."); 
+         fseekerr = FSEEK(ifs[1],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){
@@ -474,7 +471,7 @@ double phi(INT a, INT b, INT c, INT** ped, int* top, FILE** ifs)
 /*
       counter = 3;
       while(frwsize!=1 && counter>0){
-         cout<<"."<<flush;
+         Rprintf(".");
          frwsize = fread(&buff,sizeof(double),1,ifs[1]);
          counter--;
       }
@@ -508,11 +505,11 @@ double phi(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
       sort(o0,4,o,false);
       jj = s4(o);
 
-      fseekerr = fseeko(ifs[2],jj*sizeof(double),SEEK_SET);
+      fseekerr = FSEEK(ifs[2],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         fseekerr = fseeko(ifs[2],jj*sizeof(double),SEEK_SET);
+         fseekerr = FSEEK(ifs[2],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){
@@ -561,11 +558,11 @@ double phi22(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
       sort22(o0,4,o);
       jj = s22(o);
 
-      fseekerr = fseeko(ifs[3],jj*sizeof(double),SEEK_SET);
+      fseekerr = FSEEK(ifs[3],jj*sizeof(double),SEEK_SET);
 /*
       counter = 3;
       while(fseekerr && counter>0){
-         fseekerr = fseeko(ifs[3],jj*sizeof(double),SEEK_SET);
+         fseekerr = FSEEK(ifs[3],jj*sizeof(double),SEEK_SET);
          counter--;
       }
       if(fseekerr){

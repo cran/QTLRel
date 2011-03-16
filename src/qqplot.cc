@@ -1,30 +1,5 @@
 
-/***************************************************
-  compile with option:
-     g++  -D_FILE_OFFSET_BITS=64 imFn.cc
-     R CMD SHLIB -D_FILE_OFFSET_BITS=64 imFn.cc
-****************************************************/
-
-#define _FILE_OFFSET_BITS 64
-#include <R_ext/Error.h>
-#include <R_ext/Memory.h>
-#ifdef ENABLE_NLS
-#include <libintl.h>
-#define _(String) dgettext ("stats", String)
-#else
-#define _(String) (String)
-#endif
-
-#include "iostream"
-#include "fstream"
-#include "iomanip"
-#include "string"
-#include "stdlib.h"
-#include "time.h"
-#include "math.h"
-#include "cmath"
-#include <stdio.h>
-using namespace std;
+#include "xxx.h"
 
 /*------------------------
  Kolmogorov distribution

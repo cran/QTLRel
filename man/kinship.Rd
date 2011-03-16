@@ -24,5 +24,7 @@ A matrix giving kinship coefficients.
 data(miscEx)
 
 id<- sample(ped$id,10)
+\dontrun{
 ksp<- kinship(ped,ids=id)
+}
 }
