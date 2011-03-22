@@ -21,26 +21,21 @@
 #else
    #define _(String) (String)
 #endif
-#include <R_ext/Print.h> // for Rprintf 
+#include <R_ext/Print.h> // for Rprintf
 
-#include "iostream"
-#include "fstream"
-#include "iomanip"
-#include "string"
 #include "stdlib.h"
 #include "time.h"
 #include "math.h"
 #include "limits.h"
-#include "cmath"
 #include "stdio.h"
-using namespace std;
+//#include "iostream"
+//#include "fstream"
+//#include "iomanip"
+//#include "string"
+//#include "cmath"
+//using namespace std;
 
-#ifdef LLONG_MAX
 typedef long long LONGLONG;
-#else
-typedef long LONGLONG;
-#endif
-typedef int INT;
 
 ////////////////////////////////////////////////////
 

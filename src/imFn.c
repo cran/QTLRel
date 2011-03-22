@@ -50,7 +50,7 @@ double mappingFuncInv(double d,int method){
  r: recombination rate at F2
  n: target generation
  --------------------------------*/
-double rFn(double r,int n=2){
+double rFn(double r,int n){
    double pr;
 
    if(r<0 || r>0.5){
@@ -143,46 +143,43 @@ double conGenoPr2(int g,int g1,int g2,double r,double r1,double r2){
  method: 1-Haldane, 2-Kosambi
  pData: np by 3 array, pData[i][j] is P(geno=j|mData) at pos[i]
       j=1--AA,j=2--AB,j=3--BB
- err: true if no markder data
+ err: 1 if no markder data
  ------------------------------------------------------------ */
-void conGenoPrs(int *mData,int n,double *dist,double *pos,int np,int* at, int gr,int method,double *pData,bool &err){
+void conGenoPrs(int *mData,int n,double *dist,double *pos,int np,int* at, int gr,int method,double *pData,int *err){
    double r,r1,r2;
-   bool yes,bad1,bad2;
-      if(mData[0]==0) bad2 = true;
-      else bad2=false;//true if missing at the right flanking marker
+   int yes,bad1,bad2;
+      if(mData[0]==0) bad2 = 1;
+      else bad2=0;//1 if missing at the right flanking marker
    int n1,n2;//mData[n1] is left flanking marker
       n2=0;
    int ii=-1;//pos[ii] is current imputation position
-   err = false; //return err=true if no genotype data
+   *err = 0; //return err=1 if no genotype data
    n=n-1;
    np=np-1;
-   yes=true; if(np<0) yes=false;
+   yes=1; if(np<0) yes=0;
    while(yes){
       n1=n2;
       bad1=bad2;
-      bad2 = true;
+      bad2 = 1;
       while(n2<n){
          n2++;
          if(mData[n2]){
-            bad2 = false;
+            bad2 = 0;
             break;
          }
       }
       if(bad1 && bad2){
-         err = true;
+         *err = 1;
 //         printf("no marker data on the chrosomome!\n",n);
          break;
       }
       r=mappingFuncInv(dist[n2]-dist[n1],method);
          r=rFn(r,gr);
-//cout<<"n1="<<n1<<' '<<"n2="<<n2<<' '<<dist[n2]-dist[n1]<<' '<<"r="<<r<<endl;
       do{
-//cout<<"ii+1="<<ii+1<<" at[ii+1]="<<at[ii+1]<<" n1="<<n1<<" n2="<<n2<<endl;
          if(!bad2){
             if(at[ii+1]-1==n2) break;
          }
          ii++;
-//cout<<"ii="<<ii<<" np="<<np<<" dist[n1]="<<dist[n1]<<" pos[ii]="<<pos[ii]<<" dist[n2]="<<dist[n2]<<endl;
          if(pos[ii]<dist[n1]){
             r1=mappingFuncInv(dist[n1]-pos[ii],method);
                r1=rFn(r1,gr);
@@ -216,15 +213,15 @@ void conGenoPrs(int *mData,int n,double *dist,double *pos,int np,int* at, int gr
                pData[ii*3+2] = conGenoPr2(3,mData[n1],mData[n2],r,r1,r2);
             }
          }
-         if(ii+1>np) {yes=false; break;}
+         if(ii+1>np) {yes=0; break;}
       }while(ii<np);
    }
 }
 
-extern "C"{
-   void conGenoPrc(int *mData,int &n,double *dist,double *pos,int &np,int* at,int &gr,int &method,double *pData,bool &err){
-      conGenoPrs(mData,n,dist,pos,np,at,gr,method,pData,err);
+//extern "C"{
+   void conGenoPrc(int *mData,int *n,double *dist,double *pos,int *np,int* at,int *gr,int *method,double *pData,int *err){
+      conGenoPrs(mData,*n,dist,pos,*np,at,*gr,*method,pData,err);
    }
-}
+//}
 
 

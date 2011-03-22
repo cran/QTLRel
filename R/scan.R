@@ -127,7 +127,8 @@ scanOne.1 <-
       }
    }
 
-   list(chr=prdat$chr,
+   list(snp=prdat$snp,
+        chr=prdat$chr,
         dist=prdat$dist,
         p=P,
         parameters=model.par)
@@ -306,7 +307,7 @@ scanOne.default<-
       pv<- scanOne.2(y=y,x=x,gdat=gdat,cov=cov,intcovar=intcovar,test=test)
    }
 
-   class(pv)<- c("scanOne")
+   class(pv)<- c("scanOne",test)
    pv
 }
 

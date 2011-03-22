@@ -7,7 +7,7 @@ Calculate Jacquard condensed identity coefficients
 Calculate Jacquard condensed identity coefficients from a pedigree.
 }
 \usage{
-cic(ped,ids,inter,df=2,ask=FALSE,verbose=FALSE)
+cic(ped,ids,inter,df=3,ask=FALSE,verbose=FALSE)
 }
 \arguments{
   \item{ped}{

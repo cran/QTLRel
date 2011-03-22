@@ -1,4 +1,6 @@
 
+2011/3/22 resolve the problem of 'long long' type on some platforms.
+
 2011/3/16 resolve the problem of fopen64 and fseeko64 to enable installation on macosx and solaris systems.
 
 2011/3/10 replace scanOne with scanOne4p; add functions to calculate identity coefficients from pedigrees; add a function to create matrices that are associated with non-genetic random effects.

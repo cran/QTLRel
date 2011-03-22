@@ -1,16 +1,16 @@
 
 #include "xxx.h"
 
-void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,unsigned long seed=0);
-void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,bool xchr=true,unsigned long seed=0);
-extern "C"{
-   void rgdata(int* gdata,int &nr,int &nc,int& ninit,int* pedigree,double* recomb,unsigned long &seed){
-      rgeno1(gdata,nr,nc,ninit,pedigree,recomb,seed);
+void rgeno1();
+void rgeno2();
+//extern "C"{
+   void rgdata(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *seed){
+      rgeno1(gdata,*nr,*nc,*ninit,pedigree,recomb,*seed);
    }
-   void rgdata2(int* gdata,int &nr,int &nc,int& ninit,int* pedigree,double* recomb,bool &xchr,unsigned long &seed){
-      rgeno2(gdata,nr,nc,ninit,pedigree,recomb,xchr,seed);
+   void rgdata2(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *xchr,int *seed){
+      rgeno2(gdata,*nr,*nc,*ninit,pedigree,recomb,*xchr,*seed);
    }
-}
+//}
 
 /*---------------------------------------------------
  generate genotype data using pedigree
@@ -23,23 +23,19 @@ extern "C"{
     between SNP[j-1] and SNP[j]
  seed: take system time as seed if 0
  ---------------------------------------------------*/
-void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,unsigned long seed){
+void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int seed){
    double u;
    int i,j;
    int ii,jj;
    if(seed == 0) srand ( time(NULL) ); else srand(seed); //printf("%d\n",seed);
    if(nr<2){
-//      Rprintf("pedigree: at least 2 rows.\n"); exit(0);
       error(_("pedigree: at least 2 rows.\n"));
-   }else if(nr>INT_MAX){
-//      Rprintf("pedigree: too many rows.\n"); exit(0);
+   }else if(nr>INT_MAX){//useless, R won't pass int larger than INT_MAX
       error(_("pedigree: too many rows.\n"));
    }
    if(nc<1){
-//      Rprintf("recombinaton rate: at least 1 SNP.\n"); exit(0);
       error(_("recombinaton rate: at least 1 SNP.\n"));
    }else if(nc>(INT_MAX-1)/2){
-//      Rprintf("recombinaton rate: too many SNPs.\n"); exit(0);
       error(_("recombinaton rate: too many SNPs.\n"));
    }
    for(i=ninit;i<nr;i++){
@@ -80,27 +76,23 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,unsigned long
     id=1,2,...,nr
  recomb: vector of length nc, recomb[j] is the recombination rate
     between SNP[j-1] and SNP[j]
- xchr: true if it is x-chromosome
+ xchr: 1 if it is x-chromosome
  seed: take system time as seed if 0
  ---------------------------------------------------*/
 
-void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,bool xchr,unsigned long seed){
+void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr,int seed){
    double u;
    int i,j;
    int ii,jj;
    if(seed == 0) srand ( time(NULL) ); else srand(seed); //printf("%d\n",seed);
    if(nr<2){
-//      Rprintf("pedigree: at least 2 rows.\n"); exit(0);
       error(_("pedigree: at least 2 rows.\n"));
    }else if(nr>INT_MAX){
-//      Rprintf("pedigree: too many rows.\n"); exit(0);
       error(_("pedigree: too many rows.\n"));
    }
    if(nc<1){
-//      Rprintf("recombinaton rate: at least 1 SNP.\n"); exit(0);
       error(_("recombinaton rate: at least 1 SNP.\n"));
    }else if(nc>(INT_MAX-1)/2){
-//      Rprintf("recombinaton rate: too many SNPs.\n"); exit(0);
       error(_("recombinaton rate: too many SNPs.\n"));
    }
    if(xchr){

@@ -123,7 +123,7 @@ ped.local.no<- function(ped,oids){
    ii
 }
 
-ped.opt<- function(ped,ids,ns,df=2){
+ped.opt<- function(ped,ids,ns,df=3){
 # ped: object of pedRecode
 # ids: old ids of interest
 # ns: object of ped.local.no
@@ -225,7 +225,7 @@ kinship<- function(ped,ids){
             ksp=as.double(ksp))
    ksp<- matrix(out$ksp,nrow=nrow(ped),byrow=TRUE)
       ksp<- ksp[idx,idx]
-      rownames(ksp)<- colnames(ksp)<- ids
+      rownames(ksp)<- colnames(ksp)<- trim(as.character(ids))
    ksp
 }
 
@@ -233,11 +233,11 @@ kinship<- function(ped,ids){
 # calculate identity coefficients #
 ###################################
 
-cic<- function(ped,ids,inter,df=2,ask=FALSE,verbose=FALSE){
+cic<- function(ped,ids,inter,df=3,ask=FALSE,verbose=FALSE){
    cicTmp(ped=ped,ids=ids,inter=inter,df=df,ask=ask,verbose=verbose)
 }
 
-cicTmp<- function(ped,ids,inter,df=2,ask=TRUE,verbose=TRUE){
+cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    if(!is.ll()) cat("Warning: your system does not seem to support integers of 8+ bytes.\n") 
    if(missing(ids)) ids<- ped$id
    ped<- pedRecode(ped=ped,ids=ids)
@@ -328,6 +328,7 @@ cicTmp<- function(ped,ids,inter,df=2,ask=TRUE,verbose=TRUE){
       colnames(idcf)<- paste("d",1:9,sep="")
 
    rns<- matrix("NA",nrow=nrow(idcf),ncol=2)
+   ids<- trim(as.character(ids))
    ii<- 0
    for(i in 1:length(ids)){
       for(j in 1:i){

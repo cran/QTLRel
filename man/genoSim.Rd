@@ -47,6 +47,7 @@ data(miscEx)
 
 pedR<- pedRecode(ped)
 
+\dontrun{
 gd1<- genoSim(pedR, genMapF34)
 dim(gd1)
 
@@ -57,5 +58,6 @@ gd3<- genoSim(pedR, genMapF34, ids=pedR$id[pedR$gen=="F34"],
    recode.pedigree=TRUE)
 dim(gd3)
 gd3[1:5,1:5]
+}
 }
 

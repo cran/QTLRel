@@ -13,15 +13,20 @@
 ****************************************************/
 
 #include "xxx.h"
-#if defined(linux) || defined(__linux__) || defined(WIN32) || defined(_WIN32) || defined(__WIN32)
+#if defined(linux) || defined(__linux__)
+   #define FOPEN fopen64
+   #define FSEEK fseeko
+   #define IS64 1
+#elif  defined(WIN32) || defined(_WIN32) || defined(__WIN32)
    #define FOPEN fopen64
    #define FSEEK fseeko64
-   #define IS64 true
+   #define IS64 1
 #else //defined(__APPLE__) || defined(__MACH__) || defined(__SOLARIS__) || defined(SOLARIS)
    #define FOPEN fopen
    #define FSEEK fseek
-   #define IS64 false
+   #define IS64 0
 #endif
+FILE *FOPEN(const char *filename, const char *type);
 
 int fseekerr;
 size_t frwsize;
@@ -31,15 +36,15 @@ LONGLONG jj;
 LONGLONG o0[4];
 LONGLONG o[4];
 
-inline void checkages(INT &a, INT &b);
-void kinship(INT** ped, int nr, double** kc);
-double phi(INT a, INT b, INT** ped, int* top, FILE** ifs);
-double phi(INT a, INT b, INT c, INT** ped, int* top, FILE** ifs);
-double phi(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs);
-double phi22(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs);
-void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs,FILE** ofs);
-void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs,double* idcf,int verbose);
-void gen_Matrix(double** idcf, int nn, double** ksp, double** DD, double** AD, double** HH, double** MH);
+void checkages();
+void kship();
+double phi2();
+double phi3();
+double phi4();
+double phi22();
+void idcoefw();
+void idcoefr();
+void genMatr();
 
 /*************************************************************************
    pedigree: nr by nc array with (id,father,mother,...)
@@ -47,91 +52,90 @@ void gen_Matrix(double** idcf, int nn, double** ksp, double** DD, double** AD, d
    outfs[4]: specify out file names
 **************************************************************************/
 
-extern "C"{
-   void llints(int &s){
-      s = sizeof(LONGLONG);
-      if(IS64) Rprintf("  fopen64() and fseeko64() in use...\n");
-      else Rprintf("  fopen() and fseek() in use... you are advised to run this program on a 64-bit machine!\n");
+//extern "C"{
+   void llints(int *s){
+      *s = sizeof(LONGLONG);
+      if(!IS64) Rprintf("  fopen() and fseek() in use... you are advised to run this program on a 64-bit machine!\n");
    }
-   void getsize(int& n){
-      n=sizeof(LONGLONG);
-   }
-
-   void kinship(INT* pedigree, INT &nr, INT& nc, double* ksp){
-      INT** ped=new INT*[nr]; for(INT i=0;i<nr;i++) ped[i]=pedigree+i*nc;
-      double** kc=new double*[nr]; for(INT i=0;i<nr;i++) kc[i]=ksp+i*nr;
-      kinship(ped,nr,kc);
+   void getsize(int* n){
+      *n = sizeof(LONGLONG);
    }
 
-   //write to file outfs[4]: phi(a,b), phi(a,b,c), phi(a,b,c,d) and phi22(a,b,c,d)
-   void phicw(INT* pedigree,INT& nr,int& nc,INT* id,INT& nid, int* top, char** infs, char** outfs){
+   void kinship(int* pedigree, int *nr, int* nc, double* ksp){
+      int i;
+      int* ped[*nr]; for(i=0;i<*nr;i++) ped[i]=pedigree+i*(*nc);
+      double* kc[*nr]; for(i=0;i<*nr;i++) kc[i]=ksp+i*(*nr);
+      kship(ped,*nr,kc);
+   }
+
+   //write to file outfs[4]: phi2(a,b), phi3(a,b,c), phi4(a,b,c,d) and phi22(a,b,c,d)
+   void phicw(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, char** outfs){
          FILE* ifs[4];
-         if(top[0]!=-999) for(int i=0; i<4; i++){
+         int i;
+         if(top[0]!=-999) for(i=0; i<4; i++){
             ifs[i] = FOPEN(infs[i],"rb+");
             if(!ifs[i]){
                error(_("In_file failed to open.\n"));
             }
          }
          FILE* ofs[4];
-         for(int i=0; i<4; i++){
+         for(i=0; i<4; i++){
             ofs[i] = FOPEN(outfs[i],"wb");
             if(!ofs[i]){
                error(_("Out_file failed to open.\n"));
             }
          }
+         int* ped[*nr]; for(i=0;i<*nr;i++) ped[i]=pedigree+i*(*nc);
+         idcoefw(ped,*nr,id,*nid,top,ifs,ofs);
 
-         INT** ped=new INT*[nr]; for(INT i=0;i<nr;i++) ped[i]=pedigree+i*nc;
-         idcoef(ped,nr,id,nid,top,ifs,ofs);
-
-         delete[] ped;
-         for(int i=0; i<4; i++)
+         for(i=0; i<4; i++)
             fclose(ofs[i]);
-         if(top[0]!=-999) for(int i=0; i<4; i++){
+         if(top[0]!=-999) for(i=0; i<4; i++){
             fclose(ifs[i]);
             remove(infs[i]);
          }
    }
 
    //store in idcf[,9]
-   void phicr(INT* pedigree,INT& nr,int& nc,INT* id,INT& nid, int* top, char** infs, double* idcf,int& verbose){
+   void phicr(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, double* idcf,int* verbose){
+         int i;
          FILE* ifs[4];
-         if(top[0]!=-999) for(int i=0; i<4; i++){
+         if(top[0]!=-999) for(i=0; i<4; i++){
             ifs[i] = FOPEN(infs[i],"rb+");
             if(!ifs[i]){
                error(_("In_file failed to open.\n"));
             }
          }
 
-         INT** ped=new INT*[nr]; for(INT i=0;i<nr;i++) ped[i]=pedigree+i*nc;
-         idcoef(ped,nr,id,nid,top,ifs,idcf,verbose);
+         int* ped[*nr]; for(i=0;i<*nr;i++) ped[i]=pedigree+i*(*nc);
+         idcoefr(ped,*nr,id,*nid,top,ifs,idcf,*verbose);
 
-         delete[] ped;
-         if(top[0]!=-999) for(int i=0; i<4; i++){
+         if(top[0]!=-999) for(i=0; i<4; i++){
             fclose(ifs[i]);
             remove(infs[i]);
          }
    }
 
-   void gen_Matrix(double* idcf, int& nr, int& nc, int& nn,
+   void gen_Matrix(double* idcf, int* nr, int* nc, int* nn,
       double* ksp, double* DD, double* AD, double* HH, double* MH){
-      double** idc=new double*[nr]; for(int i=0;i<nr;i++) idc[i]=idcf+i*nc;
-      double** ks=new double*[nn]; for(int i=0;i<nn;i++) ks[i]=ksp+i*nn;
-      double** dd=new double*[nn]; for(int i=0;i<nn;i++) dd[i]=DD+i*nn;
-      double** ad=new double*[nn]; for(int i=0;i<nn;i++) ad[i]=AD+i*nn;
-      double** hh=new double*[nn]; for(int i=0;i<nn;i++) hh[i]=HH+i*nn;
-      double** mh=new double*[nn]; for(int i=0;i<nn;i++) mh[i]=MH+i*nn;
+      int i;
+      double* idc[*nr]; for(i=0;i<*nr;i++) idc[i]=idcf+i*(*nc);
+      double* ks[*nn]; for(i=0;i<*nn;i++) ks[i]=ksp+i*(*nn);
+      double* dd[*nn]; for(i=0;i<*nn;i++) dd[i]=DD+i*(*nn);
+      double* ad[*nn]; for(i=0;i<*nn;i++) ad[i]=AD+i*(*nn);
+      double* hh[*nn]; for(i=0;i<*nn;i++) hh[i]=HH+i*(*nn);
+      double* mh[*nn]; for(i=0;i<*nn;i++) mh[i]=MH+i*(*nn);
 
-      gen_Matrix(idc, nn, ks, dd, ad, hh, mh);
-
-      delete[] idc; delete[] ks; delete[] dd; delete[] ad; delete[] hh; delete[] mh;
+      genMatr(idc, *nn, ks, dd, ad, hh, mh);
    }
-}
+//}
 
 // write to ofs[k]
-void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, FILE** ofs){
-   for(INT i=0;i<nid;i++){
-      for(INT j=0;j<=i;j++){
-         buff = phi(id[i],id[j],ped,top,ifs);
+void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs){
+   int i, j, k, l;
+   for(i=0;i<nid;i++){
+      for(j=0;j<=i;j++){
+         buff = phi2(id[i],id[j],ped,top,ifs);
          frwsize = fwrite(&buff,sizeof(double),1,ofs[0]);
          if(frwsize!=1){
             error(_("Data writing errors.\n"));
@@ -139,10 +143,10 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, FILE** ofs){
       }
    }
 
-   for(INT i=0;i<nid;i++){
-      for(INT j=0;j<=i;j++){
-         for(INT k=0;k<=j;k++){
-            buff = phi(id[i],id[j],id[k],ped,top,ifs);
+   for(i=0;i<nid;i++){
+      for(j=0;j<=i;j++){
+         for(k=0;k<=j;k++){
+            buff = phi3(id[i],id[j],id[k],ped,top,ifs);
             frwsize = fwrite(&buff,sizeof(double),1,ofs[1]);
             if(frwsize!=1){
                error(_("Data writing errors.\n"));
@@ -151,11 +155,11 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, FILE** ofs){
       }
    }
 
-   for(INT i=0;i<nid;i++){
-      for(INT j=0;j<=i;j++){
-         for(INT k=0;k<=j;k++){
-            for(INT l=0;l<=k;l++){
-               buff = phi(id[i],id[j],id[k],id[l],ped,top,ifs);
+   for(i=0;i<nid;i++){
+      for(j=0;j<=i;j++){
+         for(k=0;k<=j;k++){
+            for(l=0;l<=k;l++){
+               buff = phi4(id[i],id[j],id[k],id[l],ped,top,ifs);
                frwsize = fwrite(&buff,sizeof(double),1,ofs[2]);
                if(frwsize!=1){
                   error(_("Data writing errors.\n"));
@@ -165,10 +169,10 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, FILE** ofs){
       }
    }
 
-   for(INT i=0;i<nid;i++){
-      for(INT j=0;j<=i;j++){
-         for(INT k=0;k<=i;k++){
-            for(INT l=0;l<=k;l++){
+   for(i=0;i<nid;i++){
+      for(j=0;j<=i;j++){
+         for(k=0;k<=i;k++){
+            for(l=0;l<=k;l++){
                buff = phi22(id[i],id[j],id[k],id[l],ped,top,ifs);
                frwsize = fwrite(&buff,sizeof(double),1,ofs[3]);
                if(frwsize!=1){
@@ -181,23 +185,24 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, FILE** ofs){
 }
 
 // store in idcf[i][j]
-void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, double* idcf,int verbose){
-   LONGLONG ii;
+void idcoefr(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, double* idcf,int verbose){
+   int i, j;
    double aa,bb,ab,aab,abb,aabb,aaxbb,abxab;
+   LONGLONG ii;
 
    ii = 0;
    if(verbose) Rprintf("\nFinishing");
-   for(INT i=0;i<nid;i++){
+   for(i=0;i<nid;i++){
       if(verbose) Rprintf("."); //Rprintf("%d ",i+1);
-      for(INT j=0;j<=i;j++){
+      for(j=0;j<=i;j++){
 //         if(verbose) Rprintf(".");
 
-         aa = 2.0*phi(id[i],id[i],ped,top,ifs);
-         bb = 2.0*phi(id[j],id[j],ped,top,ifs);
-         ab = 4.0*phi(id[i],id[j],ped,top,ifs);
-         aab = 8.0*phi(id[i],id[i],id[j],ped,top,ifs);
-         abb = 8.0*phi(id[i],id[j],id[j],ped,top,ifs);
-         aabb = 16.0*phi(id[i],id[i],id[j],id[j],ped,top,ifs); 
+         aa = 2.0*phi2(id[i],id[i],ped,top,ifs);
+         bb = 2.0*phi2(id[j],id[j],ped,top,ifs);
+         ab = 4.0*phi2(id[i],id[j],ped,top,ifs);
+         aab = 8.0*phi3(id[i],id[i],id[j],ped,top,ifs);
+         abb = 8.0*phi3(id[i],id[j],id[j],ped,top,ifs);
+         aabb = 16.0*phi4(id[i],id[i],id[j],id[j],ped,top,ifs); 
          aaxbb = 4.0*phi22(id[i],id[i],id[j],id[j],ped,top,ifs);
          abxab = 16.0*phi22(id[i],id[j],id[i],id[j],ped,top,ifs);
 
@@ -216,10 +221,10 @@ void idcoef(INT** ped,INT nr,INT* id,INT nid, int* top, FILE** ifs, double* idcf
 }
 
 
-void gen_Matrix(double** idcf, int nn, double** ksp, double** DD, double** AD, double** HH, double** MH){
-   int ii=0;
-   for(int i=0;i<nn;i++){
-      for(int j=0;j<=i;j++){
+void genMatr(double** idcf, int nn, double** ksp, double** DD, double** AD, double** HH, double** MH){
+   int i, j, ii=0;
+   for(i=0;i<nn;i++){
+      for(j=0;j<=i;j++){
          ksp[i][j] = idcf[ii][0] + (idcf[ii][2] + idcf[ii][4] + idcf[ii][6])/2.0 + idcf[ii][7]/4.0;
             ksp[j][i] = ksp[i][j];
          DD[i][j] = idcf[ii][6];
@@ -233,8 +238,8 @@ void gen_Matrix(double** idcf, int nn, double** ksp, double** DD, double** AD, d
          ii++;
       }
    }
-   for(int i=0;i<nn;i++){
-      for(int j=0;j<=i;j++){
+   for(i=0;i<nn;i++){
+      for(j=0;j<=i;j++){
          MH[i][j] -= (2.0*ksp[i][i] -1.0)*(2.0*ksp[j][j] -1.0);
             MH[j][i] = MH[i][j];
       }
@@ -244,18 +249,18 @@ void gen_Matrix(double** idcf, int nn, double** ksp, double** DD, double** AD, d
 /*----------------------------------------
  sort: sort an array x of length n
  returned by arr of length n
- default: increasing=true
+ default: increasing=1
  ----------------------------------------*/
-template <class T>
-void sort(T* x,INT n,T* arr,bool increasing){
-   T tmp;
+void sort(LONGLONG* x,int n,LONGLONG* arr,int increasing){
+   int i, j;
+   LONGLONG tmp;
 
-   for(INT i=0;i<n;i++){
+   for(i=0;i<n;i++){
       arr[i]=x[i];
    }
-   if(increasing==true){
-      for(INT i=0;i<n-1;i++){
-         for(INT j=i+1;j<n;j++){
+   if(increasing==1){
+      for(i=0;i<n-1;i++){
+         for(j=i+1;j<n;j++){
             if(arr[j]<arr[i]){
                tmp=arr[i];
                arr[i]=arr[j];
@@ -263,9 +268,9 @@ void sort(T* x,INT n,T* arr,bool increasing){
             }
          }
       }
-   }else if(increasing==false){
-      for(INT i=0;i<n-1;i++){
-         for(INT j=i+1;j<n;j++){
+   }else if(increasing==0){
+      for(i=0;i<n-1;i++){
+         for(j=i+1;j<n;j++){
             if(arr[j]>arr[i]){
                tmp=arr[i];
                arr[i]=arr[j];
@@ -281,15 +286,15 @@ void sort(T* x,INT n,T* arr,bool increasing){
  such that AB from ab or cd and A>=B,
  A>=C,C>=D
  ----------------------------------------*/
-template <class T>
-void sort22(T* x,INT n,T* arr){
-   T tmp;
+void sort22(LONGLONG* x,int n,LONGLONG* arr){
+   int i;
+   LONGLONG tmp;
 
    if(n != 4){
       error(_("n should be 4.\n"));
    }
 
-   for(INT i=0;i<n;i++){
+   for(i=0;i<n;i++){
       arr[i]=x[i];
    }
    if(arr[0]<arr[1]){
@@ -359,16 +364,16 @@ LONGLONG s22(LONGLONG* x){
    return s;
 }
 
-inline void checkages(INT &a, INT &b)
+void checkages(int *a, int *b)
 {
-   if (a < b){
-      INT tmp = a;
-      a = b;
-      b = tmp;
+   if (*a < *b){
+      int tmp = *a;
+      *a = *b;
+      *b = tmp;
    }
 }
 
-double phi(INT a, INT b, INT** ped, double** kc)
+double phi(int a, int b, int** ped, double** kc)
 {
    if( a == 0 || b == 0){
       return 0;
@@ -391,23 +396,24 @@ double phi(INT a, INT b, INT** ped, double** kc)
    return buff;
 }
 
-void kinship(INT** ped, int nr, double** kc)
+void kship(int** ped, int nr, double** kc)
 {
-   for(int i=0; i<nr; i++){
-      for(int j=0; j<=i; j++){
+   int i,j;
+   for(i=0; i<nr; i++){
+      for(j=0; j<=i; j++){
          kc[i][j] = phi(i+1, j+1, ped, kc);
             kc[j][i] = kc[i][j];
       }
    }
 }
 
-double phi(INT a, INT b, INT** ped, int* top, FILE** ifs)
+double phi2(int a, int b, int** ped, int* top, FILE** ifs)
 {
    if( a == 0 || b == 0)
       return 0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1){
       o0[0]=a; o0[1]=b;
-      sort(o0,2,o,false);
+      sort(o0,2,o,0);
       jj = s2(o);
       fseekerr = FSEEK(ifs[0],jj*sizeof(double),SEEK_SET);
 /*
@@ -435,24 +441,24 @@ double phi(INT a, INT b, INT** ped, int* top, FILE** ifs)
       return(buff);
    }
    if(a == b)
-      return (0.5 + 0.5*phi(ped[a-1][1], ped[a-1][2], ped, top, ifs));
+      return (0.5 + 0.5*phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs));
    else{
       if(a < b){
-         INT tmp = a;
+         int tmp = a;
          a = b;
          b = tmp;
       }
-      return((phi(ped[a-1][1],b, ped, top, ifs) + phi(ped[a-1][2],b, ped, top, ifs))/2.0);
+      return((phi2(ped[a-1][1],b, ped, top, ifs) + phi2(ped[a-1][2],b, ped, top, ifs))/2.0);
    }
 }
 
-double phi(INT a, INT b, INT c, INT** ped, int* top, FILE** ifs)
+double phi3(int a, int b, int c, int** ped, int* top, FILE** ifs)
 {
    if (a == 0 || b == 0 || c == 0) // case 0
       return 0.0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1 && top[c-1]==1){
       o0[0]=a; o0[1]=b; o0[2]=c;
-      sort(o0,3,o,false);
+      sort(o0,3,o,0);
       jj = s3(o);
 
       fseekerr = FSEEK(ifs[1],jj*sizeof(double),SEEK_SET);
@@ -484,25 +490,25 @@ double phi(INT a, INT b, INT c, INT** ped, int* top, FILE** ifs)
    }
 
    if (a == b && a == c) // case 1
-      return ((1.0 + 3.0 * phi(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
+      return ((1.0 + 3.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
 
-   checkages(a,c);
-   checkages(b,c);
+   checkages(&a,&c);
+   checkages(&b,&c);
    if(a == b) // case 2
-      return ((phi(a, c, ped, top, ifs) + phi(ped[a-1][1], ped[a-1][2], c, ped, top, ifs)) / 2.0);
+      return ((phi2(a, c, ped, top, ifs) + phi3(ped[a-1][1], ped[a-1][2], c, ped, top, ifs)) / 2.0);
 
-   checkages(a,b);
-   return ((phi(ped[a-1][1], b, c, ped, top, ifs) + phi(ped[a-1][2], b, c, ped, top, ifs)) / 2.0);
+   checkages(&a,&b);
+   return ((phi3(ped[a-1][1], b, c, ped, top, ifs) + phi3(ped[a-1][2], b, c, ped, top, ifs)) / 2.0);
 }
 
 
-double phi(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
+double phi4(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
 {
    if (a == 0 || b == 0 || c == 0 || d == 0)
       return 0.0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1 && top[c-1]==1 && top[d-1]==1){
       o0[0]=a; o0[1]=b; o0[2]=c; o0[3]=d;
-      sort(o0,4,o,false);
+      sort(o0,4,o,0);
       jj = s4(o);
 
       fseekerr = FSEEK(ifs[2],jj*sizeof(double),SEEK_SET);
@@ -532,24 +538,24 @@ double phi(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
    }
 
    if (a == b && a == c && a == d)   // case 1
-      return ((1.0 + 7.0 * phi(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 8.0);
+      return ((1.0 + 7.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 8.0);
 
-   checkages(a,d);
-   checkages(b,d);
-   checkages(c,d);
+   checkages(&a,&d);
+   checkages(&b,&d);
+   checkages(&c,&d);
    if(a == b && b == c)   // case 2
-      return ((phi(a, d, ped, top, ifs) + 3.0 * phi(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 4.0);
+      return ((phi2(a, d, ped, top, ifs) + 3.0 * phi3(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 4.0);
 
-   checkages(a,c);
-   checkages(b,c);
+   checkages(&a,&c);
+   checkages(&b,&c);
    if(a == b)   // case 3
-      return ((phi(a, c, d, ped, top, ifs) + phi(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
+      return ((phi3(a, c, d, ped, top, ifs) + phi4(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
 
-   checkages(a,b);
-   return ((phi(ped[a-1][1], b, c, d, ped, top, ifs) + phi(ped[a-1][2], b, c, d, ped, top, ifs)) / 2.0);
+   checkages(&a,&b);
+   return ((phi4(ped[a-1][1], b, c, d, ped, top, ifs) + phi4(ped[a-1][2], b, c, d, ped, top, ifs)) / 2.0);
 }
 
-double phi22(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
+double phi22(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
 {
    if( a == 0 || b == 0 || c == 0 || d == 0 )
       return 0.0;
@@ -585,24 +591,24 @@ double phi22(INT a, INT b, INT c, INT d, INT** ped, int* top, FILE** ifs)
    }
 
    if( a == b && a == c && a == d ) // case 1 
-      return ((1.0 + 3.0 * phi(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
+      return ((1.0 + 3.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
 
-   checkages(a,b);
-   checkages(c,d);
+   checkages(&a,&b);
+   checkages(&c,&d);
    if( a == c)
-      checkages(b,d);
+      checkages(&b,&d);
    if( a == b && a == c ) // case 2
-      return ((phi(a, d, ped, top, ifs) + phi(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 2.0);
+      return ((phi2(a, d, ped, top, ifs) + phi3(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 2.0);
 
    if( a < c ){
-      INT tmp = a; a = c; c = tmp;
+      int tmp = a; a = c; c = tmp;
       tmp = b; b = d; d = tmp;
    }
    if( a == b ) // case 3
-      return ((phi(c, d, ped, top, ifs) + phi22(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
+      return ((phi2(c, d, ped, top, ifs) + phi22(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
 
    if( a == c ) // case 4
-      return ((2.0 * phi(a, b, d, ped, top, ifs) + phi22(ped[a-1][1], b, ped[a-1][2], d, ped, top, ifs) +
+      return ((2.0 * phi3(a, b, d, ped, top, ifs) + phi22(ped[a-1][1], b, ped[a-1][2], d, ped, top, ifs) +
             phi22(ped[a-1][2], b, ped[a-1][1], d, ped, top, ifs)) / 4.0);
 
    return ((phi22(ped[a-1][1],b,c,d,ped, top, ifs) + phi22(ped[a-1][2],b,c,d,ped, top, ifs)) / 2.0);
