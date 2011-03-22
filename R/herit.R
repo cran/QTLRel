@@ -25,7 +25,7 @@ gvar<- function (par, ov){
 
 # estimate QTL variances
 qtlVar<- function(lrt,prdat,simulation=FALSE,nsim=25){
-# lrt: data frame (a,d,g,e,...)
+# lrt: data frame (a,d,...)
 # probs: prDat$pr
 # estimated genetic variance-covariance matrix
    vv<- rep(NA,nrow(lrt))

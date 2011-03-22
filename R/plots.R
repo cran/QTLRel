@@ -1,8 +1,8 @@
 
 plot.scanOne<- function(x,...){
    xTmp<- list(...)
-   if(is.null(xTmp$cex)) cex<- 0.3
-   if(is.null(xTmp$main)) main<- ""
+   if(is.null(xTmp$cex)) xTmp$cex<- 0.3
+   if(is.null(xTmp$main)) xTmp$main<- ""
    if(is.null(xTmp$xlab)) xlab<- "Chromosome"
    cv<- xTmp$cv
 
@@ -19,10 +19,10 @@ plot.scanOne<- function(x,...){
    }
    if(is.element("None",class(x))){
       lrt$y<- x$p/(2*log(10))
-      plot.lrt(lrt,cv,cex=cex,main=main,xlab=xlab,ylab="LOD")
+      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,xlab=xlab,ylab="LOD")
    }else{
       lrt$y<- -log10(x$p)
-      plot.lrt(lrt,cv,cex=cex,main=main,xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
+      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
    }
 }
 

@@ -10,19 +10,20 @@ W.inv<- function(W, symmetric=TRUE,inverse=TRUE){
 }
 
 # adapted from lm.gls in MASS
-lmGls<- function (formula, data, A, subset, na.action, method = "qr", ...) {
+lmGls<- function (formula, data, A, ...) {
     call <- match.call()
     m <- match.call(expand.dots = FALSE)
-    m$A <- m$method <- m$... <- NULL
+    m$A <- NULL
     m[[1L]] <- as.name("model.frame")
     m <- eval.parent(m)
-    if (method == "model.frame") 
-        return(m)
     Terms <- attr(m, "terms")
-    Y <- model.response(m)
-    X <- model.matrix(Terms, m, contrasts)
-    fit <- lm.fit(A %*% X, A %*% Y, method = method, ...)
-    class(fit)<- "lm"
+    yy <- model.response(m)
+       y<- A%*%yy
+    xx <- model.matrix(Terms, m, contrasts)
+       x<- A%*%xx; colnames(x)[1]<- "Intercept"
+    dtf<- data.frame(y=y,x)
+    fit<- lm(y~.-1, data=dtf, ...)
+
     fit
 }
 

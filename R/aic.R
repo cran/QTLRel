@@ -5,7 +5,7 @@ inf<- max(1e+38,sqrt(.Machine$double.xmax))
 estRR <-
    function(yy, xx, dd)
 {
-   g<- lm(yy~xx-1, w=1/dd)
+   g<- lm(yy~xx-1, weights=1/dd)
    b<- g$coef
    s2<- sum(g$res^2/dd)/length(g$res)
    loglik<- logLik(g)

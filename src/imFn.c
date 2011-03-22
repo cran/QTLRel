@@ -29,7 +29,7 @@ double mappingFunc(double r,int method){
  method: 1-Haldane, 2-Kosambi
  ---------------------------------*/
 double mappingFuncInv(double d,int method){
-   double r;
+   double r = 1.0;
 
    if(d<0){
 //      Rprintf("d in mappingFuncInv: out of range.\n"); exit(0);
@@ -40,6 +40,8 @@ double mappingFuncInv(double d,int method){
       r = 1.0/2*(1.0-exp(-2*d));
    }else if(method==2){
       r = 1.0/2 - 1.0/(1.0+exp(4*d));
+   }else{
+      error(_("undefined method.\n"));
    }
 
    return r;
@@ -74,7 +76,7 @@ double rFn(double r,int n){
  r: recombination rate between two markers
  --------------------------------------------------- */
 double conGenoPr(int g,int g0,double r){
-   double pr;
+   double pr = 1.0;
    if(r<0 || r>0.5){
 //      Rprintf("r in conGenoPr: out of range.\n"); exit(0);
       error(_("r in conGenoPr: out of range.\n"));

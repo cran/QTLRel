@@ -127,7 +127,12 @@ estVC.1 <-
    }else ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y)*20,sum(ov$nnl)))
+   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
+   for(i in 1:ov$nv){
+      if(ov$nnl[i]){
+         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+      }
+   }
 
    optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
       b<- par[1:a$nb]
@@ -227,7 +232,12 @@ estVC.2 <-
    }else ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y)*20,sum(ov$nnl)))
+   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
+   for(i in 1:ov$nv){
+      if(ov$nnl[i]){
+         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+      }
+   }
 
    optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
       b<- par[1:a$nb]
@@ -397,7 +407,12 @@ estVC.3 <-
    }else ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y)*20,sum(ov$nnl)))
+   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
+   for(i in 1:ov$nv){
+      if(ov$nnl[i]){
+         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+      }
+   }
 
    optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
       b<- par[1:a$nb]
@@ -548,7 +563,12 @@ estVC.4 <-
    }else ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y)*20,sum(ov$nnl)))
+   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
+   for(i in 1:ov$nv){
+      if(ov$nnl[i]){
+         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+      }
+   }
 
    optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
       b<- par[1:a$nb]

@@ -27,7 +27,11 @@ threshold. Reported support intervals cover at least one scanning locus where \c
 In case of multiple peaks on a chromosome, a peak has to satisfy: a) above the threshold \code{cv}; b) drops, e.g., 3 LOD on both sides except chromosome ends. So if two peaks close to each other but LOD between them doesn't drop, e.g., 3 LOD, only one of them is considered.
 }
 \value{
-A data frame (chr, lower, upper), where "chr" represents the chromosome, "lower" the lower bound and "upper" the upper bound.
+A data frame with the following components:
+\item{chr}{the chromosome}
+\item{lower}{the lower bound}
+\item{upper}{the upper bound}
+\item{index}{indicates which scanning loci}
 }
 \examples{
 data(miscEx)
