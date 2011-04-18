@@ -2,12 +2,12 @@ useDynLib(QTLRel)
 
 export(aicVC,mAIC,
 	blup,estVC,fv,
-	scanOne,scanTwo,gvar,qtlVar,nullSim,
+	scanOne,scanTwo,gvar,qtlVar,nullSim,gls,
 	lodci,.lodci,
 	genoProb,genoImpute,genoPos,rem,
 	pedRecode,hapSim,genoSim,
 	pkolm,qkolm,qqPlot,plotit,plot.scanTwo,
-   cic,kinship,genMatrix)
+      cic,kinship,genMatrix)
 
 importFrom(gdata, "reorder.factor")
 importFrom(gdata, "trim")

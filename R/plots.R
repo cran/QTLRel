@@ -195,7 +195,7 @@ plot.scanTwo<- function(x,...){
       main=lst$main,col=terrain.colors(12))
    image(x=max(dst)*c(19/20,1),y=(rv-min(rv))*scale,z=matrix(rv,nrow=1),
       col=terrain.colors(12),add=TRUE)
-   axis(4,at=(rv-min(rv))*scale,label=rv,pos=max(dst)*19.5/20,tick=FALSE)
+   axis(4,at=(rv-min(rv))*scale,labels=rv,pos=max(dst)*19.5/20,tick=FALSE)
    axis(2,at=xat,labels=chrs,tick=F,pos=max(dst)*0.025)
    axis(3,at=xat,labels=chrs,tick=F,pos=max(dst)*0.975)
    mtext("Chromosomes",2,line=1.5)

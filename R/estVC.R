@@ -44,7 +44,13 @@ fv <- function(vv){
    nv<- length(vv)
    if(nv>0){
       nnl<- NULL
-      for(i in 1:nv) nnl<- c(nnl,!is.null(vv[[i]]))
+      for(i in 1:nv){
+         nnl<- c(nnl,!is.null(vv[[i]]))
+         if(!is.null(vv[[i]])){
+            if(!all(is.finite(vv[[i]])))
+               stop("Only finite numerical elements are allowed in variance matrices!")
+         }
+      }
       nn<- cumsum(nnl)
    }else stop("At least the environmental variance component should be included.\n")
 
@@ -75,10 +81,10 @@ estVC.default <-
             control = list(),
             hessian = FALSE)
 {
-   if(any(is.infinite(y)))
-      stop("y: missing or infinite data points not allowed.")
+   if(!all(is.finite(y)))
+      stop("y: non-numeric or infinite data points not allowed.")
    if(!missing(x))
-      if(any(is.infinite(x)))
+      if(any(is.infinite(x) | is.na(x)))
          stop("x: missing or infinite data points not allowed.")
 
    if(!missing(x)){
@@ -149,7 +155,7 @@ estVC.1 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
+      if(!all(is.finite(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -254,7 +260,7 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
+      if(!all(is.finite(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -274,7 +280,7 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*a$par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(a$par[1:a$nb])
+      if(!all(is.finite(S))) return(a$par[1:a$nb])
 
       dd<- eigen(S,symmetric=T)
          uu<- dd$vec
@@ -303,7 +309,7 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
+      if(!all(is.finite(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -429,7 +435,7 @@ estVC.3 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(inf)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -449,7 +455,7 @@ estVC.3 <-
             }else S<- S + a$ov$v[[i]]*a$par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(a$par[1:a$nb])
+      if(!all(is.finite(S))) return(a$par[1:a$nb])
 
       dd<- eigen(S,symmetric=T)
          uu<- dd$vec
@@ -478,7 +484,7 @@ estVC.3 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(inf)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -585,7 +591,7 @@ estVC.4 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(fs*inf)
+      if(!all(is.finite(S))) return(fs*inf)
 
       u<- x%*%b
       tmp<- qr(S)
@@ -606,7 +612,7 @@ estVC.4 <-
             }else S<- S + a$ov$v[[i]]*a$par[a$nb+a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S))) return(a$par[1:a$nb])
+      if(!all(is.finite(S))) return(a$par[1:a$nb])
 
       dd<- eigen(S,symmetric=T)
          uu<- dd$vec
@@ -635,7 +641,7 @@ estVC.4 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(any(is.infinite(S)) || any(is.na(S))) return(inf)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)

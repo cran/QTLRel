@@ -463,3 +463,34 @@ scanTwo.default<-
    pv
 }
 
+# generalized least squares estimates
+gls<- function(formula,data,vc=NULL){
+   xx<- model.matrix(formula,data)
+   yy<- model.response(model.frame(formula,data))
+
+   nr<- nrow(xx)
+   if(!is.null(vc)){
+      if(is.element("bgv",attr(vc,"class"))){
+         nb<- length(vc$par) - sum(vc$nnl)
+         nr<- nrow(vc$y)
+         cov<- matrix(0,nrow=nr,ncol=nr)
+         for(i in 1:vc$nv)
+            if(vc$nnl[i]) cov<- cov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+      }else{
+         if(is.data.frame(vc)) vc<- as.matrix(vc)
+         if(!is.matrix(vc)) stop("vc should be a matrix.")
+         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         cov<- vc
+      }
+   }else cov<- diag(nrow(as.matrix(yy)))
+   A<- W.inv(cov)
+
+   x<- A%*%xx; colnames(x)[1]<- "Intercept"
+   y<- A%*%yy
+   dtf<- data.frame(y=y,x)
+   mdl<- lm(y~.-1, data=dtf)
+   mdl$data<- dtf
+
+   summary(mdl)$coeff
+}
+
