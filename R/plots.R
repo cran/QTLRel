@@ -1,7 +1,7 @@
 
 plot.scanOne<- function(x,...){
    xTmp<- list(...)
-   if(is.null(xTmp$cex)) xTmp$cex<- 0.3
+   if(is.null(xTmp$cex)) xTmp$cex<- 0.5
    if(is.null(xTmp$main)) xTmp$main<- ""
    if(is.null(xTmp$xlab)) xlab<- "Chromosome"
    cv<- xTmp$cv
@@ -19,10 +19,11 @@ plot.scanOne<- function(x,...){
    }
    if(is.element("None",class(x))){
       lrt$y<- x$p/(2*log(10))
-      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,xlab=xlab,ylab="LOD")
+      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,ylim=xTmp$ylim,xlab=xlab,ylab="LOD")
    }else{
       lrt$y<- -log10(x$p)
-      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
+      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,ylim=xTmp$ylim,
+         xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
    }
 }
 
@@ -164,4 +165,47 @@ plotit<- function(lrt,cv,bychr=FALSE,chr.labels=TRUE,
    }
 }
 
+
+plot.scanTwo<- function(x,...){
+# x: object of scanTwo
+# a genetic map 'gmap' is needed
+   lst<- list(...)
+   if(is.null(lst$gmap))
+      stop("need a genetic map 'gmap'.")
+   qqint<- x
+   gmap<- lst$gmap
+   v<- as.matrix(qqint)
+   rv<- range(v,na.rm=TRUE)
+      rv<- seq(floor(rv[1]),ceiling(rv[2]),by=0.5)
+   dst<- gmap$dist
+      dst<- diff(dst)
+      dst[dst<0]<- 0
+      dst[dst==0]<- 1e-5
+      dst<- c(0,dst)
+      dst<- cumsum(dst)
+   chrs<- unique(gmap$chr)
+   xat<- NULL
+   for(chr in chrs){
+      xat<- c(xat,mean(range(dst[gmap$chr==chr])))
+   }
+
+   scale<- max(dst)/(max(rv)-min(rv))*0.75
+   image(x=dst,y=dst,z=v,axes=F,xlab=lst$xlab,xlim=c(-2,max(dst)),
+      ylim=c(0,max(dst)+2),ylab=lst$ylab,
+      main=lst$main,col=terrain.colors(12))
+   image(x=max(dst)*c(19/20,1),y=(rv-min(rv))*scale,z=matrix(rv,nrow=1),
+      col=terrain.colors(12),add=TRUE)
+   axis(4,at=(rv-min(rv))*scale,label=rv,pos=max(dst)*19.5/20,tick=FALSE)
+   axis(2,at=xat,labels=chrs,tick=F,pos=max(dst)*0.025)
+   axis(3,at=xat,labels=chrs,tick=F,pos=max(dst)*0.975)
+   mtext("Chromosomes",2,line=1.5)
+   mtext("Chromosomes",3,line=1.25,at=0)
+   col<- 0
+   for(chr in chrs){
+      col<- col+1
+      lines(c(-3,-3),range(dst[gmap$chr==chr]),col=col,lwd=5)
+      lines(range(dst[gmap$chr==chr]),max(dst)-c(-3,-3),
+      col=col,lwd=5)
+   }
+}
 

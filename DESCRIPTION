@@ -1,6 +1,6 @@
 Package: QTLRel
-Version: 0.2-4
-Date: 2011-3-22
+Version: 0.2-5
+Date: 2011-4-22
 Title: Tools for mapping of quantitative traits of genetically related
         individuals and calculating identity coefficients from a
         pedigree
@@ -22,5 +22,5 @@ LazyLoad: yes
 LazyData: no
 License: GPL (>= 2)
 Repository: CRAN
-Date/Publication: 2011-03-29 10:24:54
-Packaged: 2011-03-29 07:54:08 UTC; rcheng
+Date/Publication: 2011-04-14 17:20:34
+Packaged: 2011-04-14 16:48:13 UTC; rcheng

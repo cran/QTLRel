@@ -2,6 +2,7 @@
 \alias{plot}
 \alias{plotit}
 \alias{plot.scanOne}
+\alias{plot.scanTwo}
 \title{
 Plotting
 }
@@ -16,16 +17,16 @@ plotit(lrt,cv,bychr=FALSE,chr.labels=TRUE,type="p",lty=NULL,
 }
 \arguments{
   \item{x}{
-object from \code{\link{scanOne}}.
+object from \code{\link{scanOne}} or \code{\link{scanTwo}}.
+}
+  \item{lrt}{
+a data frame with (chr, dist, y,...) or (chr, dist, y, group,...), where "chr" represents chromosome, "dist" position on the chromosome, "y" the test statistic.
 }
   \item{cv}{
 threshold to be drawn on the plot.
 }
   \item{cex}{
 see \code{\link{par}}.
-}
-  \item{lrt}{
-a data frame with (chr, dist, y,...) or (chr, dist, y, group,...), where "chr" represents chromosome, "dist" position on the chromosome, "y" the test statistic.
 }
   \item{bychr}{
 a logical variable. If true, the plot will be displayed per chromosomes.
@@ -42,7 +43,7 @@ other options passed to R plot function. To call \code{\link{plot}} to plot resu
 }
 }
 \note{
-The color option may not give what is expected.
+A genetic map 'gmap' may be needed to plot an object of \code{\link{scanOne}} or \code{\link{scanTwo}}. The color option may not give what is expected.
 }
 \examples{
 data(miscEx)

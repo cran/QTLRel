@@ -676,7 +676,7 @@ estVC.4 <-
       nit<- nit-1
    }
 
-   oo<- nlminb(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),upper=upper)
+   oo<- nlminb(oo$par,optfct,gradient=NULL,a=list(nb=nb,ny=ny,ov=ov),upper=upper)
       oo$value<- oo$objective
       if(ov$nnl[4]){
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)

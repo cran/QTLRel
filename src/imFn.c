@@ -7,7 +7,7 @@
  method: 1-Haldane, 2-Kosambi
  ---------------------------------*/
 double mappingFunc(double r,int method){
-   double d;
+   double d = 0.0;
 
    if(r<0 || r>0.5){
 //      Rprintf("r in mappingFunc: out of range.\n"); exit(0);
@@ -18,7 +18,7 @@ double mappingFunc(double r,int method){
       d = -1.0/2*log(1.0-2*r);
    }else if(method==2){
       d = 1.0/4*log((1.0+2*r)/(1.0-2*r));
-   }
+   }else error(_("method: 1 or 2 only.\n"));
 
    return d;
 }

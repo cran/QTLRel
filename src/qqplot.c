@@ -44,7 +44,7 @@
    }
 
    void qFn(double* t, int* nt, double* x, int* nx){
-      int i, j, jj;
+      int i, j, jj = 0;
       for(i=0; i<*nt; i++){
          if(t[i] <= 0.0) t[i] = -1e+300;
          else if(t[i] >= 1.0) t[i] = 1e+300;

@@ -1,10 +1,10 @@
 \name{scanOne}
 \alias{scanOne}
 \title{
-Genome Scan
+Genome Scan for QTL
 }
 \description{
-Evaluate P-values at scanning loci along the genome.
+Evaluate log-likelihood ratio test statistics or P-values at scanning loci along the genome.
 }
 \usage{
 scanOne(y,x,gdat,prdat=NULL,vc=NULL,intcovar=NULL,

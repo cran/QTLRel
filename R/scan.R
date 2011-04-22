@@ -336,3 +336,130 @@ print.scanOne <-
    }
 }
 
+scanTwo.1 <-
+   function(y,
+            x,
+            prdat,
+            cov)
+{
+   gcv<- W.inv(cov)
+   nsnp<- dim(prdat$pr)[3]
+   P<- matrix(NA,nrow=nsnp,ncol=nsnp)
+      rownames(P)<- colnames(P)<- prdat$snp
+   if(nsnp<1) return(NULL)
+
+   for(i in 1:(nsnp-1)){
+      for(k in (i+1):nsnp){
+         xTmp<- cbind(x,a1=prdat$pr[,1,i]-prdat$pr[,3,i],d1=prdat$pr[,2,i])
+         oTmp<- data.frame(y=y,
+                             xTmp,
+                          a2=prdat$pr[,1,k]-prdat$pr[,3,k],
+                          d2=prdat$pr[,2,k])
+
+         g0<- lmGls(y~.,data=oTmp,A=gcv)
+         g<- lmGls(y~(a1+d1)*(a2+d2) + .,data=oTmp,A=gcv)
+         P[i,k]<- 2*(logLik(g)-logLik(g0))
+      }
+   }
+
+   P
+}
+
+scanTwo.2 <-
+   function(y,
+            x,
+            gdat,
+            cov)
+{
+   gcv<- W.inv(cov)
+   nsnp<- dim(gdat)[2]
+   P<- matrix(NA,nrow=nsnp,ncol=nsnp)
+      rownames(P)<- colnames(P)<- colnames(gdat)
+   if(nsnp<1) return(NULL)
+
+   for(i in 1:(nsnp-1)){
+      for(j in (i+1):nsnp){
+         xTmp<- cbind(x,snp1=as.factor(gdat[,i]))
+         oTmp<- data.frame(y=y,
+                             xTmp,
+                        snp2=as.factor(gdat[,j]))
+
+         g0<- lmGls(y~.,data=oTmp,A=gcv)
+         g<- lmGls(y~snp1*snp2 + .,data=oTmp,A=gcv)
+         P[i,j]<- 2*(logLik(g)-logLik(g0))
+      }
+   }
+
+   P
+}
+
+scanTwo<- 
+   function(y,
+            x,
+            gdat,
+            prdat = NULL,
+            vc = NULL,
+            minorGenoFreq = 0,
+            rmv = TRUE)
+
+{
+   UseMethod("scanTwo")
+}
+
+scanTwo.default<- 
+   function(y,
+            x,
+            gdat,
+            prdat = NULL,
+            vc = NULL,
+            minorGenoFreq = 0,
+            rmv = TRUE)
+{
+   if(!is.null(vc)){
+      if(is.element("bgv",attr(vc,"class"))){
+         nb<- length(vc$par) - sum(vc$nnl)
+         nr<- nrow(vc$y)
+         cov<- matrix(0,nrow=nr,ncol=nr)
+         for(i in 1:vc$nv)
+            if(vc$nnl[i]) cov<- cov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+      }else{
+         if(is.data.frame(vc)) vc<- as.matrix(vc)
+         if(!is.matrix(vc)) stop("vc should be a matrix.")
+         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         cov<- vc
+      }
+   }else cov<- diag(nrow(as.matrix(y)))
+   if(!is.null(prdat)){
+      pv<- scanTwo.1(y=y,x=x,prdat=prdat,cov=cov)
+   }else{
+      tb<- sort(union(as.matrix(gdat),NULL))
+      tbf<- NULL
+      for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
+         if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.\n")
+      tbf<- apply(tbf,2,min)
+      idx<- (tbf < nrow(gdat)*minorGenoFreq)
+      if(sum(idx)>0){
+         if(rmv){
+            gdat<- as.matrix(gdat)
+            tb<- sort(union(as.matrix(gdat),NULL))
+            tbf<- NULL
+            for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
+               if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.\n")
+            tbf<- apply(tbf,2,min)
+            idx<- (tbf < nrow(gdat)*minorGenoFreq)
+            gdat<- gdat[,!idx]
+            rm(tb,tbf,ii,idx)
+         }else{
+            cat("minor genotype frequency is too small at one or more SNPs.\n")
+            return(NULL)
+        }
+      }
+
+      gdat<- as.data.frame(gdat)
+      pv<- scanTwo.2(y=y,x=x,gdat=gdat,cov=cov)
+   }
+
+   class(pv)<- "scanTwo"
+   pv
+}
+
