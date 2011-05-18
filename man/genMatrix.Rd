@@ -7,11 +7,11 @@ Derive genetic matrices
 Derive genetic matrices from Jacquard condensed identity coefficients.
 }
 \usage{
-genMatrix(idcf)
+genMatrix(x)
 }
 \arguments{
-  \item{idcf}{
-\code{idcf} an object of \code{\link{cic}}.
+  \item{x}{
+an object of \code{\link{cic}}, or genotype data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3).
 }
 }
 \value{
@@ -33,7 +33,7 @@ id<- sample(ped$id[300:500],20)
 \dontrun{
 oo<- cic(ped,id,df=0)
 ksp<- kinship(ped,ids=id)
-y<- genMatrix(oo)
-sum((y$AA-2*ksp)>1e-7) # same results
+gm<- genMatrix(oo)
+sum((gm$AA-2*ksp)>1e-7) # same results
 }
 }

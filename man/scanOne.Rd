@@ -7,8 +7,9 @@ Genome Scan for QTL
 Evaluate log-likelihood ratio test statistics or P-values at scanning loci along the genome.
 }
 \usage{
-scanOne(y,x,gdat,prdat=NULL,vc=NULL,intcovar=NULL,
-   test=c("None","F","Chisq"),minorGenoFreq=0,rmv=TRUE)
+scanOne(y, x, gdat, prdat=NULL, vc=NULL, intcovar=NULL,
+   numGeno=FALSE, test=c("None","F","Chisq"),
+   minorGenoFreq=0, rmv=TRUE)
 }
 \arguments{
   \item{y}{
@@ -28,6 +29,9 @@ an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated varia
 }
   \item{intcovar}{
 Covariates that interact with QTL.
+}
+  \item{numGeno}{
+whether to treat numeric coding of genotypes as numeric.
 }
   \item{test}{
 "None", "F" or "Chisq".

@@ -14,7 +14,7 @@ gls(formula,data,vc=NULL)
 an object of class "formula": a symbolic description of the model to be fitted.
 }
   \item{data}{
-an optional data frame containing the variables in the model.
+an data frame containing the variables in the model.
 }
   \item{vc}{
 an object from \code{\link{estVC}} or \code{\link{aicVC}} or an estimated variance-covariance matrix induced by relatedness and environment if not NULL.

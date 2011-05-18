@@ -108,7 +108,7 @@ genoProb.default <-
 # gmap: genetic map (snp,chr,recRate,d,dist) with dist in cM
 # pos: postions to calculate P(Q|MN), (chr,dist,snp) with dist in cM
 # gr: gr-th generation of AIL
-   gmap$chr<- reorder(gmap$chr)
+   gmap$chr<- reorder(factor(gmap$chr))
       gmap<- gmap[order(gmap$chr,gmap$dist),]
    snp<- intersect(colnames(gdat),gmap$snp)
    idx<- is.element(colnames(gdat),snp)
@@ -126,7 +126,7 @@ genoProb.default <-
    method<- match.arg(method,c("Haldane","Kosambi"))
    if(missing(pos) || is.null(pos))
       pos<- genoPos(gmap=gmap,step=step,gr=gr,method=method)
-   pos$chr<- reorder(pos$chr)
+   pos$chr<- reorder(factor(pos$chr))
    pos<- pos[order(pos$chr,pos$dist),]
    method<- pmatch(method,c("Haldane","Kosambi"))
    probs<- vector("list",3)
@@ -234,7 +234,7 @@ genoPos<- function(gmap,step=2,gr=34,method=c("Haldane","Kosambi")){
    }
    step<- mappingFunc(root(func,c(0,0.5),nit=1000),method)*100 # equivalent step at F2
 
-   gmap$chr<- reorder(gmap$chr)
+   gmap$chr<- reorder(factor(gmap$chr))
    gmap<- gmap[order(gmap$chr,gmap$dist),]
    chrs<- unique(gmap$chr)
       chrs<- as.character(chrs)

@@ -69,14 +69,10 @@ pedRecode <- function(ped,ids){
    rm(idx,ids)
 
    # new code
-   if(is.factor(ped$generation))
-      ped$generation<- reorder(ped$generation)
-   if(is.factor(ped$id))
-      ped$id<- reorder(ped$id)
-   if(is.factor(ped$sire))
-      ped$sire<- reorder(ped$sire)
-   if(is.factor(ped$dam))
-      ped$dam<- reorder(ped$dam)
+   ped$generation<- reorder(factor(ped$generation))
+   ped$id<- reorder(factor(ped$id))
+   ped$sire<- reorder(factor(ped$sire))
+   ped$dam<- reorder(factor(ped$dam))
    ped<- ped[order(ped$generation,ped$id,ped$sire,ped$dam),]
    idd<- data.frame(index=c(0,0),id=c(NA,0))
       idd<- rbind(idd,data.frame(index=1:nrow(ped),id=ped$id))
@@ -192,14 +188,10 @@ pedRecode.0<- function(ped){
    out<- cbind(id=out[,jj],generation=out$generation,out[-c(1,jj)])
    rownames(out)<- 1:nrow(out)
 
-   if(is.factor(out$generation))
-      out$generation<- reorder(out$generation)
-   if(is.factor(out$id))
-      out$id<- reorder(out$id)
-   if(is.factor(out$sire))
-      out$sire<- reorder(out$sire)
-   if(is.factor(out$dam))
-      out$dam<- reorder(out$dam)
+   out$generation<- reorder(factor(out$generation))
+   out$id<- reorder(factor(out$id))
+   out$sire<- reorder(factor(out$sire))
+   out$dam<- reorder(factor(out$dam))
 
    out<- out[order(out$generation,out$id,out$sire,out$dam),]
    out
@@ -234,8 +226,7 @@ pedRecode.0<- function(ped){
       if(any(is.na(ii))) stop("check ids for error.")
    }else ii<- 1:length(ped$old.id)
 
-   gmap$chr<- as.factor(gmap$chr)
-      gmap$chr<- reorder(gmap$chr)
+   gmap$chr<- reorder(factor(gmap$chr))
       ord<- order(gmap$chr,gmap$dist)
       gmap<- gmap[ord,]
    if(is.null(gmap$recRate)){

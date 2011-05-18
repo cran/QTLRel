@@ -141,6 +141,7 @@ scanOne.2 <-
             gdat,
             cov,
             intcovar = NULL,
+            numGeno = FALSE,
             test = c("None","F","Chisq"))
 {
 # gdat: n by ? matrix, marker data. Markers in columes!!!
@@ -149,6 +150,9 @@ scanOne.2 <-
 # test: “Chisq”, “F” or “Cp”
    gcv<- W.inv(cov)
    test<- match.arg(test)
+   if(numGeno){
+      num.geno<- I
+   }else num.geno<- as.factor
 
    nsnp<- dim(gdat)[2]
    if(!is.null(intcovar)) nint<- ncol(as.matrix(intcovar))
@@ -167,9 +171,9 @@ scanOne.2 <-
          P0<- logLik(g0)
          for(j in 1:nsnp){
             if(!missing(x)){
-               oTmp<- data.frame(y=y,x,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,x,snp=num.geno(gdat[,j]))
             }else{
-               oTmp<- data.frame(y=y,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,snp=num.geno(gdat[,j]))
             }
 
             g<- lmGls(y~.,data=oTmp,A=gcv)
@@ -180,9 +184,9 @@ scanOne.2 <-
       }else{
          for(j in 1:nsnp){
             if(!missing(x)){
-               oTmp<- data.frame(y=y,x,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,x,snp=num.geno(gdat[,j]))
             }else{
-               oTmp<- data.frame(y=y,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,snp=num.geno(gdat[,j]))
             }
 
             g<- lmGls(y~.,data=oTmp,A=gcv)
@@ -201,9 +205,9 @@ scanOne.2 <-
          P0<- logLik(g0)
          for(j in 1:nsnp){
             if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,x,intcovar,snp=num.geno(gdat[,j]))
             }else{
-               oTmp<- data.frame(y=y,intcovar,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,intcovar,snp=num.geno(gdat[,j]))
             }
 
             nc<- ncol(oTmp)
@@ -218,9 +222,9 @@ scanOne.2 <-
       }else{
          for(j in 1:nsnp){
             if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,x,intcovar,snp=num.geno(gdat[,j]))
             }else{
-               oTmp<- data.frame(y=y,intcovar,snp=as.factor(gdat[,j]))
+               oTmp<- data.frame(y=y,intcovar,snp=num.geno(gdat[,j]))
             }
 
             nc<- ncol(oTmp)
@@ -245,11 +249,17 @@ scanOne<-
             prdat = NULL,
             vc = NULL,
             intcovar = NULL,
+            numGeno = FALSE,
             test = c("None","F","Chisq"),
             minorGenoFreq = 0,
             rmv = TRUE)
 
 {
+   if(!all(is.finite(y)))
+      stop("y: non-numeric or infinite data points not allowed.")
+   if(!missing(x))
+      if(any(is.infinite(x) | is.na(x)))
+         stop("x: missing or infinite data points not allowed.")
    UseMethod("scanOne")
 }
 
@@ -260,6 +270,7 @@ scanOne.default<-
             prdat = NULL,
             vc = NULL,
             intcovar = NULL,
+            numGeno = FALSE,
             test = c("None","F","Chisq"),
             minorGenoFreq = 0,
             rmv = TRUE)
@@ -281,6 +292,8 @@ scanOne.default<-
    if(!is.null(prdat)){
       pv<- scanOne.1(y=y,x=x,prdat=prdat,cov=cov,intcovar=intcovar,test=test)
    }else{
+      if(any(is.na(gdat)))
+         stop("There are missing genotypes...")
       tb<- sort(union(as.matrix(gdat),NULL))
       tbf<- NULL
       for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
@@ -305,7 +318,7 @@ scanOne.default<-
       }
 
       gdat<- as.data.frame(gdat)
-      pv<- scanOne.2(y=y,x=x,gdat=gdat,cov=cov,intcovar=intcovar,test=test)
+      pv<- scanOne.2(y=y,x=x,gdat=gdat,cov=cov,intcovar=intcovar,numGeno=numGeno, test=test)
    }
 
    class(pv)<- c("scanOne",test)
@@ -369,9 +382,14 @@ scanTwo.2 <-
    function(y,
             x,
             gdat,
-            cov)
+            cov,
+            numGeno)
 {
+   if(numGeno){
+      num.geno<- I
+   }else num.geno<- as.factor
    gcv<- W.inv(cov)
+
    nsnp<- dim(gdat)[2]
    P<- matrix(NA,nrow=nsnp,ncol=nsnp)
       rownames(P)<- colnames(P)<- colnames(gdat)
@@ -379,10 +397,10 @@ scanTwo.2 <-
 
    for(i in 1:(nsnp-1)){
       for(j in (i+1):nsnp){
-         xTmp<- cbind(x,snp1=as.factor(gdat[,i]))
+         xTmp<- cbind(x,snp1=num.geno(gdat[,i]))
          oTmp<- data.frame(y=y,
                              xTmp,
-                        snp2=as.factor(gdat[,j]))
+                        snp2=num.geno(gdat[,j]))
 
          g0<- lmGls(y~.,data=oTmp,A=gcv)
          g<- lmGls(y~snp1*snp2 + .,data=oTmp,A=gcv)
@@ -399,10 +417,16 @@ scanTwo<-
             gdat,
             prdat = NULL,
             vc = NULL,
+            numGeno = FALSE,
             minorGenoFreq = 0,
             rmv = TRUE)
 
 {
+   if(!all(is.finite(y)))
+      stop("y: non-numeric or infinite data points not allowed.")
+   if(!missing(x))
+      if(any(is.infinite(x) | is.na(x)))
+         stop("x: missing or infinite data points not allowed.")
    UseMethod("scanTwo")
 }
 
@@ -412,6 +436,7 @@ scanTwo.default<-
             gdat,
             prdat = NULL,
             vc = NULL,
+            numGeno = FALSE,
             minorGenoFreq = 0,
             rmv = TRUE)
 {
@@ -432,6 +457,8 @@ scanTwo.default<-
    if(!is.null(prdat)){
       pv<- scanTwo.1(y=y,x=x,prdat=prdat,cov=cov)
    }else{
+      if(any(is.na(gdat)))
+         stop("There are missing genotypes...")
       tb<- sort(union(as.matrix(gdat),NULL))
       tbf<- NULL
       for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
@@ -456,7 +483,7 @@ scanTwo.default<-
       }
 
       gdat<- as.data.frame(gdat)
-      pv<- scanTwo.2(y=y,x=x,gdat=gdat,cov=cov)
+      pv<- scanTwo.2(y=y,x=x,gdat=gdat,cov=cov,numGeno=numGeno)
    }
 
    class(pv)<- "scanTwo"
@@ -464,8 +491,10 @@ scanTwo.default<-
 }
 
 # generalized least squares estimates
-gls<- function(formula,data,vc=NULL){
-   xx<- model.matrix(formula,data)
+gls<- function(formula,data=NULL,vc=NULL){
+   if(is.null(data)){
+      xx<- model.matrix(formula)
+   }else xx<- model.matrix(formula,data)
    yy<- model.response(model.frame(formula,data))
 
    nr<- nrow(xx)
@@ -491,6 +520,7 @@ gls<- function(formula,data,vc=NULL){
    mdl<- lm(y~.-1, data=dtf)
    mdl$data<- dtf
 
+#   print(logLik(mdl))
    summary(mdl)$coeff
 }
 

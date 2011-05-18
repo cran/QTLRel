@@ -7,7 +7,8 @@ Genome Scan for Epistasis
 Evaluate log-likelihood ratio test statistic for epistasis (QTL by QTL interaction).
 }
 \usage{
-scanTwo(y,x,gdat,prdat=NULL,vc=NULL,minorGenoFreq=0,rmv=TRUE)
+scanTwo(y, x, gdat, prdat=NULL, vc=NULL, numGeno=FALSE,
+   minorGenoFreq=0, rmv=TRUE)
 }
 \arguments{
   \item{y}{
@@ -24,6 +25,9 @@ an object from \code{\link{genoProb}}.
 }
   \item{vc}{
 an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness and environment.
+}
+  \item{numGeno}{
+whether to treat numeric coding of genotypes as numeric.
 }
   \item{minorGenoFreq}{
 specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.

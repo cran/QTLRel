@@ -29,8 +29,7 @@ plot.scanOne<- function(x,...){
 
 plot.lrt<- function(lrt,cv,...){
 # lrt: data.frame(y,chr,dist,...)
-   lrt$chr<- as.factor(lrt$chr)
-      lrt$chr<- reorder(lrt$chr)
+   lrt$chr<- reorder(factor(lrt$chr))
    lrt<- lrt[order(lrt$chr,lrt$dist),]
 
    chr<- unique(lrt$chr)
@@ -43,10 +42,12 @@ plot.lrt<- function(lrt,cv,...){
 
    plot(range(lrt$dist),range(lrt$y),type="n",xaxt="n",...)
 
+   col<- NULL
    for(i in 1:nchr){
       idx<- lrt$chr==chr[i]
-      lines(lrt$dist[idx],lrt$y[idx],type="p",col=i%%2 + 3,...)
+      col<- c(col,rep(i%%2 + 3,sum(idx)))
    }
+   lines(lrt$dist,lrt$y,type="p",col=col,...)
    idx<- c(TRUE,lrt$chr[-length(lrt$chr)]!=lrt$chr[-1])
    min.p<- lrt$dist[idx]
    min.p<- c(min.p,max(lrt$dist))
@@ -104,10 +105,8 @@ plotit<- function(lrt,cv,bychr=FALSE,chr.labels=TRUE,
    }else{
       if(is.null(lrt$group)) lrt$group<- 1
       lrt<- as.data.frame(lrt)
-      lrt$chr<- as.factor(lrt$chr)
-         lrt$chr<- reorder(lrt$chr)
-      lrt$group<- as.factor(lrt$group)
-         lrt$group<- reorder(lrt$group)
+      lrt$chr<- reorder(factor(lrt$chr))
+      lrt$group<- reorder(factor(lrt$group))
       lrt<- lrt[order(lrt$group,lrt$chr,lrt$dist),]
 
       groups<- lrt$group

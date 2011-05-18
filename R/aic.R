@@ -37,6 +37,11 @@ aicVC <-
             control = list(),
             hessian = FALSE)
 {
+   if(!all(is.finite(y)))
+      stop("y: non-numeric or infinite data points not allowed.")
+   if(!missing(x))
+      if(any(is.infinite(x) | is.na(x)))
+         stop("x: missing or infinite data points not allowed.")
    UseMethod("aicVC")
 }
 
@@ -510,6 +515,8 @@ mAIC.default <-
    yy<- t(uu)%*%y
       yy<- as.matrix(yy)
 
+   if(any(is.na(gdat)))
+      stop("There are missing genotypes...")
    if(is.numeric(gdat)){
       gdat<- matrix(as.character(gdat),nrow=nrow(gdat))
    }
@@ -955,6 +962,11 @@ mAIC<-
             ext = FALSE,
             verbose = FALSE)
 {
+   if(!all(is.finite(y)))
+      stop("y: non-numeric or infinite data points not allowed.")
+   if(!missing(x))
+      if(any(is.infinite(x) | is.na(x)))
+         stop("x: missing or infinite data points not allowed.")
    if(is.null(prdat) || !is.element("Pr",class(prdat))){
       mAIC.default(y = y,
                    x = x,

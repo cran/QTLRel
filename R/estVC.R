@@ -136,6 +136,7 @@ estVC.1 <-
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
    for(i in 1:ov$nv){
       if(ov$nnl[i]){
+         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
          if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
       }
    }
@@ -241,6 +242,7 @@ estVC.2 <-
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
    for(i in 1:ov$nv){
       if(ov$nnl[i]){
+         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
          if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
       }
    }
@@ -416,6 +418,7 @@ estVC.3 <-
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
    for(i in 1:ov$nv){
       if(ov$nnl[i]){
+         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
          if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
       }
    }
@@ -572,6 +575,7 @@ estVC.4 <-
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
    for(i in 1:ov$nv){
       if(ov$nnl[i]){
+         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
          if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
       }
    }

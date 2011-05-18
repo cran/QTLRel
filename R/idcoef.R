@@ -180,8 +180,7 @@ ped.opt<- function(ped,ids,ns,df=3){
    }
 
    cat("  Total free disk space needed:", totdiskspace,"Mb...\n")
-   if(is.factor(ped$generation))
-      ped$generation<- reorder(ped$generation)
+   ped$generation<- reorder(factor(ped$generation))
    grsTmp<- sort(unique(ped$generation),decreasing=FALSE)
    grsTmp[ii] # (optimal) intermediate generations
 }
@@ -253,7 +252,7 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    if(verbose){
       cat("  Carry-over number of individuals in each generation:\n")
       print(pedN)
-      cat("  Will going through generations:",as.character(gr),"\n")
+      cat("  Will go through generations:",as.character(gr),"\n")
    }
    if(ask){
       ansTmp<- ans(prompt="Continue?")
@@ -344,13 +343,16 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    idcf # list(idcf=idcf,ids=ids)
 }
 
-# genetic matrices
-genMatrix<- function(idcf){
-   nr<- nrow(idcf)
-   nc<- ncol(idcf)
+####################
+# genetic matrices #
+####################
+
+genMatrix.cic<- function(x){
+   nr<- nrow(x)
+   nc<- ncol(x)
    nn<- (sqrt(8*nr+1)-1)/2 # number of individuals
 
-   str<- strsplit(rownames(idcf),"/")
+   str<- strsplit(rownames(x),"/")
    str<- unlist(str)
    str<- matrix(str,ncol=2,byrow=T)
    if(!setequal(str[,1],str[,2])){
@@ -366,11 +368,11 @@ genMatrix<- function(idcf){
 #   for(i in 1:nn){cat(i,"\r")
 #      for(j in 1:i){
 #         ii<- ii+1
-#         ksp[i,j]<- ksp[j,i]<- idcf[ii,1] + (idcf[ii,3] + idcf[ii,5] + idcf[ii,7])/2 + idcf[ii,8]/4
-#         DD[i,j]<- DD[j,i]<- idcf[ii,7]
-#         AD[i,j]<- AD[j,i]<- 4*idcf[ii,1] + idcf[ii,3] + idcf[ii,5]
-#         HH[i,j]<- HH[j,i]<- idcf[ii,1]
-#         MH[i,j]<- MH[j,i]<- idcf[ii,1] + idcf[ii,2]
+#         ksp[i,j]<- ksp[j,i]<- x[ii,1] + (x[ii,3] + x[ii,5] + x[ii,7])/2 + x[ii,8]/4
+#         DD[i,j]<- DD[j,i]<- x[ii,7]
+#         AD[i,j]<- AD[j,i]<- 4*x[ii,1] + x[ii,3] + x[ii,5]
+#         HH[i,j]<- HH[j,i]<- x[ii,1]
+#         MH[i,j]<- MH[j,i]<- x[ii,1] + x[ii,2]
 #      }
 #   }
 #   ib<- diag(ksp)
@@ -378,7 +380,7 @@ genMatrix<- function(idcf){
 #   AA<- 2*ksp
 #   MH<- MH - ib%o%ib
    o<- .C("gen_Matrix",
-          idcf=as.double(t(idcf)),
+          x=as.double(t(x)),
           nr=as.integer(nr),
           nc=as.integer(nc),
           nn=as.integer(nn),
@@ -391,6 +393,7 @@ genMatrix<- function(idcf){
       rownames(ksp)<- colnames(ksp)<- ids
    ib<- diag(ksp)
       ib<- 2*ib - 1
+      names(ib)<-  ids
    AA<- 2*ksp
    DD<- matrix(o$DD,nrow=nn,byrow=TRUE)
       rownames(DD)<- colnames(DD)<- ids
@@ -401,7 +404,12 @@ genMatrix<- function(idcf){
    MH<- matrix(o$MH,nrow=nn,byrow=TRUE)
       rownames(MH)<- colnames(MH)<- ids
 
-   list(ib=ib,AA=AA,DD=DD,AD=AD,HH=HH,MH=MH)
+   list(ib=ib,
+        AA=AA,
+        DD=DD,
+        AD=AD,
+        HH=HH,
+        MH=MH)
 }
 
 ###########
