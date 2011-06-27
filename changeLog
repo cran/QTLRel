@@ -1,4 +1,6 @@
 
+2011/06/27 remove error messages on certain platforms; add function 'ibs'.
+
 2011/05/18 add to genMatrix: estimate genetic matrices from genotypic data;
    add to scanOne and scanTwo: allow numurical genotype coding.
 

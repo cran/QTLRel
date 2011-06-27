@@ -41,9 +41,9 @@ A matrix G with G[,j] being the j-th Jacquard identity coefficients.
 Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components of quantitative traits in inbred populations. Am. J. Hum. Genet. 141, 629-650.
 }
 \note{
-It is better to remove the working directory if the program is interrupted by external forces (e.g. killed by users).
+You may need the administrative privilege to run this function on systems such as Windows 7. It may require your operating system support "long long" integer type in C++. If you run this function in a windows system, make sure the working directory is under system volume C and you have the write privilege.
 
-It may require your operating system support "long long" integer type in C++. If you run this function in a windows system, make sure the working directory is under system volume C and you have the write privilege.
+It is better to remove the working directory if the program is interrupted by external forces (e.g. killed by users).
 
 Warning: you may need to run this program on a 64-bit machine in case of seeing such a message!
 }

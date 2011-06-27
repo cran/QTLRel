@@ -1,6 +1,6 @@
 Package: QTLRel
-Version: 0.2-7
-Date: 2011-5-18
+Version: 0.2-8
+Date: 2011-6-27
 Title: Tools for mapping of quantitative traits of genetically related
         individuals and calculating identity coefficients from a
         pedigree
@@ -15,14 +15,14 @@ Description: This software provides tools for quantitative trait
         results. It also has functions to calculate identity
         coefficients from pedigrees, especially suitable for pedigrees
         that consist of a large number of generations, or estimate
-        genetic matrices from pedigrees and from genotypic data in
-        certain circumstances.
-Depends:
+        identity coefficients from genotypic data in certain
+        circumstances.
+Depends: R (>= 2.10)
 Imports: gdata
 Suggests: lattice
 LazyLoad: yes
 LazyData: no
 License: GPL (>= 2)
+Packaged: 2011-06-28 14:49:30 UTC; rcheng
 Repository: CRAN
-Packaged: 2011-05-18 19:26:35 UTC; rcheng
-Date/Publication: 2011-05-19 04:20:24
+Date/Publication: 2011-06-28 15:35:58

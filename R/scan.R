@@ -258,7 +258,7 @@ scanOne<-
    if(!all(is.finite(y)))
       stop("y: non-numeric or infinite data points not allowed.")
    if(!missing(x))
-      if(any(is.infinite(x) | is.na(x)))
+      if(any(sapply(x,is.infinite) | sapply(x,is.na)))
          stop("x: missing or infinite data points not allowed.")
    UseMethod("scanOne")
 }
@@ -425,7 +425,7 @@ scanTwo<-
    if(!all(is.finite(y)))
       stop("y: non-numeric or infinite data points not allowed.")
    if(!missing(x))
-      if(any(is.infinite(x) | is.na(x)))
+      if(any(sapply(x,is.infinite) | sapply(x,is.na)))
          stop("x: missing or infinite data points not allowed.")
    UseMethod("scanTwo")
 }

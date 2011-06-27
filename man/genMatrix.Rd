@@ -4,14 +4,14 @@
 Derive genetic matrices
 }
 \description{
-Derive genetic matrices from Jacquard condensed identity coefficients.
+Derive genetic matrices from Jacquard condensed identity coefficients or genotypic data.
 }
 \usage{
 genMatrix(x)
 }
 \arguments{
   \item{x}{
-an object of \code{\link{cic}}, or genotype data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3).
+an object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3).
 }
 }
 \value{

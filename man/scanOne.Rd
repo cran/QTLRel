@@ -47,7 +47,7 @@ a logical variable. If true, then the scanning locus will be skipped if the mino
 The test at a scanning locus under the assumption of no QTL effect versus the assumption of QTL effect is performed by conditioning on the estimated polygenic genetic variance-covariance matrix. Normality is assumed for the random effects.
 }
 \value{
-A list with the at least following components:
+A list with at least the following components:
    \item{p}{P-value at the snp (marker) if \code{test} is "F" or "Chisq", or the log-likelihood ratio statistic at the SNP (marker) if "test" is "None"}
    \item{parameters}{estimated parameters at all scanning loci, including additive effect \code{a} and dominance effect \code{d} if \code{prdat} is not NULL}
 }

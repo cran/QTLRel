@@ -7,7 +7,7 @@ export(aicVC,mAIC,
 	genoProb,genoImpute,genoPos,rem,
 	pedRecode,hapSim,genoSim,
 	pkolm,qkolm,qqPlot,plotit,plot.scanTwo,
-      cic,kinship,genMatrix)
+      cic,ibs,kinship,genMatrix)
 
 importFrom(gdata, "reorder.factor")
 importFrom(gdata, "trim")

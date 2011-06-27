@@ -1,4 +1,105 @@
 
+
+#############################################
+# calculate condensed identity coefficients #
+#             identity by state             #
+#############################################
+
+# 9 condensed identity coefficients
+ibs<- function(x){
+   if(length(dim(x))==3){
+      ibs.1(x)
+   }else if(length(dim(x))==2){
+      ibs.2(x)
+   }else stop("Input not correct...")
+}
+
+ibs.1<- function(prdat){
+# prdat$pr: n by 3 by ? matrix, conditional probabilities
+   if(any(prdat<0 | prdat>1))
+      stop("Input not correct: probabilities out of range...")
+   nr<- dim(prdat)[1]
+   nc<- dim(prdat)[3]
+   npairs<- nr*(nr+1)/2
+
+   ibsc<- matrix(-1,nrow=npairs,ncol=9)
+   out<- .C("ibsPrc",
+            prdat=as.double(aperm(prdat, c(3,2,1))),
+            nr=as.integer(nr),
+            nc=as.integer(nc),
+            ibsc=as.double(t(ibsc)))
+
+   idcf<- matrix(out$ibsc,ncol=9,byrow=TRUE)
+      colnames(idcf)<- paste("d",1:9,sep="")
+
+   rns<- matrix("NA",nrow=nrow(idcf),ncol=2)
+   ids<- rownames(prdat)
+   if(is.null(ids)){
+      ids<- 1:nrow(prdat)
+   }else{
+      ids<- trim(as.character(ids))
+   }
+   ii<- 0
+   for(i in 1:length(ids)){
+      for(j in 1:i){
+         ii<- ii+1
+         rns[ii,1]<- ids[i]
+         rns[ii,2]<- ids[j]
+      }
+   }
+   rns<- paste(rns[,1],rns[,2],sep="/")
+   rownames(idcf)<- rns
+   class(idcf)<- "cic"
+
+   idcf
+}
+
+ibs.2<- function(gdat){
+# gdat: genotype data ("AA","AB","BB", or, 1,2,3); no missing data
+# rows represent individuals, columns represent SNPs
+   gdata<- as.matrix(gdat)
+   if(!is.numeric(gdata))
+      gdata<- (gdata=="AA")*1 +
+              (gdata=="AB")*2 +
+              (gdata=="BB")*3
+   if(any(!is.element(unique(c(gdata)),c(1,2,3))))
+      stop("gdat: wrong input...")
+   nr<- nrow(gdata)
+   nc<- ncol(gdata)
+   npairs<- nr*(nr+1)/2
+
+   ibsc<- matrix(-1,nrow=npairs,ncol=9)
+   out<- .C("ibsFnc",
+            gdat=as.integer(t(gdata)),
+            nr=as.integer(nr),
+            nc=as.integer(nc),
+            ibsc=as.double(t(ibsc)))
+
+   idcf<- matrix(out$ibsc,ncol=9,byrow=TRUE)
+      colnames(idcf)<- paste("d",1:9,sep="")
+
+   rns<- matrix("NA",nrow=nrow(idcf),ncol=2)
+   ids<- rownames(gdat)
+   if(is.null(ids)){
+      ids<- 1:nrow(gdat)
+   }else{
+      ids<- trim(as.character(ids))
+   }
+   ii<- 0
+   for(i in 1:length(ids)){
+      for(j in 1:i){
+         ii<- ii+1
+         rns[ii,1]<- ids[i]
+         rns[ii,2]<- ids[j]
+      }
+   }
+   rns<- paste(rns[,1],rns[,2],sep="/")
+   rownames(idcf)<- rns
+   class(idcf)<- "cic"
+
+   idcf
+}
+
 ########################################
 # genetic matrices from genotypic data #
 #           identity by state          #
