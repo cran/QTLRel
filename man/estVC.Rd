@@ -59,6 +59,7 @@ x<- sample(c("M","F"),100,replace=TRUE)
 y<- rnorm(100) + (x=="M")*1.0
 v<- cov(matrix(rnorm(10^6),ncol=100))
 
+\dontrun{
 # no sex effect
 o<- estVC(y, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,EE=diag(100)),method="BFGS")
@@ -76,5 +77,6 @@ ro<- estVC(y, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,SE=SM$x,EE=diag(100)),method="BFGS")
 ro
 2*(ro$value-o$value) # log-likelihood test statistic
+}
 }
 

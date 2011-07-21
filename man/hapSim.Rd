@@ -42,12 +42,16 @@ a matrix giving haplotypes.
 \examples{
 data(miscEx)
 
+\dontrun{
+# prepare pedigree in desired format
 pedR<- pedRecode(ped)
+# fake founder haplotypes
 hapDat<- rbind(rep(1:2,nrow(genMapF34)),rep(3:4,nrow(genMapF34)))
-
+# simulate hyplotypes for F34 individuals
 hd<- hapSim(pedR, genMapF34, ids=pedR$id[pedR$gen=="F34"],
    hap.data=hapDat, recode.pedigree=TRUE)
 dim(hd)
 hd[1:5,1:10]
+}
 }
 

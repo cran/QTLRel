@@ -45,15 +45,20 @@ Sex may be used as a covariate if significance on x-chromosome is assessed by ge
 \examples{
 data(miscEx)
 
+\dontrun{
+# prepare pedigree in desired format
 pedR<- pedRecode(ped)
 
-\dontrun{
+# simulate genotype data for all individuals
 gd1<- genoSim(pedR, genMapF34)
 dim(gd1)
 
+# simulate genotype data for all individuals
+# no need to recode pedigree ahead
 gd2<- genoSim(ped, genMapF34, recode.pedigree=TRUE)
 dim(gd2)
 
+# simulate genotypes for F34 individuals
 gd3<- genoSim(pedR, genMapF34, ids=pedR$id[pedR$gen=="F34"],
    recode.pedigree=TRUE)
 dim(gd3)

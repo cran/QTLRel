@@ -24,12 +24,15 @@ an object from \code{\link{estVC}} or \code{\link{aicVC}}.
 \code{\link{estVC}} and \code{\link{aicVC}}.
 }
 \examples{
+\dontrun{
 y<- rnorm(100)
 x<- matrix(1,nrow=100,ncol=1)
 v<- cov(matrix(rnorm(10^6),ncol=100))
 
+# only consider additive genetic variance component
 o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,EE=diag(100)))
 b<- blup(o)
+}
 }
 

@@ -53,9 +53,14 @@ data(miscEx)
 id<- sample(ped$id[300:500],20)
 
 \dontrun{
+# run 'cic' for the sampled individuals
+# top-down
 oo<- cic(ped,id,df=Inf,verbose=TRUE)
+# bottom-up
 o0<- cic(ped,id,df=0,verbose=TRUE)
+# hybrid of top-down and bottom-up
 o2<- cic(ped,id,ask=TRUE,verbose=TRUE)
-c(sum(abs(oo-o0) >1e-7),sum(abs(o2-o0) >1e-7)) # same results
+# same results
+c(sum(abs(oo-o0) >1e-7),sum(abs(o2-o0) >1e-7))
 }
 }

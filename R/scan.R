@@ -28,6 +28,113 @@ lmGls<- function (formula, data, A, ...) {
 }
 
 # generalized least squares test
+scanOne.0 <-
+   function(y,
+            x,
+            prdat,
+            cov,
+            intcovar = NULL,
+            test = c("None","F","Chisq"))
+{
+# prdat$pr: n by ? by ? matrix, allele probabilities
+# vc: object from estVC or aicVC
+# test: “Chisq”, “F” or “Cp”
+   gcv<- W.inv(cov)
+   test<- match.arg(test)
+
+   nsnp<- dim(prdat$pr)[3]
+   if(!is.null(intcovar)) nint<- ncol(as.matrix(intcovar))
+   model.par<- vector("list",nsnp)
+      names(model.par)<- prdat$snp
+   P<- rep(Inf,nsnp)
+      names(P)<- prdat$snp
+   if(is.null(intcovar)){
+      if(!missing(x)){
+         oTmp<- data.frame(y=y,x)
+      }else{
+         oTmp<- data.frame(y=y)
+      }
+      g0<- lmGls(y~.,data=oTmp,A=gcv)
+      if(test=="None"){
+         P0<- logLik(g0)
+         for(k in 1:nsnp){
+            if(!missing(x)){
+               oTmp<- data.frame(y=y,x,prdat$pr[,-1,k])
+            }else{
+               oTmp<- data.frame(y=y,a=prdat$pr[,-1,k])
+            }
+
+            g<- lmGls(y~.,data=oTmp,A=gcv)
+            model.par[[k]]<- g$coef
+            P[k]<- logLik(g)
+         }
+         P<- 2*(P-P0)
+      }else{
+         for(k in 1:nsnp){
+            if(!missing(x)){
+               oTmp<- data.frame(y=y,x,prdat$pr[,-1,k])
+            }else{
+               oTmp<- data.frame(y=y,prdat$pr[,-1,k])
+            }
+
+            g<- lmGls(y~.,data=oTmp,A=gcv)
+            model.par[[k]]<- g$coef
+            P[k]<- anova(g0,g,test=test)$P[2]
+         }
+      }
+   }else{
+      if(!missing(x)){
+         oTmp<- data.frame(y=y,x,intcovar)
+      }else{
+         oTmp<- data.frame(y=y,intcovar)
+      }
+      g0<- lmGls(y~.,data=oTmp,A=gcv)
+      if(test=="None"){
+         P0<- logLik(g0)
+         for(k in 1:nsnp){
+            if(!missing(x)){
+               oTmp<- data.frame(y=y,x,intcovar,prdat$pr[,-1,k])
+            }else{
+               oTmp<- data.frame(y=y,intcovar,prdat$pr[,-1,k])
+            }
+            nc<- ncol(oTmp)
+            str<- paste(paste("(",paste(colnames(oTmp)[nc-1-(nint:1)],collapse="+"),")",sep=""),
+                        paste("(",paste(colnames(oTmp)[(nc-1):nc],collapse="+"),")",sep=""),
+                        sep=":")
+            str<- paste("y~.+",str,sep="")
+
+            g<- lmGls(formula(str),data=oTmp,A=gcv)
+            model.par[[k]]<- g$coef
+            P[k]<- logLik(g)
+         }
+         P<- 2*(P-P0)
+      }else{
+         for(k in 1:nsnp){
+            if(!missing(x)){
+               oTmp<- data.frame(y=y,x,intcovar,prdat$pr[,-1,k])
+            }else{
+               oTmp<- data.frame(y=y,intcovar,prdat$pr[,-1,k])
+            }
+            nc<- ncol(oTmp)
+            str<- paste(paste("(",paste(colnames(oTmp)[nc-1-(nint:1)],collapse="+"),")",sep=""),
+                        paste("(",paste(colnames(oTmp)[(nc-1):nc],collapse="+"),")",sep=""),
+                        sep=":")
+            str<- paste("y~.+",str,sep="")
+
+            g<- lmGls(formula(str),data=oTmp,A=gcv)
+            model.par[[k]]<- g$coef
+            P[k]<- anova(g0,g,test=test)$P[2]
+         }
+      }
+   }
+
+   list(snp=prdat$snp,
+        chr=prdat$chr,
+        dist=prdat$dist,
+        p=P,
+        parameters=model.par)
+}
+
 scanOne.1 <-
    function(y,
             x,
@@ -290,7 +397,11 @@ scanOne.default<-
       }
    }else cov<- diag(nrow(as.matrix(y)))
    if(!is.null(prdat)){
-      pv<- scanOne.1(y=y,x=x,prdat=prdat,cov=cov,intcovar=intcovar,test=test)
+      if(is.element("addEff",class(prdat))){
+         pv<- scanOne.0(y=y,x=x,prdat=prdat,cov=cov,intcovar=intcovar,test=test)
+      }else{
+         pv<- scanOne.1(y=y,x=x,prdat=prdat,cov=cov,intcovar=intcovar,test=test)
+      }
    }else{
       if(any(is.na(gdat)))
          stop("There are missing genotypes...")
@@ -361,13 +472,18 @@ scanTwo.1 <-
       rownames(P)<- colnames(P)<- prdat$snp
    if(nsnp<1) return(NULL)
 
+   if(!missing(x)){
+      oTmp.xy<- data.frame(y=y,x)
+   }else{
+      oTmp.xy<- data.frame(y=y)
+   }
    for(i in 1:(nsnp-1)){
       for(k in (i+1):nsnp){
-         xTmp<- cbind(x,a1=prdat$pr[,1,i]-prdat$pr[,3,i],d1=prdat$pr[,2,i])
-         oTmp<- data.frame(y=y,
-                             xTmp,
-                          a2=prdat$pr[,1,k]-prdat$pr[,3,k],
-                          d2=prdat$pr[,2,k])
+         xTmp<- data.frame(a1=prdat$pr[,1,i] - prdat$pr[,3,i],
+                           d1=prdat$pr[,2,i],
+                           a2=prdat$pr[,1,k] - prdat$pr[,3,k],
+                           d2=prdat$pr[,2,k])
+         oTmp<- cbind(oTmp.xy, oTmp)
 
          g0<- lmGls(y~.,data=oTmp,A=gcv)
          g<- lmGls(y~(a1+d1)*(a2+d2) + .,data=oTmp,A=gcv)
@@ -395,12 +511,16 @@ scanTwo.2 <-
       rownames(P)<- colnames(P)<- colnames(gdat)
    if(nsnp<1) return(NULL)
 
+   if(!missing(x)){
+      oTmp.xy<- data.frame(y=y,x)
+   }else{
+      oTmp.xy<- data.frame(y=y)
+   }
    for(i in 1:(nsnp-1)){
       for(j in (i+1):nsnp){
-         xTmp<- cbind(x,snp1=num.geno(gdat[,i]))
-         oTmp<- data.frame(y=y,
-                             xTmp,
-                        snp2=num.geno(gdat[,j]))
+         oTmp<- data.frame(snp1=num.geno(gdat[,i]),
+                           snp2=num.geno(gdat[,j]))
+         oTmp<- cbind(oTmp.xy, oTmp)
 
          g0<- lmGls(y~.,data=oTmp,A=gcv)
          g<- lmGls(y~snp1*snp2 + .,data=oTmp,A=gcv)

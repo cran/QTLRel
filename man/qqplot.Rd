@@ -80,10 +80,12 @@ William J. Conover (1971). Practical Nonparametric Statistics. New York: John Wi
 \code{\link{ks.test}}.
 }
 \examples{
+\dontrun{
 par(mfrow=c(1,2))
 x<- rnorm(200, mean=0.7,sd=2); y<- rnorm(200, sd=2)
 qqPlot(y,x,qqline="exp")
 qqPlot(y=y,x="norm",sd=2)
 ks.test(x,y)
+}
 }
 

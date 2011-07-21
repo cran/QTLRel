@@ -115,7 +115,7 @@ genMatrix.default<- function(x){
               (gdata=="AB")*2 +
               (gdata=="BB")*3
    if(any(!is.element(unique(c(gdata)),c(1,2,3))))
-      stop("x: wrong input...")
+      stop("Only genotypes AA, AB and BB (or 1, 2, 3) allowed...")
    nr<- nrow(gdata)
    nc<- ncol(gdata)
    npairs<- nr*(nr+1)/2

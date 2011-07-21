@@ -76,6 +76,7 @@ data(miscEx)
 vv<- v
 vv[3]<- vv[4]<- vv[5] <- list(NULL)
 
+\dontrun{
 # forward selection
 # any variance component will be selected
 # if AIC improve by 1e-5 or larger
@@ -91,5 +92,6 @@ of
 ob<- aicVC(y, x, v=vv, k=1/2, keep=6, direction="back",
    verbose=TRUE)
 ob
+}
 }
 

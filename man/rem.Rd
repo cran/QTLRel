@@ -22,6 +22,7 @@ a list of matrices that are associated with random effects.
 }
 
 \examples{
+\dontrun{
 # make-up example
 dat<- data.frame(
    group=c("A","A","A","A","A","A","B","B","B","B"),
@@ -34,5 +35,6 @@ dat<- data.frame(
 # y_{ijk} = x_{ij}*b + group_i + sex_{ij} + z*pass_{ij}
 #           + e_{ijk}
 rem(~ group/sex + z|pass,data=dat)
+}
 }
 

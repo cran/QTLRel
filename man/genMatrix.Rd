@@ -11,7 +11,7 @@ genMatrix(x)
 }
 \arguments{
   \item{x}{
-an object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3).
+an object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3) without missing genotypes.
 }
 }
 \value{
@@ -31,8 +31,10 @@ data(miscEx)
 
 id<- sample(ped$id[300:500],20)
 \dontrun{
+# get condensed identity coefficients
 oo<- cic(ped,id,df=0)
-ksp<- kinship(ped,ids=id)
+ksp<- kinship(ped,ids=id) # kinship coefficients only
+# extract genetic matrices
 gm<- genMatrix(oo)
 sum((gm$AA-2*ksp)>1e-7) # same results
 }

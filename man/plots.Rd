@@ -48,21 +48,29 @@ A genetic map 'gmap' may be needed to plot an object of \code{\link{scanOne}} or
 \examples{
 data(miscEx)
 
+\dontrun{
+# impute missing genotypes
 gdat.imp<- genoImpute(gdat, gmap=genMap, step=Inf,
    gr=2, na.str=NA)
 y<- rnorm(20)
 x<- matrix(1,nrow=20,ncol=1)
 v<- cov(matrix(rnorm(500*20),ncol=20))
+# estimate variance components
 o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,EE=diag(20)))
 
+# genome scan
 gcv<- v*o$par["AA"]
 llk<- scanOne(y=y, x=x, vc=gcv, gdat=gdat.imp[,1:20])
+
+# plotting
 plot(llk,gmap=genMap) # gmap is needed
 
+# plotting in another way
 idx<- match(colnames(gdat.imp[,1:20]),genMap$snp)
 tmp<- data.frame(chr=genMap$chr[idx],dist=genMap$dist[idx],y=llk$p)
 plotit(tmp, main="Mapping Plot", xlab="Chromosome", ylab="LRT",
    col=as.integer(tmp$ch)\%\%2+2,type="b")
+}
 }
 

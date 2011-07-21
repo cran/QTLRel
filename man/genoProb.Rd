@@ -48,6 +48,8 @@ Currently only suitable for advanced intercross lines.
 \examples{
 data(miscEx)
 
+\dontrun{
+# briefly look at genotype data
 sum(is.na(gdat))
 gdat[11:13,21:25]
 
@@ -58,5 +60,6 @@ gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
 prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
    gr=2, method="Haldane", verbose=TRUE)
 prDat$pr[11:13,,21:25]
+}
 }
 

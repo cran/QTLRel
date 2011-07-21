@@ -35,23 +35,30 @@ Correlations among observations are ignored, and this function should be used wi
 \examples{
 data(miscEx)
 
+\dontrun{
+# impute missing genotypes
 gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
+# rung 'genoProb'
 prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
    gr=2, method="Haldane", verbose=TRUE)
 y<- rnorm(20)
 x<- matrix(1,nrow=20,ncol=1)
 v<- cov(matrix(rnorm(500*20),ncol=20))
+# estimate variance components
 o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,EE=diag(20)))
 
+# genome scan
 gcv<- v*o$par["AA"]
 llk.hk<- scanOne(y=y, x=x, vc=gcv, prdat=prDat)
 
+# run 'qtlVar'
 qef<- NULL
 for(n in 1:length(llk.hk$par))
    qef<- rbind(qef,llk.hk$par[[n]][c("a","d")])
    qef<- as.data.frame(qef)
 qtlVar(qef,prDat$pr)[1:3]
+}
 }
 

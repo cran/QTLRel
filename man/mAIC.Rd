@@ -19,7 +19,7 @@ a numeric vector or a numeric matrix of one column (representing a phenotype for
 a data frame or matrix, representing covariates if not missing.
 }
   \item{gdat}{
-genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Ignored if \code{prdat} is an object from \code{\link{genoProb}}.
+genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Numeric coding of genotype is treated as numeric. Ignored if \code{prdat} is an object from \code{\link{genoProb}}.
 }
   \item{vc}{
 an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness. The scan will assume no polygenic variation if \code{vc} is NULL.
@@ -64,7 +64,7 @@ a list with the following components:
 Haley, C. S., and S. A. Knott (1992). A simple regression method for mapping quantitative trait loci in line crosses using flanking markers. Heredity 69: 315-324.
 }
 \note{
-Currently only suitable for advanced intercross lines.
+Currently only suitable for advanced intercross lines (or diallelic data).
 }
 \seealso{
 \code{\link{optim}}, \code{\link{genoProb}} and \code{\link{aicVC}}.
@@ -73,23 +73,31 @@ Currently only suitable for advanced intercross lines.
 \examples{
 data(miscEx)
 
+\dontrun{
+# impute missing genotypes
 gdat.imp<- genoImpute(gdat, gmap=genMap, step=Inf,
    gr=2, na.str=NA)
 y<- rnorm(20)
 x<- sample(c("M","F"),20,replace=TRUE)
 v<- cov(matrix(rnorm(500*20),ncol=20))
+# estimate variance components
 o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
    MH=NULL,EE=diag(20)))
 
+# run 'genoProb'
 gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
    gr=2, method="Haldane", verbose=TRUE)
 
+# genome scan
 llk.hk<- scanOne(y=y, x=x, prdat=prDat, vc=o)
 xin<- llk.hk$p > 3
+
+# run 'mAIC' based on genome scan results
 mg<- mAIC(y=y, x=x, prdat=prDat, vc=o, xin=xin,
    k=10,direction="back", verbose=TRUE)
 mg$model$value # likelihood of the final model
+}
 }
 
