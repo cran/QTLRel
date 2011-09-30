@@ -58,41 +58,36 @@ Currently only suitable for advanced intercross lines.
 data(miscEx)
 
 # briefly look at genotype data
-sum(is.na(gdat))
-gdat[11:13,21:25]
+sum(is.na(gdatF8))
+gdatF8[1:5,1:5]
 
 \dontrun{
 # run 'genoProb'
-gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
+gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
-   gr=2, method="Haldane", verbose=TRUE)
-prDat$pr[11:13,,21:25]
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+   gr=8, method="Haldane", verbose=TRUE)
 
 # imputation based on 'genoProb' object
 tmp<- genoImpute(prd=prDat)
-dim(gdat)
 sum(is.na(tmp))
-tmp[11:13,21:25]
+tmp[1:5,1:5]
 
 # imputation based on both genotype data and 'genoProb' object
-tmp<- genoImpute(gdat[1:15,],prd=prDat)
-dim(gdat)
+tmp<- genoImpute(gdatF8, prd=prDat)
 sum(is.na(tmp))
-tmp[11:13,21:25]
+tmp[1:5,1:5]
 
 # imputation based on genotype data
-tmp<- genoImpute(gdat, gmap=genMap, step=Inf,
-   gr=2, na.str=NA)
-dim(gdat)
+tmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+   gr=8, na.str=NA)
 sum(is.na(tmp))
-tmp[11:13,21:25]
+tmp[1:5, 1:5]
 # set "verbose=TRUE" for more information
-tmp<- genoImpute(gdat[1:15,], gmap=genMap, step=Inf,
-   gr=2, na.str=NA, verbose=TRUE)
-dim(gdat)
+tmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+   gr=8, na.str=NA, verbose=TRUE)
 sum(is.na(tmp))
-tmp[11:13,21:25]
+tmp[1:5, 1:5]
 }
 }
 

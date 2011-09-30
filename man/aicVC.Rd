@@ -73,24 +73,23 @@ Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components o
 \examples{
 data(miscEx)
 
-vv<- v
-vv[3]<- vv[4]<- vv[5] <- list(NULL)
-
 \dontrun{
 # forward selection
 # any variance component will be selected
 # if AIC improve by 1e-5 or larger
-o<- aicVC(y,x,k=0,v=vv)
+v=list(AA=gmF8$AA, DD=gmF8$DD, HH=NULL, AD=NULL,
+	MH=NULL, EE=diag(length(pdatF8$bwt)))
+o<- aicVC(y=pdatF8$bwt, x=pdatF8$sex, k=0, v=v, verbose=TRUE)
 o
 
 # forward selection
-of<- aicVC(y, x, v=vv, k=1/2, init=6, direction="for",
-   verbose=TRUE)
+of<- aicVC(y=pdatF8$bwt, x=pdatF8$sex, v=v, k=1/2, init=6,
+	direction="for", verbose=TRUE)
 of
 
 # backward elimination
-ob<- aicVC(y, x, v=vv, k=1/2, keep=6, direction="back",
-   verbose=TRUE)
+ob<- aicVC(y=pdatF8$bwt, x=pdatF8$sex, v=v, k=1/2, keep=6,
+	direction="back", verbose=TRUE)
 ob
 }
 }

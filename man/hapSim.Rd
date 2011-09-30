@@ -44,11 +44,11 @@ data(miscEx)
 
 \dontrun{
 # prepare pedigree in desired format
-pedR<- pedRecode(ped)
+pedR<- pedRecode(pedF8)
 # fake founder haplotypes
-hapDat<- rbind(rep(1:2,nrow(genMapF34)),rep(3:4,nrow(genMapF34)))
-# simulate hyplotypes for F34 individuals
-hd<- hapSim(pedR, genMapF34, ids=pedR$id[pedR$gen=="F34"],
+hapDat<- rbind(rep(1:2,nrow(gmapF8)),rep(3:4,nrow(gmapF8)))
+# simulate hyplotypes for F8 individuals
+hd<- hapSim(pedR, gmapF8, ids=pedR$id[pedR$gen=="F8"],
    hap.data=hapDat, recode.pedigree=TRUE)
 dim(hd)
 hd[1:5,1:10]

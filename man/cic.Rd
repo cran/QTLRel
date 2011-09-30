@@ -50,16 +50,16 @@ Warning: you may need to run this program on a 64-bit machine in case of seeing 
 \examples{
 data(miscEx)
 
-id<- sample(ped$id[300:500],20)
+ids<- sample(pedF8$id[300:500],20)
 
 \dontrun{
 # run 'cic' for the sampled individuals
 # top-down
-oo<- cic(ped,id,df=Inf,verbose=TRUE)
+oo<- cic(pedF8, ids=ids, df=Inf, verbose=TRUE)
 # bottom-up
-o0<- cic(ped,id,df=0,verbose=TRUE)
+o0<- cic(pedF8, ids=ids, df=0, verbose=TRUE)
 # hybrid of top-down and bottom-up
-o2<- cic(ped,id,ask=TRUE,verbose=TRUE)
+o2<- cic(pedF8, ids=ids, ask=TRUE, verbose=TRUE)
 # same results
 c(sum(abs(oo-o0) >1e-7),sum(abs(o2-o0) >1e-7))
 }

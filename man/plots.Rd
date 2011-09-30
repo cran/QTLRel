@@ -50,27 +50,23 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdat.imp<- genoImpute(gdat, gmap=genMap, step=Inf,
-   gr=2, na.str=NA)
-y<- rnorm(20)
-x<- matrix(1,nrow=20,ncol=1)
-v<- cov(matrix(rnorm(500*20),ncol=20))
+gdat.imp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+   gr=8, na.str=NA)
 # estimate variance components
-o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,EE=diag(20)))
+o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
 
 # genome scan
-gcv<- v*o$par["AA"]
-llk<- scanOne(y=y, x=x, vc=gcv, gdat=gdat.imp[,1:20])
+llk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, vc=o, gdat=gdat.imp)
 
 # plotting
-plot(llk,gmap=genMap) # gmap is needed
+plot(llk, gmap=gmapF8) # gmap is needed
 
 # plotting in another way
-idx<- match(colnames(gdat.imp[,1:20]),genMap$snp)
-tmp<- data.frame(chr=genMap$chr[idx],dist=genMap$dist[idx],y=llk$p)
+idx<- match(colnames(gdat.imp), gmapF8$snp)
+tmp<- data.frame(chr=gmapF8$chr[idx],dist=gmapF8$dist[idx],y=llk$p)
 plotit(tmp, main="Mapping Plot", xlab="Chromosome", ylab="LRT",
-   col=as.integer(tmp$ch)\%\%2+2,type="b")
+   col=as.integer(tmp$ch)\%\%2+2,type="p")
 }
 }
 

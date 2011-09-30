@@ -23,8 +23,8 @@ A matrix giving kinship coefficients.
 \examples{
 data(miscEx)
 
-id<- sample(ped$id,10)
+ids<- sample(pedF8$id,10)
 \dontrun{
-ksp<- kinship(ped,ids=id)
+ksp<- kinship(pedF8,ids=ids)
 }
 }

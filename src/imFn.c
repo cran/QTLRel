@@ -10,7 +10,6 @@ double mappingFunc(double r,int method){
    double d = 0.0;
 
    if(r<0 || r>0.5){
-//      Rprintf("r in mappingFunc: out of range.\n"); exit(0);
       error(_("r in mappingFunc: out of range.\n"));
    }
 
@@ -32,7 +31,6 @@ double mappingFuncInv(double d,int method){
    double r = 1.0;
 
    if(d<0){
-//      Rprintf("d in mappingFuncInv: out of range.\n"); exit(0);
       error(_("d in mappingFuncInv: out of range.\n"));
    }
 
@@ -56,11 +54,9 @@ double rFn(double r,int n){
    double pr;
 
    if(r<0 || r>0.5){
-//      Rprintf("r in rFn: out of range.\n"); exit(0);
       error(_("r in rFn: out of range.\n"));
    }
    if(n<2){
-//      Rprintf("n=%d in rFn: can't smaller than 2.\n"); exit(0);
       error(_("n in rFn: can't smaller than 2."));
    }
 
@@ -78,7 +74,6 @@ double rFn(double r,int n){
 double conGenoPr(int g,int g0,double r){
    double pr = 1.0;
    if(r<0 || r>0.5){
-//      Rprintf("r in conGenoPr: out of range.\n"); exit(0);
       error(_("r in conGenoPr: out of range.\n"));
    }
    if(g0==1){
@@ -86,7 +81,6 @@ double conGenoPr(int g,int g0,double r){
       else if(g==2) pr = 2*r*(1.0-r);
       else if(g==3) pr = r*r;
       else {
-//         Rprintf("g in conGenoPr: genotype error.\n"); exit(0);
          error(_("g in conGenoPr: genotype error.\n"));
       }
    }else if(g0==2){
@@ -94,7 +88,6 @@ double conGenoPr(int g,int g0,double r){
       else if(g==2) pr = r*r + (1.0-r)*(1.0-r);
       else if(g==3) pr = r*(1.0-r);
       else {
-//         Rprintf("g in conGenoPr: genotype error.\n"); exit(0);
          error(_("g in conGenoPr: genotype error.\n"));
       }
    }else if(g0==3){
@@ -102,11 +95,9 @@ double conGenoPr(int g,int g0,double r){
       else if(g==2) pr = 2*r*(1.0-r);
       else if(g==3) pr = (1.0-r)*(1.0-r);
       else {
-//         Rprintf("g in conGenoPr: genotype error.\n"); exit(0);
          error(_("g in conGenoPr: genotype error.\n"));
       }
    }else {
-//      Rprintf("g0 in conGenoPr: genotype error.\n"); exit(0);
       error(_("g0 in conGenoPr: genotype error.\n"));
    }
 
@@ -178,6 +169,7 @@ void conGenoPrs(int *mData,int n,double *dist,double *pos,int np,int* at, int gr
       r=mappingFuncInv(dist[n2]-dist[n1],method);
          r=rFn(r,gr);
       do{
+         if(stopIt) return;
          if(!bad2){
             if(at[ii+1]-1==n2) break;
          }
@@ -222,7 +214,9 @@ void conGenoPrs(int *mData,int n,double *dist,double *pos,int np,int* at, int gr
 
 //extern "C"{
    void conGenoPrc(int *mData,int *n,double *dist,double *pos,int *np,int* at,int *gr,int *method,double *pData,int *err){
+      signal(SIGINT, &userInt);
       conGenoPrs(mData,*n,dist,pos,*np,at,*gr,*method,pData,err);
+      if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
    }
 //}
 

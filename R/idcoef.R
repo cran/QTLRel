@@ -58,6 +58,7 @@ freeSpace<- function(){
        k<- a[length(a)-2]
        k<- as.double(k)/2^10 # in Mb
     }else if(os.type=="windows"){
+       cat("You may need administrator's privilidge to run this program\a\n")
        a<- system("fsutil volume diskfree c:",intern=T)
        n<- c(nchar(a[1]),
              nchar(strsplit(a[1],":")[[1]][2]),
@@ -252,12 +253,14 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    if(verbose){
       cat("  Carry-over number of individuals in each generation:\n")
       print(pedN)
-      cat("  Will go through generations:",as.character(gr),"\n")
+      cat("  Will go over generations:",as.character(gr),"\n")
    }
    if(ask){
       ansTmp<- ans(prompt="Continue?")
       if(!ansTmp) return(NA)
    }
+   cat("  This may take hours or days to finish!\n")
+   cat("  Please wait or press 'ctrl-c' to abort...\n")
 
    grTmp<- sort(unique(ped$generation),decreasing=FALSE)
    gr<- match(gr,grTmp)

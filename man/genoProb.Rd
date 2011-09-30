@@ -50,16 +50,16 @@ data(miscEx)
 
 \dontrun{
 # briefly look at genotype data
-sum(is.na(gdat))
-gdat[11:13,21:25]
+sum(is.na(gdatF8))
+gdatF8[1:5,1:5]
 
-gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
+gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-# The 12th individual not imputable on chromosome 7.
-# One needs to assign genotypes manually.
-prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
-   gr=2, method="Haldane", verbose=TRUE)
-prDat$pr[11:13,,21:25]
+# In case an individual is not imputable, then
+# one needs to assign genotypes manually
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+   gr=8, method="Haldane", verbose=TRUE)
+prDat$pr[1:5,,1:5]
 }
 }
 

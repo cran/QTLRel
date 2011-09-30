@@ -70,6 +70,8 @@ void genMatr();
 
    //write to file outfs[4]: phi2(a,b), phi3(a,b,c), phi4(a,b,c,d) and phi22(a,b,c,d)
    void phicw(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, char** outfs){
+         signal(SIGINT, &userInt);
+
          FILE* ifs[4];
          int i;
          if(top[0]!=-999) for(i=0; i<4; i++){
@@ -94,10 +96,13 @@ void genMatr();
             fclose(ifs[i]);
             remove(infs[i]);
          }
+         if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
    }
 
    //store in idcf[,9]
    void phicr(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, double* idcf,int* verbose){
+         signal(SIGINT, &userInt);
+
          int i;
          FILE* ifs[4];
          if(top[0]!=-999) for(i=0; i<4; i++){
@@ -114,6 +119,7 @@ void genMatr();
             fclose(ifs[i]);
             remove(infs[i]);
          }
+         if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
    }
 
    void gen_Matrix(double* idcf, int* nr, int* nc, int* nn,
@@ -135,6 +141,7 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
    int i, j, k, l;
    for(i=0;i<nid;i++){
       for(j=0;j<=i;j++){
+         if(stopIt) return;
          buff = phi2(id[i],id[j],ped,top,ifs);
          frwsize = fwrite(&buff,sizeof(double),1,ofs[0]);
          if(frwsize!=1){
@@ -146,6 +153,7 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
    for(i=0;i<nid;i++){
       for(j=0;j<=i;j++){
          for(k=0;k<=j;k++){
+            if(stopIt) return;
             buff = phi3(id[i],id[j],id[k],ped,top,ifs);
             frwsize = fwrite(&buff,sizeof(double),1,ofs[1]);
             if(frwsize!=1){
@@ -159,6 +167,7 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
       for(j=0;j<=i;j++){
          for(k=0;k<=j;k++){
             for(l=0;l<=k;l++){
+               if(stopIt) return;
                buff = phi4(id[i],id[j],id[k],id[l],ped,top,ifs);
                frwsize = fwrite(&buff,sizeof(double),1,ofs[2]);
                if(frwsize!=1){
@@ -173,6 +182,7 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
       for(j=0;j<=i;j++){
          for(k=0;k<=i;k++){
             for(l=0;l<=k;l++){
+               if(stopIt) return;
                buff = phi22(id[i],id[j],id[k],id[l],ped,top,ifs);
                frwsize = fwrite(&buff,sizeof(double),1,ofs[3]);
                if(frwsize!=1){
@@ -191,11 +201,12 @@ void idcoefr(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, double* idc
    LONGLONG ii;
 
    ii = 0;
-   if(verbose) Rprintf("\nFinishing");
+   if(verbose) Rprintf("\n   Finishing...");
    for(i=0;i<nid;i++){
       if(verbose) Rprintf("."); //Rprintf("%d ",i+1);
       for(j=0;j<=i;j++){
 //         if(verbose) Rprintf(".");
+         if(stopIt) return;
 
          aa = 2.0*phi2(id[i],id[i],ped,top,ifs);
          bb = 2.0*phi2(id[j],id[j],ped,top,ifs);
@@ -613,5 +624,4 @@ double phi22(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
 
    return ((phi22(ped[a-1][1],b,c,d,ped, top, ifs) + phi22(ped[a-1][2],b,c,d,ped, top, ifs)) / 2.0);
 }
-
 

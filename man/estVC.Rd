@@ -55,26 +55,24 @@ Normality is assumed for the random effects. Input data should be free of missin
 \code{\link{optim}} and \code{\link{rem}}.
 }
 \examples{
-x<- sample(c("M","F"),100,replace=TRUE)
-y<- rnorm(100) + (x=="M")*1.0
-v<- cov(matrix(rnorm(10^6),ncol=100))
+data(miscEx)
 
 \dontrun{
 # no sex effect
-o<- estVC(y, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,EE=diag(100)),method="BFGS")
+o<- estVC(y=pdatF8$bwt, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
 o
 
 # sex as fixed effect
-fo<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,EE=diag(100)),method="BFGS")
+fo<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
 fo
 2*(fo$value-o$value) # log-likelihood test statistic
 
 # sex as random effect
-SM<- rem(~x,data.frame(x=x))
-ro<- estVC(y, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,SE=SM$x,EE=diag(100)),method="BFGS")
+SM<- rem(~sex, data=pdatF8)
+ro<- estVC(y=pdatF8$bwt, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, SE=SM$sex, EE=diag(length(pdatF8$bwt))))
 ro
 2*(ro$value-o$value) # log-likelihood test statistic
 }

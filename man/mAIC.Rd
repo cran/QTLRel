@@ -75,28 +75,25 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdat.imp<- genoImpute(gdat, gmap=genMap, step=Inf,
-   gr=2, na.str=NA)
-y<- rnorm(20)
-x<- sample(c("M","F"),20,replace=TRUE)
-v<- cov(matrix(rnorm(500*20),ncol=20))
+gdat.imp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+   gr=8, na.str=NA)
 # estimate variance components
-o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,EE=diag(20)))
+o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
 
 # run 'genoProb'
-gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
+gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
-   gr=2, method="Haldane", verbose=TRUE)
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+   gr=8, method="Haldane", verbose=TRUE)
 
 # genome scan
-llk.hk<- scanOne(y=y, x=x, prdat=prDat, vc=o)
-xin<- llk.hk$p > 3
+llk.hk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat, vc=o)
+xin<- llk.hk$p > 10
 
 # run 'mAIC' based on genome scan results
-mg<- mAIC(y=y, x=x, prdat=prDat, vc=o, xin=xin,
-   k=10,direction="back", verbose=TRUE)
+mg<- mAIC(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat, vc=o, xin=xin,
+   k=5, direction="back", verbose=TRUE)
 mg$model$value # likelihood of the final model
 }
 }

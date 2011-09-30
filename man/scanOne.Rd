@@ -65,28 +65,24 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdat.imp<- genoImpute(gdat, gmap=genMap, step=Inf,
-   gr=2, na.str=NA)
+gdatTmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+   gr=8, na.str=NA)
 
-y<- rnorm(20)
-x<- sample(c("Male","Female"),20,replace=TRUE)
-# fake additive genetic matrix
-v<- cov(matrix(rnorm(500*20),ncol=20))
 # estimate variance components
-o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,EE=diag(20)))
+o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
 
 # genome scan and plotting
-pv<- scanOne(y=y, x=x, gdat=gdat.imp[,1:20], vc=o)
+pv<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, gdat=gdatTmp, vc=o)
 pv
-plot(pv,gmap=genMap)
+plot(pv,gmap=gmapF8)
 
 # Haley-Knott method
-gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
+gdtmp<- gdatF8; unique(unlist(gdtmp))
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
-   gr=2, method="Haldane", verbose=TRUE)
-pv.hk<- scanOne(y=y, x=x, prdat=prDat, vc=o)
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+   gr=8, method="Haldane", verbose=TRUE)
+pv.hk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat, vc=o)
 pv.hk
 plot(pv.hk)
 }

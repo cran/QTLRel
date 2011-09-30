@@ -23,11 +23,11 @@ A recoded pedigree.
 \examples{
 data(miscEx)
 
-ped[1:10,]
-pedR<- pedRecode(ped)
+pedF8[1:10,]
+pedR<- pedRecode(pedF8)
 pedR[1:10,]
 dim(pedR)
-pedR<- pedRecode(ped,ids=ped$id[ped$gener=="F34"])
+pedR<- pedRecode(pedF8, ids=pedF8$id[pedF8$gener=="F8"])
 dim(pedR)
 }
 

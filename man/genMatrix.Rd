@@ -29,11 +29,12 @@ Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components o
 \examples{
 data(miscEx)
 
-id<- sample(ped$id[300:500],20)
+ids<- sample(pedF8$id[300:500],20)
+
 \dontrun{
 # get condensed identity coefficients
-oo<- cic(ped,id,df=0)
-ksp<- kinship(ped,ids=id) # kinship coefficients only
+oo<- cic(pedF8, ids=ids, df=0)
+ksp<- kinship(pedF8, ids=ids) # kinship coefficients only
 # extract genetic matrices
 gm<- genMatrix(oo)
 sum((gm$AA-2*ksp)>1e-7) # same results

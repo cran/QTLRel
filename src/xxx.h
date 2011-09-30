@@ -29,6 +29,7 @@
 #include "limits.h"
 #include "stdio.h"
 #include "string.h"
+#include "signal.h"
 //#include "iostream"
 //#include "fstream"
 //#include "iomanip"
@@ -39,6 +40,12 @@
 typedef long long LONGLONG;
 
 ////////////////////////////////////////////////////
+
+static int stopIt = 0;
+static void userInt(int sig){
+//   Rprintf("\n   Exit without finish.\a\n");
+   stopIt = 1;
+}
 
 /*
 void itoa(int i,char buff[],int base=10);

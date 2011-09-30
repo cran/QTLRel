@@ -38,25 +38,21 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdtmp<- (gdat=="AA") + (gdat=="AB")*2 + (gdat=="BB")*3
+gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 # run 'genoProb'
-prDat<- genoProb(gdat=gdtmp, gmap=genMap, step=Inf,
-   gr=2, method="Haldane", verbose=TRUE)
-y<- rnorm(20)
-x<- matrix(1,nrow=20,ncol=1)
-v<- cov(matrix(rnorm(500*20),ncol=20))
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+   gr=8, method="Haldane", verbose=TRUE)
 # estimate variance components
-o<- estVC(y, x, v = list(AA=v,DD=NULL,HH=NULL,AD=NULL,
-   MH=NULL,EE=diag(20)))
+o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
+	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
 
 # genome scan
-gcv<- v*o$par["AA"]
-llk.hk<- scanOne(y=y, x=x, vc=gcv, prdat=prDat)
+llk.hk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, vc=o, prdat=prDat)
 
 # extract LOD support intervals
-tmp<- data.frame(y=llk.hk$p,chr=llk.hk$chr,dist=llk.hk$dist)
-lodci(tmp, cv=5, lod=1.5, drop=3)
+tmp<- data.frame(y=llk.hk$p, chr=llk.hk$chr, dist=llk.hk$dist)
+lodci(tmp, cv=10, lod=1.5, drop=3)
 }
 }
 
