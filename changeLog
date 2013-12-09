@@ -1,4 +1,6 @@
 
+2013/12/09 fix warning on '.First.lib()'
+
 2012/11/06 add functions qtl2rel and rel2qtl for converting data between
    QTLRel and R/qtl formats. These two functions are provided by Karl Broman,
    author of R/qtl.
