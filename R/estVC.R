@@ -87,6 +87,12 @@ estVC.default <-
       if(any(sapply(x,is.infinite) | sapply(x,is.na)))
          stop("x: missing or infinite data points not allowed.")
 
+   if(!is.null(dim(y))){
+      if(length(dim(y))>2) stop("y: may be wrong.\n")
+      if(dim(y)[2]>1)
+         warning("y: only the fisrt column will be analyzed.")
+      y<- y[,1]
+   }
    if(!missing(x)){
       oTmp<- data.frame(y=y,x)
    }else oTmp<- data.frame(y=y)
@@ -116,7 +122,7 @@ estVC.1 <-
             hessian)
 {
 # estimate all background genetic variance (bgv)
-# y: ny by 1 matrix, response
+# y: vector, response
 # x: covariates
 # v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
 # initpar: initial parameters, will be initilized automatically if missing
@@ -127,10 +133,7 @@ estVC.1 <-
    fs<- control$fnscale
       if(!is.null(fs) && fs<0) fs<- -1 else fs<- 1
 
-   if(!is.null(dim(y))){
-      if(length(dim(y))>2) stop("y: may be wrong.\n")
-      ny<- nrow(y)
-   }else ny<- length(y)
+   ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
@@ -222,7 +225,7 @@ estVC.2 <-
             hessian)
 {
 # estimate all background genetic variance (bgv)
-# y: ny by 1 matrix, response
+# y: vector, response
 # x: covariates
 # v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
 # initpar: initial parameters, will be initilized automatically if missing
@@ -233,10 +236,7 @@ estVC.2 <-
    fs<- control$fnscale
       if(!is.null(fs) && fs<0) fs<- -1 else fs<- 1
 
-   if(!is.null(dim(y))){
-      if(length(dim(y))>2) stop("y: may be wrong.\n")
-      ny<- nrow(y)
-   }else ny<- length(y)
+   ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
@@ -403,16 +403,13 @@ estVC.3 <-
             hessian)
 {
 # estimate all background genetic variance (bgv)
-# y: ny by 1 matrix, response
+# y: vector, response
 # x: desig matrix including overall mean !!!
 # v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
 # initpar: initial parameters, will be initilized automatically if missing
 # nit: number of iterations
    control$fnscale<- 1
-   if(!is.null(dim(y))){
-      if(length(dim(y))>2) stop("y: may be wrong.\n")
-      ny<- nrow(y)
-   }else ny<- length(y)
+   ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
@@ -555,7 +552,7 @@ estVC.4 <-
             hessian)
 {
 # estimate all background genetic variance (bgv)
-# y: ny by 1 matrix, response
+# y: vector, response
 # x: covariates
 # v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
 # initpar: initial parameters, will be initilized automatically if missing
@@ -566,10 +563,7 @@ estVC.4 <-
    fs<- control$fnscale
       if(!is.null(fs) && fs<0) fs<- -1 else fs<- 1
 
-   if(!is.null(dim(y))){
-      if(length(dim(y))>2) stop("y: may be wrong.\n")
-      ny<- nrow(y)
-   }else ny<- length(y)
+   ny<- length(y)
    nb<- ncol(x)
    ov<- fv(v)
    if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))

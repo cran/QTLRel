@@ -15,7 +15,7 @@ genoImpute(gdat,gmap,prd=NULL,step=Inf,gr=2,pos=NULL,
 genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Genotypes can be 1, 2 and 3, or "AA", "AB" and "BB". Optional if an object \code{prd} from \code{\link{genoProb}} is used as an argument.
 }
   \item{gmap}{
-a genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the leftmost SNP (marker) on the chromosome.
+a genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
 }
   \item{prd}{
 an object from \code{\link{genoProb}} if not \code{NULL}. See "details" for more information.

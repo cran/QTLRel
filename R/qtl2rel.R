@@ -7,7 +7,7 @@
 qtl2rel <-
 function(cross)
 {
-  require(qtl) # need the qtl package for this function
+  #require(qtl) # need the qtl package for this function
 
   if(class(cross)[1] != "f2" || class(cross)[2] != "cross")
     stop("Input must be an intercross.")

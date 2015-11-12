@@ -11,8 +11,16 @@ export(aicVC,mAIC,
 
 export(rel2qtl, qtl2rel)
 
-importFrom(gdata, "reorder.factor")
-importFrom(gdata, "trim")
+importFrom("gdata", "reorder.factor", "trim")
+importFrom("lattice", "xyplot", "panel.xyplot", "panel.abline", "panel.superpose")
+importFrom("grDevices", "terrain.colors")
+importFrom("graphics", "abline", "axis", "image", "lines", "mtext",
+     "par", "plot", "points")
+importFrom("stats", "anova", "approx", "contrasts", "formula", "lm",
+     "lm.wfit", "logLik", "model.frame", "model.matrix",
+     "model.response", "nlm", "nlminb", "optim", "optimize",
+     "ppoints", "quantile", "reorder", "rmultinom", "runif",
+     "terms", "uniroot", "var")
 
 S3method(aicVC, default)
 S3method(blup, aic)

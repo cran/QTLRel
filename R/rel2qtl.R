@@ -73,7 +73,6 @@ function(gdat, pdat, gmap)
 
   # need to jitter map to move markers apart?
   if(any(sapply(cross$geno, function(a) any(diff(a$map)==0)))) {
-    require(qtl) # need R/qtl package for this
     cross <- qtl::jittermap(cross)
   }
 

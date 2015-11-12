@@ -50,7 +50,7 @@ a logical variable. True if ones wants to track the process for monitoring purpo
 Makes use of "Haley-Knott" method (Haley and Knott 1992) if \code{prdat} is an object from \code{\link{genoProb}}.
 }
 \value{
-a list with the following components:
+A list with the following components:
 
    \code{model}: the resulting model;
 

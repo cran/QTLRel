@@ -6,10 +6,10 @@ void rgeno1();
 void rgeno2();
 //extern "C"{
    void rgdata(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *seed){
-      rgeno1(gdata,*nr,*nc,*ninit,pedigree,recomb,*seed);
+      rgeno1(gdata,*nr,*nc,*ninit,pedigree,recomb);
    }
    void rgdata2(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *xchr,int *seed){
-      rgeno2(gdata,*nr,*nc,*ninit,pedigree,recomb,*xchr,*seed);
+      rgeno2(gdata,*nr,*nc,*ninit,pedigree,recomb,*xchr);
    }
 //}
 
@@ -24,11 +24,10 @@ void rgeno2();
     between SNP[j-1] and SNP[j]
  seed: take system time as seed if 0
  ---------------------------------------------------*/
-void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int seed){
+void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr){
    double u;
    int i,j;
    int ii,jj;
-   if(seed == 0) srand ( time(NULL) ); else srand(seed); //printf("%d\n",seed);
    if(nr<2){
       error(_("pedigree: at least 2 rows.\n"));
    }else if(nr>INT_MAX){//useless, R won't pass int larger than INT_MAX
@@ -44,11 +43,15 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int seed){
       //paternal gamete
       ii = pedd[i*4+1] - 1;
       if(ii>=0){
-         u =  rand()/((double)RAND_MAX + 1);
+         GetRNGstate();
+         u =  unif_rand();
+         PutRNGstate();
          if(u<0.5) jj = 0; else jj = 1;
          data[i*nc*2] = data[ii*nc*2+jj];
          for(j=1;j<nc;j++){
-            u =  rand()/((double)RAND_MAX + 1);
+            GetRNGstate();
+            u =  unif_rand();
+            PutRNGstate();
             if(u<rr[j]) jj += 1; jj %= 2;
             data[i*nc*2+j*2] = data[ii*nc*2+j*2+jj];
          }
@@ -56,11 +59,15 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int seed){
       //maternal gamete
       ii = pedd[i*4+2] - 1;
       if(ii>=0){
-         u =  rand()/((double)RAND_MAX + 1);
+         GetRNGstate();
+         u =  unif_rand();
+         PutRNGstate();
          if(u<0.5) jj = 0; else jj = 1;
          data[i*nc*2+1] = data[ii*nc*2+jj];
          for(j=1;j<nc;j++){
-            u =  rand()/((double)RAND_MAX + 1);
+            GetRNGstate();
+            u =  unif_rand();
+            PutRNGstate();
             if(u<rr[j]) jj += 1; jj %= 2;
             data[i*nc*2+j*2+1] = data[ii*nc*2+j*2+jj];
          }
@@ -82,11 +89,10 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int seed){
  seed: take system time as seed if 0
  ---------------------------------------------------*/
 
-void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr,int seed){
+void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr){
    double u;
    int i,j;
    int ii,jj;
-   if(seed == 0) srand ( time(NULL) ); else srand(seed); //printf("%d\n",seed);
    if(nr<2){
       error(_("pedigree: at least 2 rows.\n"));
    }else if(nr>INT_MAX){
@@ -112,11 +118,15 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr,int 
          //maternal gamete
          ii = pedd[i*4+2] - 1;
          if(ii>=0){
-            u =  rand()/((double)RAND_MAX + 1);
+            GetRNGstate();
+            u =  unif_rand();
+            PutRNGstate();
             if(u<0.5) jj = 0; else jj = 1;
             data[i*nc*2+1] = data[ii*nc*2+jj];
             for(j=1;j<nc;j++){
-               u =  rand()/((double)RAND_MAX + 1);
+               GetRNGstate();
+               u =  unif_rand();
+               PutRNGstate();
                if(u<rr[j]) jj += 1; jj %= 2;
                data[i*nc*2+j*2+1] = data[ii*nc*2+j*2+jj];
             }
@@ -128,11 +138,15 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr,int 
          //paternal gamete
          ii = pedd[i*4+1] - 1;
          if(ii>=0){
-            u =  rand()/((double)RAND_MAX + 1);
+            GetRNGstate();
+            u =  unif_rand();
+            PutRNGstate();
             if(u<0.5) jj = 0; else jj = 1;
             data[i*nc*2] = data[ii*nc*2+jj];
             for(j=1;j<nc;j++){
-               u =  rand()/((double)RAND_MAX + 1);
+               GetRNGstate();
+               u =  unif_rand();
+               PutRNGstate();
                if(u<rr[j]) jj += 1; jj %= 2;
                data[i*nc*2+j*2] = data[ii*nc*2+j*2+jj];
             }
@@ -140,11 +154,15 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr,int 
          //maternal gamete
          ii = pedd[i*4+2] - 1;
          if(ii>=0){
-            u =  rand()/((double)RAND_MAX + 1);
+            GetRNGstate();
+            u =  unif_rand();
+            PutRNGstate();
             if(u<0.5) jj = 0; else jj = 1;
             data[i*nc*2+1] = data[ii*nc*2+jj];
             for(j=1;j<nc;j++){
-               u =  rand()/((double)RAND_MAX + 1);
+               GetRNGstate();
+               u =  unif_rand();
+               PutRNGstate();
                if(u<rr[j]) jj += 1; jj %= 2;
                data[i*nc*2+j*2+1] = data[ii*nc*2+j*2+jj];
             }

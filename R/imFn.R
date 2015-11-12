@@ -195,7 +195,6 @@ genoPr0<- function(mdat,nn,dist,pos,at,gr,method,verbose){
             method = as.integer(method),
             pdat = as.double(pdat),
             error = as.logical(err),
-            DUP = FALSE,
             PACKAGE="QTLRel")
    if(verbose)
       if(out$error) cat("individual",nn,"not imputable...")

@@ -20,7 +20,7 @@ lmGls<- function (formula, data, A, ...) {
     yy <- model.response(m)
        y<- A%*%yy
     xx <- model.matrix(Terms, m, contrasts)
-       x<- A%*%xx; colnames(x)[1]<- "Intercept"
+       x<- A%*%xx; colnames(x)[1]<- "(Intercept)"
     dtf<- data.frame(y=y,x)
     fit<- lm(y~.-1, data=dtf, ...)
 
@@ -38,7 +38,7 @@ scanOne.0 <-
 {
 # prdat$pr: n by ? by ? matrix, allele probabilities
 # vc: object from estVC or aicVC
-# test: “Chisq”, “F” or “Cp”
+# test: "Chisq", "F" or "Cp"
    diag.cov<- diag(cov)
    if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
       if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
@@ -185,7 +185,7 @@ scanOne.1 <-
 {
 # prdat$pr: n by 3 by ? matrix, conditional probabilities
 # vc: object from estVC or aicVC
-# test: “Chisq”, “F” or “Cp”
+# test: "Chisq", "F" or "Cp"
    diag.cov<- diag(cov)
    if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
       if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
@@ -334,7 +334,7 @@ scanOne.2 <-
 # gdat: n by ? matrix, marker data. Markers in columes!!!
 # vc: object from estVC or aicVC
 # intcover: covariates that interact with QTL
-# test: “Chisq”, “F” or “Cp”
+# test: "Chisq", "F" or "Cp"
    diag.cov<- diag(cov)
    if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
       if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
@@ -782,7 +782,7 @@ gls<- function(formula,data=NULL,vc=NULL){
    }else cov<- diag(nrow(as.matrix(yy)))
    A<- W.inv(cov)
 
-   x<- A%*%xx; colnames(x)[1]<- "Intercept"
+   x<- A%*%xx; colnames(x)[1]<- "(Intercept)"
    y<- A%*%yy
    dtf<- data.frame(y=y,x)
    mdl<- lm(y~.-1, data=dtf)

@@ -18,7 +18,7 @@ a data frame that contains all the variables in the formula.
 }
 }
 \value{
-a list of matrices that are associated with random effects.
+A list of matrices that are associated with random effects.
 }
 
 \examples{

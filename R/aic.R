@@ -506,6 +506,11 @@ mAIC.default <-
       if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance may not be positive definite.")
    dd<- abs(dd)
 
+   if(is.matrix(y) || is.data.frame(y)){
+      if(dim(y)[2]>1)
+         warning("y: only the first column will be analzed.")
+      y<- y[,1]
+   }
    if(!missing(x)){
       oTmp<- data.frame(y=y,x)
    }else oTmp<- data.frame(y=y)
@@ -843,6 +848,11 @@ mAIC.HK <-
       if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance: may not be positive definite.")
    dd<- abs(dd)
 
+   if(is.matrix(y) || is.data.frame(y)){
+      if(dim(y)[2]>1)
+         warning("y: only the first column will be analzed.")
+      y<- y[,1]
+   }
    if(!missing(x)){
       oTmp<- data.frame(y=y,x)
    }else oTmp<- data.frame(y=y)
