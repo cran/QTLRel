@@ -279,7 +279,12 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    DIR<- paste(".data",format(Sys.time(), "%Y%m%d%H%M%S"),sep="")
 #   unlink(DIR,recursive=TRUE)
    dir.create(DIR)
-   on.exit(unlink(DIR,recursive=TRUE))
+   on.exit({
+      unlink(DIR,recursive=TRUE,force=TRUE)
+      if(length(dir(pattern=paste("\\",DIR,sep=""),all.files=TRUE))>0)
+         cat(paste("  Exit successfully! But you may mannually remove folder '", DIR, "'\n",sep="")) else
+         cat("  Exit successfully!\n")
+   })
    str<- paste(DIR,"/idcoef",sep="")
    if(length(gr)<2){
       stop("Something wrong. check inter?")

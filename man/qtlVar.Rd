@@ -7,20 +7,20 @@ QTL Variance
 Estimate variance in a quantitative trait induced by QTL.
 }
 \usage{
-qtlVar(lrt,prdat,simulation=FALSE,nsim=25)
+qtlVar(lrt, prdat, simulation = FALSE, nsim = 25)
 }
 \arguments{
   \item{lrt}{
-a data frame (a, d, ...), where 'a' and 'd' are respectively additive and dominance effects.
+A data frame (a, d, ...), where 'a' and 'd' are respectively additive and dominance effects.
 }
   \item{prdat}{
-a 3-D array that provides probabilities of genotypes "AA", "AB" and "BB". If \code{prDat} is an object of \code{\link{genoProb}}, then \code{prdat} can be \code{prDat$pr}. 
+A 3-D array that provides probabilities of genotypes "AA", "AB" and "BB". If \code{prDat} is an object of \code{\link{genoProb}}, then \code{prdat} can be \code{prDat$pr}. 
 }
   \item{simulation}{
-whether to use simulations to estimate the variance explained by QTL.
+Whether to use simulations to estimate the variance explained by QTL.
 }
   \item{nsim}{
-number of simulations to perform if \code{simulation} is TRUE.
+Number of simulations to perform if \code{simulation} is TRUE.
 }
 }
 \value{

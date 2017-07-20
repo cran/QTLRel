@@ -2,6 +2,16 @@
 #include "xxx.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 
+void conGenoPrs(int*, int, double*, double*, int , int*, int, int, double*, int*);
+
+//extern "C"{
+   void conGenoPrc(int *mData,int *n,double *dist,double *pos,int *np,int* at,int *gr,int *method,double *pData,int *err){
+      //signal(SIGINT, &userInt);
+      conGenoPrs(mData,*n,dist,pos,*np,at,*gr,*method,pData,err);
+      //if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
+   }
+//}
+
 /*--------------------------------
  mapping function
  r: recombination rate
@@ -212,13 +222,5 @@ void conGenoPrs(int *mData,int n,double *dist,double *pos,int np,int* at, int gr
       }while(ii<np);
    }
 }
-
-//extern "C"{
-   void conGenoPrc(int *mData,int *n,double *dist,double *pos,int *np,int* at,int *gr,int *method,double *pData,int *err){
-      //signal(SIGINT, &userInt);
-      conGenoPrs(mData,*n,dist,pos,*np,at,*gr,*method,pData,err);
-      //if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
-   }
-//}
 
 

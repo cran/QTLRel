@@ -7,14 +7,14 @@ Estimate LOD Support Intervals
 Estimate LOD support intervals.
 }
 \usage{
-lodci(llk,cv=0,lod=1.5,drop=3)
+lodci(llk, cv = 0, lod = 1.5, drop = 3)
 }
 \arguments{
   \item{llk}{
-a data frame with components (chr, dist, y, ...), where "chr" is the chromosome on which the scanning locus is located, "dist" is the genetic or physical position of the scanning locus, and "y" is the test statistic.
+A data frame with components (chr, dist, y, ...), where "chr" is the chromosome on which the scanning locus is located, "dist" is the genetic or physical position of the scanning locus, and "y" is the test statistic.
 }
   \item{cv}{
-threshold. Reported support intervals cover at least one scanning locus where \code{llk$y > cv}.
+Threshold. Reported support intervals cover at least one scanning locus where \code{llk$y > cv}.
 }
   \item{lod}{
 \code{lod} (1.5 by default) LOD support intervals are reported when \code{llk$y} is converted to LOD score.
@@ -28,10 +28,10 @@ In case of multiple peaks on a chromosome, a peak has to satisfy: a) above the t
 }
 \value{
 A data frame with the following components:
-\item{chr}{the chromosome}
-\item{lower}{the lower bound}
-\item{upper}{the upper bound}
-\item{index}{indicates which scanning loci}
+\item{chr}{The chromosome}
+\item{lower}{The lower bound}
+\item{upper}{The upper bound}
+\item{index}{Indicates which scanning loci}
 }
 \examples{
 data(miscEx)

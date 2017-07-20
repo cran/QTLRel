@@ -1,6 +1,6 @@
 
 
-pk<- function(z, nx, ny = Inf){ # exaxt from R "stats"
+pk<- function(z, nx, ny = Inf){ # from R "stats"
    if(nx==Inf || ny==Inf){
       pp <- .C("pkolmogorov2x",
                p = as.double(z),
@@ -116,11 +116,14 @@ qFn <- function(t,x){
 }
 
 qqPlot.default <- function(y, x = "norm", ...,
+   type = "p", xlim=NULL, ylim=NULL,
    xlab = if(is.numeric(x)) deparse(substitute(x)) else x,
    ylab = deparse(substitute(y)),
    main = "Q-Q Plot",
-   type = "p", col = 1, lty = 2, lwd=1, pch=1, cex = 0.7,
-   plot.it = TRUE, confidence = .95, qqline = c("observed", "expected", "none"))
+   col = 1, lty = 2, lwd=1, pch=1, cex = 0.7,
+   plot.it = TRUE, confidence = .95,
+   qqline = c("observed", "expected", "none"),
+   add = FALSE)
 {
    xlab<- xlab
    qqline<- match.arg(qqline)
@@ -169,8 +172,13 @@ qqPlot.default <- function(y, x = "norm", ...,
    }
    if (plot.it){
       if(confidence){
-         plot(sx, sy, xlab = xlab, ylab = ylab, main = main,
-            type = type, pch = pch, col = col, cex = cex, lty = lty, lwd = lwd)
+         if(add){
+            points(sx, sy, type = type, pch = pch, col = col, cex = cex, lty = lty, lwd = lwd)
+         }else{
+            plot(sx, sy, type = type, xlim=xlim, ylim=ylim,
+               xlab = xlab, ylab = ylab, main = main,
+               pch = pch, col = col, cex = cex, lty = lty, lwd = lwd)
+         }
          idx <- (sy < qL) | (sy> qU)
 #         lines(sx[idx], sy[idx], type = type, pch = 4, cex = cex, lty = lty, lwd = lwd, col = col+1)
          points(sx[idx], sy[idx], pch = pch, cex = cex, col = col+1)
@@ -182,8 +190,13 @@ qqPlot.default <- function(y, x = "norm", ...,
          lines(sx, qL, col = col, lty = lty, lwd = lwd)
          lines(sx, qU, col = col, lty = lty, lwd = lwd)
       }else{
-         plot(sx, sy, xlab = xlab, ylab = ylab, main = main,
-            type = type, pch = pch, col = col, cex = cex, lty = lty, lwd = lwd)
+         if(add){
+            points(sx, sy, type = type, pch = pch, col = col, cex = cex, lty = lty, lwd = lwd)
+         }else{
+            plot(sx, sy, type = type, xlim=xlim, ylim=ylim,
+               xlab = xlab, ylab = ylab, main = main,
+               pch = pch, col = col, cex = cex, lty = lty, lwd = lwd)
+         }
          if(qqline == "expected" && !confidence){
             qqline<- "observed"
             warning("Observed qqline was drawn instead.")
@@ -198,11 +211,14 @@ qqPlot.default <- function(y, x = "norm", ...,
 }
 
 qqPlot <- function(y, x = "norm", ...,
+   type = "p", xlim=NULL, ylim=NULL, 
    xlab = if(is.numeric(x)) deparse(substitute(x)) else x,
    ylab = deparse(substitute(y)),
    main = "Q-Q Plot",
-   type = "p", col = 1, lty = 2, lwd=1, pch=1, cex = 0.7,
-   plot.it = TRUE, confidence = .95, qqline = c("observed", "expected", "none"))
+   col = 1, lty = 2, lwd=1, pch=1, cex = 0.7,
+   plot.it = TRUE, confidence = .95,
+   qqline = c("observed", "expected", "none"),
+   add = FALSE)
 {
    UseMethod("qqPlot")
 }

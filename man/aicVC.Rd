@@ -7,50 +7,50 @@ AIC Model Selection
 Select genetic variance components via Akaike's information criterion (AIC).
 }
 \usage{
-aicVC(y,x,v=vector("list",6),initpar,k=2,init=6,keep=6,
-   direction=c("forward","backward"),nit=25,verbose=FALSE,
-   method=c("Nelder-Mead","BFGS","CG","SANN"),control=list(),
-   hessian=FALSE)
+aicVC(y, x, v = vector("list", 6), initpar, k = 2, init = 6, keep = 6,
+   direction = c("forward", "backward"), nit = 25, verbose = FALSE,
+   method = c("Nelder-Mead", "BFGS", "CG", "SANN"), control = list(),
+   hessian = FALSE)
 }
 \arguments{
   \item{y}{
-a numeric vector or a numeric matrix of one column (representing a phenotype for instance).
+A numeric vector or a numeric matrix of one column (representing a phenotype for instance).
 }
   \item{x}{
-a data frame or matrix, representing covariates if not missing.
+A data frame or matrix, representing covariates if not missing.
 }
   \item{v}{
-a list of variance components (AA, DD, HH, AD, MH, EE, ...) where "AA" and "DD" are respectively additive and dominance genetic matrices, "HH", "AD" and "MH" are other genetic matrices that one may be interested in (see "details"), "EE" is the residual matrix that is usually assumed to be an identity matrix, and "..." are other random components of interest. If a genetic component is not considered, it should be set to NULL.
+A list of variance components (AA, DD, HH, AD, MH, EE, ...) where "AA" and "DD" are respectively additive and dominance genetic matrices, "HH", "AD" and "MH" are other genetic matrices that one may be interested in (see "details"), "EE" is the residual matrix that is usually assumed to be an identity matrix, and "..." are other random components of interest. If a genetic component is not considered, it should be set to NULL.
 }
   \item{initpar}{
-optional initial parameter values.
+Optional initial parameter values.
 }
   \item{k}{
-penalty on a parameter. The selection criterion is the known "AIC" if \code{k = 2} and is "BIC" if \code{k = log(n)} where "n" is the sample size.
+Penalty on a parameter. The selection criterion is the known "AIC" if \code{k = 2} and is "BIC" if \code{k = log(n)} where "n" is the sample size.
 }
   \item{init}{
-indicator of the initial model pertaining to genetic variance components. For instance, c(1,2,6) indicates the initial model includes "AA", "DD" and "EE". By default, only "EE" is considered.
+Indicator of the initial model pertaining to genetic variance components. For instance, c(1,2,6) indicates the initial model includes "AA", "DD" and "EE". By default, only "EE" is considered.
 }
  \item{keep}{
-indicator of which variance components should be forced into the final model. The default is "EE".
+Indicator of which variance components should be forced into the final model. The default is "EE".
 }
   \item{direction}{
-the mode of search. Either "forward" or "backward" with default "forward".
+The mode of search. Either "forward" or "backward" with default "forward".
 }
   \item{nit}{
-number of iterations to call \code{\link{optim}} for optimization.
+Number of iterations to call \code{\link{optim}} for optimization.
 }
   \item{verbose}{
-a logical variable. True if ones wants to track the process for monitoring purpose.
+A logical variable. True if ones wants to track the process for monitoring purpose.
 }
   \item{method}{
-the optimization method to be used. See \code{\link{optim}} for details.
+The optimization method to be used. See \code{\link{optim}} for details.
 }
   \item{control}{
-a list of control parameters to be passed to \code{\link{optim}}.
+A list of control parameters to be passed to \code{\link{optim}}.
 }
   \item{hessian}{
-logical. Should a numerically differentiated Hessian matrix be returned?
+Logical. Should a numerically differentiated Hessian matrix be returned?
 }
 }
 \details{
@@ -60,9 +60,9 @@ Function \code{\link{estVC}} is called by the above function to estimate the par
 }
 \value{
 \item{aic}{AIC of the final model.}
-\item{model}{gives parameter estimates, log-likihood, and other information.}
-\item{lik}{log-likelihood of the model selected at each intermediate step.}
-\item{trace}{indicates which variance components were selected at each intermediate step.}
+\item{model}{Gives parameter estimates, log-likihood, and other information.}
+\item{lik}{Log-likelihood of the model selected at each intermediate step.}
+\item{trace}{Indicates which variance components were selected at each intermediate step.}
 }
 \references{
 Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components of quantitative traits in inbred populations. Am. J. Hum. Genet. 141, 629-650.

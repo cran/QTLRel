@@ -8,42 +8,42 @@ Multiple QTL AIC
 Multiple QTL model selection by AIC criterion.
 }
 \usage{
-mAIC(y,x,gdat,prdat=NULL,vc=NULL,chrIdx,xin,k=2,
-   direction=c("both","backward","forward"),ext=FALSE,verbose=FALSE)
+mAIC(y, x, gdat, prdat = NULL, vc = NULL, chrIdx, xin, k = 2,
+   direction = c("both","backward","forward"), ext = FALSE, verbose = FALSE)
 }
 \arguments{
  \item{y}{
-a numeric vector or a numeric matrix of one column (representing a phenotype for instance).
+A numeric vector or a numeric matrix of one column (representing a phenotype for instance).
 }
   \item{x}{
-a data frame or matrix, representing covariates if not missing.
+A data frame or matrix, representing covariates if not missing.
 }
   \item{gdat}{
-genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Numeric coding of genotype is treated as numeric. Ignored if \code{prdat} is an object from \code{\link{genoProb}}.
+Genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Numeric coding of genotype is treated as numeric. Ignored if \code{prdat} is an object from \code{\link{genoProb}}.
 }
   \item{vc}{
-an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness. The scan will assume no polygenic variation if \code{vc} is NULL.
+An object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness. The scan will assume no polygenic variation if \code{vc} is NULL.
 }
   \item{prdat}{
-an object from \code{\link{genoProb}}.
+An object from \code{\link{genoProb}}.
 }
   \item{chrIdx}{
-chromsome index of markers in columns of \code{gdat} if given. Ignored if \code{prdat} is an object from \code{\link{genoProb}}.
+Chromsome index of markers in columns of \code{gdat} if given. Ignored if \code{prdat} is an object from \code{\link{genoProb}}.
 }
   \item{xin}{
-vector indicating whether a locus is already in the model.
+Vector indicating whether a locus is already in the model.
 }
   \item{k}{
-penalty on a parameter. The selection criterion is the known "AIC" if \code{k = 2} and is "BIC" if \code{k = log(n)} where "n" is the sample size.
+Penalty on a parameter. The selection criterion is the known "AIC" if \code{k = 2} and is "BIC" if \code{k = log(n)} where "n" is the sample size.
 }
   \item{direction}{
-the mode of search: "both", "forward" or "backward" with default "both".
+The mode of search: "both", "forward" or "backward" with default "both".
 }
   \item{ext}{
-a logical variable. True if ones wants more exhaustive search.
+A logical variable. True if ones wants more exhaustive search.
 }
   \item{verbose}{
-a logical variable. True if ones wants to track the process for monitoring purpose.
+A logical variable. True if ones wants to track the process for monitoring purpose.
 }
 }
 \details{

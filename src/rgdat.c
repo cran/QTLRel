@@ -5,10 +5,10 @@
 void rgeno1();
 void rgeno2();
 //extern "C"{
-   void rgdata(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *seed){
+   void rgdata(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb){
       rgeno1(gdata,*nr,*nc,*ninit,pedigree,recomb);
    }
-   void rgdata2(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *xchr,int *seed){
+   void rgdata2(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb,int *xchr){
       rgeno2(gdata,*nr,*nc,*ninit,pedigree,recomb,*xchr);
    }
 //}
@@ -22,7 +22,6 @@ void rgeno2();
     id=1,2,...,nr
  recomb: vector of length nc, recomb[j] is the recombination rate
     between SNP[j-1] and SNP[j]
- seed: take system time as seed if 0
  ---------------------------------------------------*/
 void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr){
    double u;
@@ -86,7 +85,6 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr){
  recomb: vector of length nc, recomb[j] is the recombination rate
     between SNP[j-1] and SNP[j]
  xchr: 1 if it is x-chromosome
- seed: take system time as seed if 0
  ---------------------------------------------------*/
 
 void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr){

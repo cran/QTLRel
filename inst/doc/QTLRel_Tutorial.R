@@ -1,36 +1,11 @@
 
-pedF8<- read.table("pedigree.txt", header=T, check.names=F)
-gmapF8<- read.csv("genetic map F8.csv", header=T, check.names=F)
-   colnames(gmapF8)<- c("snp","chr","dist","phyPos37")
-gdatF8<- read.csv("genotype F8.csv", header=T, check.names=F)
-   gmapF8<- gmapF8[is.element(gmapF8$snp,intersect(colnames(gdatF8),gmapF8$snp)),]
-   gdatF8<- gdatF8[,is.element(colnames(gdatF8),intersect(colnames(gdatF8),gmapF8$snp))]
-pdatF8<- read.table("phenotype F8.txt", sep="\t", header=T, check.names=F)
-sum(!is.element(pdatF8$id,pedF8$id))
-sum(!is.element(gdatF8$id,pedF8$id))
-ids<- pdatF8$id[is.element(pdatF8$id,pedF8$id)]
-id<- sample(ids, 500) # randomly choose 500 individuals
-
-gdatF8<- gdatF8[match(id,gdatF8$id),]
-   gdatF8<- gdatF8[,-1]
-   rownames(gdatF8)<- id
-pdatF8<- pdatF8[match(id,pdatF8$id),]
-   pdatF8<- pdatF8[,-1]
-   rownames(pdatF8)<- id
-pdatF8.<- pdatF8[,c("Sex","FCAge", "WeightD1", "Cage.ID")]
-colnames(pdatF8.)<- c("sex","age","bwt","cage","pgm")
-pdatF8.[1:5,]
-pdatF8<- pdatF8.
-
-save(pedF8, gdatF8, pdatF8, file="QTLRelEx.RData")
-
 #########################
 # identity coefficients #
 #########################
 
 library(QTLRel)
 
-load("QTLRelEx.RData")
+data(miscEx)
 
 # only interested individuals in F8
 id<- rownames(pdatF8)

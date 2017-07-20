@@ -12,33 +12,33 @@ Plot mapping results.
 \usage{
 \method{plot}{scanOne}(x,...)
 
-plotit(lrt,cv,bychr=FALSE,chr.labels=TRUE,type="p",lty=NULL,
-   col=NULL,pch=NULL,cex=NULL,...)
+plotit(lrt, cv, bychr = FALSE, chr.labels = TRUE, type = "p", lty = NULL,
+   col = NULL, pch = NULL, cex = NULL, ...)
 }
 \arguments{
   \item{x}{
-object from \code{\link{scanOne}} or \code{\link{scanTwo}}.
+Object from \code{\link{scanOne}} or \code{\link{scanTwo}}.
 }
   \item{lrt}{
-a data frame with (chr, dist, y,...) or (chr, dist, y, group,...), where "chr" represents chromosome, "dist" position on the chromosome, "y" the test statistic.
+A data frame with (chr, dist, y,...) or (chr, dist, y, group,...), where "chr" represents chromosome, "dist" position on the chromosome, "y" the test statistic.
 }
   \item{cv}{
-threshold to be drawn on the plot.
+Threshold to be drawn on the plot.
 }
   \item{cex}{
-see \code{\link{par}}.
+See \code{\link{par}}.
 }
   \item{bychr}{
-a logical variable. If true, the plot will be displayed per chromosomes.
+A logical variable. If true, the plot will be displayed per chromosomes.
 }
   \item{chr.labels}{
-a logical variable. If true, the chromosome names will be drawn.
+A logical variable. If true, the chromosome names will be drawn.
 }
   \item{type,lty,col,pch}{
 See \code{\link{plot.default}}.
 }
   \item{\dots}{
-other options passed to R plot function. To call \code{\link{plot}} to plot results of \code{\link{scanOne}}, one may need to provide a genetic map \code{gmap} that should be data frame (snp, chr, dist, ...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
+Other options passed to R plot function. To call \code{\link{plot}} to plot results of \code{\link{scanOne}}, one may need to provide a genetic map \code{gmap} that should be data frame (snp, chr, dist, ...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
 
 }
 }

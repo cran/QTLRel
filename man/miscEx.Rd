@@ -12,15 +12,15 @@
 \description{
 AIL F8 data include the following:
 
-"gmF8": a list with elements inbreeding coefficients "ib", additive genetic matrix "AA", dominance genetic matrix "DD" and other genetic matrices.
+"gmF8": A list with elements inbreeding coefficients "ib", additive genetic matrix "AA", dominance genetic matrix "DD" and other genetic matrices.
 
-"pedF8": pedigree date.
+"pedF8": Pedigree date.
 
-"gmapF8: genetic map.
+"gmapF8: Genetic map.
 
-"gdatF8": genotype data.
+"gdatF8": Genotype data.
 
-"pdatF8": phenotype data.
+"pdatF8": Phenotype data.
 }
 \usage{
 data(miscEx)

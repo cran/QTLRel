@@ -7,30 +7,30 @@ Probability of a Genotype.
 Calculate the probability of a genotype at a locus conditional on the genotypes of its flanking markers in advance intercross lines (AIL).
 }
 \usage{
-genoProb(gdat,gmap,step=Inf,gr=2,pos=NULL,method=c("Haldane",
-   "Kosambi"),verbose = FALSE)
+genoProb(gdat, gmap, step = Inf, gr = 2, pos = NULL, method=c("Haldane",
+   "Kosambi"), verbose = FALSE)
 }
 \arguments{
   \item{gdat}{
-genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Each entry should be 1, 2, 3 or 0, corresponding to "AA", "AB", "BB" or missing genotype.
+Genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Each entry should be 1, 2, 3 or 0, corresponding to "AA", "AB", "BB" or missing genotype.
 }
   \item{gmap}{
-a genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
+A genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
 }
   \item{step}{
-the maximum "cumulative" distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
+The maximum "cumulative" distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
 }
   \item{gr}{
-the generation under consideration.
+The generation under consideration.
 }
   \item{pos}{
-data frame (chr, dist, snp, ...). If given, \code{step} will be ignored.
+Data frame (chr, dist, snp, ...). If given, \code{step} will be ignored.
 }
   \item{method}{
-whether "Haldane" or "Kosambi" mapping function should be used.
+Whether "Haldane" or "Kosambi" mapping function should be used.
 }
   \item{verbose}{
-a logical variable. If TRUE, certain information will be printed out during calculation.
+A logical variable. If TRUE, certain information will be printed out during calculation.
 }
 }
 \details{
@@ -38,7 +38,7 @@ The "cumulative" genetic distance between any two adjacent loci for which probab
 }
 \value{
 Probabilities for genotypes as well as genetic map information (snp,chr,dist)
-\item{pr}{a 3-D array with the first dimension corresponding to that of \code{gdat}, the second to three genotype and the third to the putative loci. The probabilities will be -1 if not imputable, which happens when the genotype data is missing at all loci on the chromosome.}
+\item{pr}{A 3-D array with the first dimension corresponding to that of \code{gdat}, the second to three genotype and the third to the putative loci. The probabilities will be -1 if not imputable, which happens when the genotype data is missing at all loci on the chromosome.}
 }
 \note{
 Currently only suitable for advanced intercross lines.

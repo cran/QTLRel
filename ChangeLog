@@ -1,4 +1,5 @@
 
+2016/02/01 modify 'pedF8' in examples to produce desired identify coefficients
 2015/11/12 remove compilation notes
 2014/04/04 fix a small bug
 2013/12/09 fix warning on '.First.lib()'

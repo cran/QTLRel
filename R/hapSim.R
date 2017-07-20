@@ -51,9 +51,7 @@
    nchr<- length(chr)
    out<- NULL
    for(n in 1:nchr){
-      seed<- runif(1,min=0,max=2^31-1)
-         seed<- round(seed,0)
-      tmp<- .hapSim0(ped,gmap,chr[n],hap,seed,genotype)
+      tmp<- .hapSim0(ped,gmap,chr[n],hap,genotype)
       out<- cbind(out,tmp)
    }
    out<- out[ii,];
@@ -68,7 +66,7 @@
    }
 }
 
-.hapSim0<- function(pedd,gmap,chr,hap,seed,genotype){
+.hapSim0<- function(pedd,gmap,chr,hap,genotype){
    pedd<- pedd[,c("id","sire","dam","sex")]
    if(is.numeric(pedd[,"sex"])){
       pedd[,"sex"]<- pedd[,"sex"]==1
@@ -82,7 +80,6 @@
    nc<- sum(idx)
    xchr<- FALSE
       if(chr=="x" || chr=="X") xchr<- TRUE
-   if(missing(seed)) seed<- 0
    gdat<- matrix(-99,nrow=nr,ncol=2*nc)
    if(!missing(hap)){
       ninit<- nrow(hap)

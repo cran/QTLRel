@@ -11,7 +11,7 @@ blup(object)
 }
 \arguments{
   \item{object}{
-an object from \code{\link{estVC}} or \code{\link{aicVC}}.
+An object from \code{\link{estVC}} or \code{\link{aicVC}}.
 }
 }
 \value{

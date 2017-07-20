@@ -759,11 +759,17 @@ scanTwo.default<-
 }
 
 # generalized least squares estimates
-gls<- function(formula,data=NULL,vc=NULL){
-   if(is.null(data)){
-      xx<- model.matrix(formula)
-   }else xx<- model.matrix(formula,data)
-   yy<- model.response(model.frame(formula,data))
+gls<- function(formula,data=NULL,vc=NULL,test=c("none","F")){
+   cl <- match.call()
+   mf <- match.call(expand.dots = FALSE)
+   m <- match(c("formula", "data", "subset", "weights", "na.action", "offset"), names(mf), 0L)
+   mf <- mf[c(1L, m)]
+      mf$drop.unused.levels <- TRUE
+      mf[[1L]] <- quote(stats::model.frame)
+      mf <- eval(mf, parent.frame())
+   mt <- attr(mf, "terms")
+   yy <- model.response(mf, "numeric")
+   xx <- model.matrix(mt, mf)
 
    nr<- nrow(xx)
    if(!is.null(vc)){
@@ -782,13 +788,21 @@ gls<- function(formula,data=NULL,vc=NULL){
    }else cov<- diag(nrow(as.matrix(yy)))
    A<- W.inv(cov)
 
-   x<- A%*%xx; colnames(x)[1]<- "(Intercept)"
-   y<- A%*%yy
+   y<- A%*%yy; attributes(y)<- attributes(yy)
+   x<- A%*%xx; attributes(x)<- attributes(xx)
    dtf<- data.frame(y=y,x)
-   mdl<- lm(y~.-1, data=dtf)
-   mdl$data<- dtf
+
+   mdl<- lm.fit(x, y, singular.ok = TRUE)
+   class(mdl) <- "lm"
+   #mdl$data<- dtf
+   mdl$xlevels <- .getXlevels(mt, mf)
+   mdl$call <- match.call()
+   mdl$terms <- mt
+   mdl$model<- mf
 
 #   print(logLik(mdl))
-   summary(mdl)$coeff
+   test<- match.arg(test)
+   if(test=="none") summary(mdl)$coeff else
+      anova(mdl, test=test)
 }
 

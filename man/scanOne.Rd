@@ -7,40 +7,40 @@ Genome Scan for QTL
 Evaluate log-likelihood ratio test statistics or P-values at scanning loci along the genome.
 }
 \usage{
-scanOne(y, x, gdat, prdat=NULL, vc=NULL, intcovar=NULL,
-   numGeno=FALSE, test=c("None","F","Chisq"),
-   minorGenoFreq=0, rmv=TRUE)
+scanOne(y, x, gdat, prdat = NULL, vc = NULL, intcovar = NULL,
+   numGeno = FALSE, test = c("None","F","Chisq"),
+   minorGenoFreq = 0, rmv = TRUE)
 }
 \arguments{
   \item{y}{
-a numeric vector or a numeric matrix of one column (representing a phenotype for instance).
+A numeric vector or a numeric matrix of one column (representing a phenotype for instance).
 }
   \item{x}{
-a data frame or matrix, representing covariates if not missing.
+A data frame or matrix, representing covariates if not missing.
 }
   \item{gdat}{
-genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Optional if an object \code{prdat} from \code{\link{genoProb}} is used as an argument.
+Genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Optional if an object \code{prdat} from \code{\link{genoProb}} is used as an argument.
 }
   \item{prdat}{
-an object from \code{\link{genoProb}}, or in the same form.
+An object from \code{\link{genoProb}}, or in the same form.
 }
   \item{vc}{
-an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness and environment.
+An object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness and environment.
 }
   \item{intcovar}{
 Covariates that interact with QTL.
 }
   \item{numGeno}{
-whether to treat numeric coding of genotypes as numeric.
+Whether to treat numeric coding of genotypes as numeric.
 }
   \item{test}{
 "None", "F" or "Chisq".
 }
   \item{minorGenoFreq}{
-specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
+Specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
 }
   \item{rmv}{
-a logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
+A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
 }
 }
 \details{
@@ -52,7 +52,7 @@ It is possible to extend the Haley-Knott approach to multiple-allelic cases unde
 A list with at least the following components:
    \item{p}{P-value at the snp (marker) if \code{test} is "F" or "Chisq", or the log-likelihood ratio statistic at the SNP (marker) if "test" is "None"}
    \item{v}{Percentage of variation explained by QTL related effects at the snp (marker)}
-   \item{parameters}{estimated parameters at all scanning loci, including additive effect \code{a} and dominance effect \code{d} if \code{prdat} is not NULL}
+   \item{parameters}{Estimated parameters at all scanning loci, including additive effect \code{a} and dominance effect \code{d} if \code{prdat} is not NULL}
 }
 \references{
 Haley, C. S., and S. A. Knott (1992). A simple regression method for mapping quantitative trait loci in line crosses using flanking markers. Heredity 69: 315-324.

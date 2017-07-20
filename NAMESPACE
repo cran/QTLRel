@@ -10,14 +10,15 @@ export(aicVC,mAIC,
         cic,ibs,kinship,genMatrix)
 
 export(rel2qtl, qtl2rel)
+useDynLib(QTLRel, .registration = TRUE, .fixes = "C_")
 
 importFrom("gdata", "reorder.factor", "trim")
 importFrom("lattice", "xyplot", "panel.xyplot", "panel.abline", "panel.superpose")
 importFrom("grDevices", "terrain.colors")
 importFrom("graphics", "abline", "axis", "image", "lines", "mtext",
      "par", "plot", "points")
-importFrom("stats", "anova", "approx", "contrasts", "formula", "lm",
-     "lm.wfit", "logLik", "model.frame", "model.matrix",
+importFrom("stats", "anova", "approx", "contrasts", "formula", ".getXlevels",
+     "lm.fit", "lm", "lm.wfit", "logLik", "model.frame", "model.matrix",
      "model.response", "nlm", "nlminb", "optim", "optimize",
      "ppoints", "quantile", "reorder", "rmultinom", "runif",
      "terms", "uniroot", "var")

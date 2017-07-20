@@ -11,14 +11,14 @@ genMatrix(x)
 }
 \arguments{
   \item{x}{
-an object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3) without missing genotypes.
+An object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3) without missing genotypes.
 }
 }
 \value{
-\item{AA}{additive genetic matrix.}
-\item{DD}{dominance genetic matrix.}
-\item{AD,HH,MH}{other three genetic matrices (see Abney et. al. 2000).}
-\item{ib}{inbreeding coefficients.}
+\item{AA}{Additive genetic matrix.}
+\item{DD}{Dominance genetic matrix.}
+\item{AD,HH,MH}{Other three genetic matrices (see Abney et. al. 2000).}
+\item{ib}{Inbreeding coefficients.}
 }
 \references{
 Abney, M., M. S. McPeek, and C. Ober (2000). Estimation of variance components of quantitative traits in inbred populations. Am. J. Hum. Genet. 141, 629-650.

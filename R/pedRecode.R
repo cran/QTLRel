@@ -33,12 +33,13 @@ pedRecode <- function(ped,ids){
       idx<- !is.element(ids,ped$id)
       if(any(idx)){
          print(ids[idx])
-         stop("Check the above IDs: out of range.")
+         warning("Above IDs are out of range and ignored!")
       }
+      ids<- ids[!idx]
 
       idTmp<- ids
       idx<- rep(FALSE,nrow(ped))
-      while(1){
+      while(TRUE){
          idxTmp<- is.element(ped$id,idTmp)
          idx<- idx | idxTmp
          idx<- idx | is.element(ped$id,ped$sire[idxTmp]) |
@@ -53,6 +54,7 @@ pedRecode <- function(ped,ids){
 
    if(is.null(ped$generation))
       ped<- pedRecode.0(ped)
+   ped$generation<- trim(ped$generation)
    ids<- paste(ped$generation,ped$id,sep="~")
    uids<- unique(ids)
       idx<- match(uids,ids)
@@ -97,22 +99,35 @@ pedRecode <- function(ped,ids){
       ped<- data.frame(id=idd$index[-c(1:2)],
                        sire=sire,
                        dam=dam,
-                       sex=ped$sex,
+                       sex=trim(ped$sex),
                        generation=ped$generation,
                        old.id=ped$id)
       ii<- match(ped$sire,ped$id)
          ii<- ii[!is.na(ii)]
-      if(length(ii)>0) if(any(ped$sex[ii]!=1 & ped$sex[ii]!="M")){
-         cat("   Suppose 1 or \"M\" stands for male...\n")
-         print(ped[ii,][ped$sex[ii]!=1 & ped$sex[ii]!="M",])
-         stop("Check above sires for errors in sex...")
+      if(length(ii)>0){
+         idx<- !is.element(ped$sex[ii], c("0", "1", "M", "Male"))
+            idx<- unique(ii[idx])
+         if(any(idx)){
+            cat("   Suppose 1, M or Male stands for male...\n")
+            cat("   --------------------------------------\n")
+            print(ped[idx,])
+            cat("   --------------------------------------\n")
+            cat("   Above should be sire(s)...\a\n\n")
+         }
       }
       jj<- match(ped$dam,ped$id)
          jj<- jj[!is.na(jj)]
-      if(length(jj)>0) if(any(ped$sex[jj]==1 || ped$sex[jj]=="M")){
-         cat("   Suppose !0 or \"!M\" stands for female...\n")
-         print(ped[jj,][ped$sex[jj]==1 || ped$sex[jj]=="M",])
-         stop("Check above dams for errors in sex...")
+      if(length(jj)>0){
+         idx<- is.element(ped$sex[jj], c("1", "M", "Male"))
+            # idx<- idx | is.na(ped$sex[jj])
+            idx<- unique(jj[idx])
+         if(any(idx)){
+            cat("   Suppose !0, !1, !M and !Male stands for female...\n")
+            cat("   --------------------------------------\n")
+            print(ped[idx,])
+            cat("   --------------------------------------\n")
+            cat("   Above should be dam(s)...\a\n\n")
+         }
       }
    }
    idx<- (ped$sire > ped$id) | (ped$dam > ped$id)

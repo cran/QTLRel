@@ -8,37 +8,37 @@ Simulate distribution under the hypothesis of no QTL by permutation (of genotypi
 }
 \usage{
 nullSim(y, x, gdat, prdat, ped, gmap, hap,
-	method=c("permutation","gene dropping"), vc=NULL, intcovar=NULL,
-	test = c("None","F","Chisq"), minorGenoFreq=0.05, rmv=TRUE,
-	recode.pedigree=FALSE, gr=2, ntimes=10)
+	method = c("permutation","gene dropping"), vc = NULL, intcovar = NULL,
+	test = c("None","F","Chisq"), minorGenoFreq = 0.05, rmv = TRUE,
+	recode.pedigree = FALSE, gr = 2, ntimes = 10)
 }
 \arguments{
   \item{y}{
-a numeric vector or a numeric matrix of one column (representing a phenotype for instance).
+A numeric vector or a numeric matrix of one column (representing a phenotype for instance).
 }
   \item{x}{
-a data frame or matrix, representing covariates if not missing.
+A data frame or matrix, representing covariates if not missing.
 }
   \item{gdat}{
-genotype data without missing values. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. Ignored in the case of gene dropping.
+Genotype data without missing values. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. Ignored in the case of gene dropping.
 }
   \item{prdat}{
-an object from \code{\link{genoProb}}, or in the same form.
+An object from \code{\link{genoProb}}, or in the same form.
 }
   \item{ped}{
-a pedigree, which is a data frame (id, sex, sire, dam, ...). In "sex", male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ... Note that 0 is reserved for missing values. Ignored in the case of permutation.
+A pedigree, which is a data frame (id, sex, sire, dam, ...). In "sex", male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ... Note that 0 is reserved for missing values. Ignored in the case of permutation.
 }
   \item{gmap}{
-a genetic map. Should be data frame (snp, chr, dist, ...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome. Ignored in the case of permutation.
+A genetic map. Should be data frame (snp, chr, dist, ...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome. Ignored in the case of permutation.
 }
   \item{hap}{
-founders' haplotype data if not missing. Rows correspond to all founders, which should be in the first places in the pedigree \code{ped}, in the exact order and columns correspond to loci in the genetic map \code{gmap} in the exact order. For an individual, the haplotype should be (f1 m1 f2 m2 ...) where fi is the allele from father at the i-th locus and mi is the allele from mother at the i-th locus. Elements should be non-negative integers that are not larger than 16384. If missing, two founders with alleles 1 and 2 are assumed.
+Founders' haplotype data if not missing. Rows correspond to all founders, which should be in the first places in the pedigree \code{ped}, in the exact order and columns correspond to loci in the genetic map \code{gmap} in the exact order. For an individual, the haplotype should be (f1 m1 f2 m2 ...) where fi is the allele from father at the i-th locus and mi is the allele from mother at the i-th locus. Elements should be non-negative integers that are not larger than 16384. If missing, two founders with alleles 1 and 2 are assumed.
 }
   \item{method}{
-permutation or gene dropping.
+Permutation or gene dropping.
 }
   \item{vc}{
-an object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness. The scan will assume no polygenic variation if \code{vc} is NULL.
+An object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness. The scan will assume no polygenic variation if \code{vc} is NULL.
 }
   \item{intcovar}{
 Covariates that interact with QTL.
@@ -47,19 +47,19 @@ Covariates that interact with QTL.
 "None", "F" or "Chisq".
 }
   \item{minorGenoFreq}{
-specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
+Specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
 }
   \item{rmv}{
-a logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
+A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
 }
   \item{recode.pedigree}{
-a logical variable. True if the pedigree needs to be recoded.
+A logical variable. True if the pedigree needs to be recoded.
 }
   \item{gr}{
-the generation under consideration.
+The generation under consideration.
 }
   \item{ntimes}{
-number of simulations.
+Number of simulations.
 }
 }
 \details{

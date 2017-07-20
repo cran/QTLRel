@@ -6,10 +6,13 @@ inf<- max(1e+38,sqrt(.Machine$double.xmax))
 fv <- function(vv){
 # vv: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
    nms<- c("AA","DD","HH","AD","MH","EE")
-   if(any(!is.element(nms,names(vv)))){
-      cat("Assume components are in the order AA,DD,HH,AD,MH,EE...\n")
-      names(vv)[1:6]<- nms
+   if(is.matrix(vv)){
+      cat("   Assume the input matrix is AA\n")
+      vv<- list(AA=vv,EE=diag(nrow(vv)))
+   }else if(any(!is.element(nms,names(vv)))){
+      cat("   Assume none of HH,AD and MH are incorporated...\n")
    }
+
    vvTmp<- vv
       vvTmp$AA<- vvTmp$DD<- vvTmp$HH<- vvTmp$AD<- vvTmp$MH<- vvTmp$EE<- NULL
    vv<- list(AA=vv$AA,
@@ -130,8 +133,7 @@ estVC.1 <-
 # method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
-   fs<- control$fnscale
-      if(!is.null(fs) && fs<0) fs<- -1 else fs<- 1
+   control$fnscale<- 1
 
    ny<- length(y)
    nb<- ncol(x)
@@ -144,13 +146,7 @@ estVC.1 <-
       }
    }
 
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
-
+   Sf<- function(par,a){
       S<- matrix(0,nrow=a$ny,ncol=a$ny)
       for(i in 1:a$ov$nv){
          if(a$ov$nnl[i]){
@@ -159,22 +155,33 @@ estVC.1 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(!all(is.finite(S))) return(fs*inf)
+      S
+   }
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- Sf(par,a)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(fs*inf)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
       tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(fs*inf)
+      if(!is.finite(tmp)) return(inf)
 
-      fs*tmp
+      tmp
    }
 
    oo<- list(par=initpar)
    val1<- val2<- inf
    while(nit>0){
-      oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),method=method,control=control,hessian=FALSE)
+      oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method=method,
+            control=control, hessian=FALSE)
       if(ov$nnl[4]){
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
          if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
@@ -187,7 +194,8 @@ estVC.1 <-
          break
    }
 
-   oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),method="Nelder-Mead",control=control,hessian=hessian)
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control,hessian=FALSE)
       if(ov$nnl[4]){
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
          if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
@@ -197,9 +205,42 @@ estVC.1 <-
             if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
          }
       }
+
+if(hessian){
+   control$maxit<- 1
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- matrix(0,nrow=a$ny,ncol=a$ny)
+      for(i in 1:a$ov$nv){
+         if(a$ov$nnl[i]){
+            if(i!=4){
+               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+         }
+      }
+      if(!all(is.finite(S))) return(inf)
+
+      u<- x%*%b
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp)) return(inf)
+
+      tmp
+   }
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=hessian)
+   oo$hessian<- -oo$hessian
+}
    oo$value<- as.numeric(oo$value)
 
-   oo$value<- -oo$value #-fs*oo$value
+   oo$value<- -oo$value
    attributes(oo$value)<- NULL
    names(oo$par)[1:nb]<- colnames(x)
    names(oo$par)[nb+1:sum(ov$nnl)]<- names(ov$v[ov$nnl])
@@ -233,8 +274,7 @@ estVC.2 <-
 # method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
-   fs<- control$fnscale
-      if(!is.null(fs) && fs<0) fs<- -1 else fs<- 1
+   control$fnscale<- 1
 
    ny<- length(y)
    nb<- ncol(x)
@@ -247,13 +287,7 @@ estVC.2 <-
       }
    }
 
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
-
+   Sf<- function(par,a){
       S<- matrix(0,nrow=a$ny,ncol=a$ny)
       for(i in 1:a$ov$nv){
          if(a$ov$nnl[i]){
@@ -262,16 +296,26 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(!all(is.finite(S))) return(fs*inf)
+      S
+   }
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- Sf(par,a)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(fs*inf)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
       tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(fs*inf)
+      if(!is.finite(tmp)) return(inf)
 
-      fs*tmp
+      tmp
    }
    optfct.b<- function(a=list(par=initpar,nb=nb,ny=ny,ov=ov)){
       S<- matrix(0,nrow=a$ny,ncol=a$ny)
@@ -311,16 +355,16 @@ estVC.2 <-
             }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
          }
       }
-      if(!all(is.finite(S))) return(fs*inf)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(fs*inf)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
       tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(fs*inf)
+      if(!is.finite(tmp)) return(inf)
 
-      fs*tmp
+      tmp
    }
 
    oo<- list(par=initpar)
@@ -329,7 +373,8 @@ estVC.2 <-
    if(length(initpar) < nb+2){
       while(nit>0){
          pparTmp[1:nb]<- optfct.b(a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-         oo<- optimize(optfct.v,interval=c(-1000,1000),a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),maximum=ifelse(fs<0,TRUE,FALSE))
+         oo<- optimize(optfct.v, interval=c(-1000,1000), a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),
+               maximum=FALSE)
             pparTmp[-c(1:nb)]<- oo$objective
             oo<- list(par=pparTmp, value=oo$minimum)
             if(ov$nnl[4]){
@@ -364,7 +409,8 @@ estVC.2 <-
          nit<- nit-1
       }
    }
-   oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),method="Nelder-Mead",control=control,hessian=hessian)
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=FALSE)
       if(ov$nnl[4]){
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
          if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
@@ -374,6 +420,39 @@ estVC.2 <-
             if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
          }
       }
+
+if(hessian){
+   control$maxit<- 1
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- matrix(0,nrow=a$ny,ncol=a$ny)
+      for(i in 1:a$ov$nv){
+         if(a$ov$nnl[i]){
+            if(i!=4){
+               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+         }
+      }
+      if(!all(is.finite(S))) return(inf)
+
+      u<- x%*%b
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp)) return(inf)
+
+      tmp
+   }
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=hessian)
+   oo$hessian<- -oo$hessian
+}
 
    oo$value<- as.numeric(oo$value)
    oo$value<- -oo$value
@@ -420,13 +499,7 @@ estVC.3 <-
       }
    }
 
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
-
+   Sf<- function(par,a){
       S<- matrix(0,nrow=a$ny,ncol=a$ny)
       for(i in 1:a$ov$nv){
          if(a$ov$nnl[i]){
@@ -435,6 +508,16 @@ estVC.3 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
+      S
+   }
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- Sf(par,a)
       if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
@@ -514,7 +597,8 @@ estVC.3 <-
          break
       nit<- nit-1
    }
-   oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),method="Nelder-Mead",control=control,hessian=hessian)
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=FALSE)
       if(ov$nnl[4]){
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
          if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
@@ -524,6 +608,39 @@ estVC.3 <-
             if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
          }
       }
+
+if(hessian){
+   control$maxit<- 1
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- matrix(0,nrow=a$ny,ncol=a$ny)
+      for(i in 1:a$ov$nv){
+         if(a$ov$nnl[i]){
+            if(i!=4){
+               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+         }
+      }
+      if(!all(is.finite(S))) return(inf)
+
+      u<- x%*%b
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp)) return(inf)
+
+      tmp
+   }
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=hessian)
+   oo$hessian<- -oo$hessian
+}
 
    oo$value<- as.numeric(oo$value)
    oo$value<- -oo$value
@@ -560,8 +677,7 @@ estVC.4 <-
 # method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
-   fs<- control$fnscale
-      if(!is.null(fs) && fs<0) fs<- -1 else fs<- 1
+   control$fnscale<- 1
 
    ny<- length(y)
    nb<- ncol(x)
@@ -574,13 +690,7 @@ estVC.4 <-
       }
    }
 
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
-
+   Sf<- function(par,a){
       S<- matrix(0,nrow=a$ny,ncol=a$ny)
       for(i in 1:a$ov$nv){
          if(a$ov$nnl[i]){
@@ -589,16 +699,26 @@ estVC.4 <-
             }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
          }
       }
-      if(!all(is.finite(S))) return(fs*inf)
+      S
+   }
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- Sf(par,a)
+      if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(fs*inf)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
       tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(fs*inf)
+      if(!is.finite(tmp)) return(inf)
 
-      fs*tmp
+      tmp
    }
 
    optfct.b<- function(a=list(par=par,nb=nb,ny=ny,ov=ov)){
@@ -675,7 +795,7 @@ estVC.4 <-
       pparTmp<- oo$par
       val1<- val2
       val2<- oo$value
-      if(abs(val2-val1)<machineEps && abs(val2-val1)<abs(val1)*machineEps)
+      if(abs(val2-val1) < machineEps && abs(val2-val1)<abs(val1)*machineEps)
          break
       nit<- nit-1
    }
@@ -686,15 +806,48 @@ estVC.4 <-
          tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
          if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
       }
-   oo<- optim(oo$par,optfct,gr=NULL,a=list(nb=nb,ny=ny,ov=ov),
-              method="Nelder-Mead",control=list(maxit=1),hessian=hessian)
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=FALSE)
       for(i in 1:ov$nv){
          if(ov$nnl[i]){
             if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
          }
       }
 
-   oo$value<- -fs*oo$value
+if(hessian){
+   control$maxit<- 1
+   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
+      b<- par[1:a$nb]
+      if(a$ov$nnl[4]){
+         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
+         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      }
+
+      S<- matrix(0,nrow=a$ny,ncol=a$ny)
+      for(i in 1:a$ov$nv){
+         if(a$ov$nnl[i]){
+            if(i!=4){
+               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+         }
+      }
+      if(!all(is.finite(S))) return(inf)
+
+      u<- x%*%b
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp)) return(inf)
+
+      tmp
+   }
+   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
+         control=control, hessian=hessian)
+   oo$hessian<- -oo$hessian
+}
+
+   oo$value<- -oo$value
    attributes(oo$value)<- NULL
    names(oo$par)[1:nb]<- colnames(x)
    names(oo$par)[nb+1:sum(ov$nnl)]<- names(ov$v[ov$nnl])

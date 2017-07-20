@@ -11,7 +11,7 @@ ibs(x)
 }
 \arguments{
   \item{x}{
-genotype data with genotypes ("AA", "AB", "BB", or, 1, 2, 3) and without missing data, or probabilities for these genotypes (e.g., obtained by using \code{\link{genoProb}}). In case of genotype data, rows represent individuals and columns represent SNPs.
+Genotype data with genotypes ("AA", "AB", "BB", or, 1, 2, 3) and without missing data, or probabilities for these genotypes (e.g., obtained by using \code{\link{genoProb}}). In case of genotype data, rows represent individuals and columns represent SNPs.
 }
 }
 \value{

@@ -7,36 +7,36 @@ Impute Genotypic Data
 Impute missing genotypic data in advance intercross lines (AIL).
 }
 \usage{
-genoImpute(gdat,gmap,prd=NULL,step=Inf,gr=2,pos=NULL,
-   method=c("Haldane","Kosambi"),na.str="NA",verbose=FALSE)
+genoImpute(gdat, gmap, prd = NULL, step = Inf, gr = 2, pos = NULL,
+   method = c("Haldane", "Kosambi"), na.str = "NA", verbose = FALSE)
 }
 \arguments{
   \item{gdat}{
-genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Genotypes can be 1, 2 and 3, or "AA", "AB" and "BB". Optional if an object \code{prd} from \code{\link{genoProb}} is used as an argument.
+Genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Genotypes can be 1, 2 and 3, or "AA", "AB" and "BB". Optional if an object \code{prd} from \code{\link{genoProb}} is used as an argument.
 }
   \item{gmap}{
-a genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
+A genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
 }
   \item{prd}{
-an object from \code{\link{genoProb}} if not \code{NULL}. See "details" for more information.
+An object from \code{\link{genoProb}} if not \code{NULL}. See "details" for more information.
 }
   \item{step}{
-the maximum distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
+The maximum distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
 }
   \item{gr}{
-the generation under consideration.
+The generation under consideration.
 }
   \item{pos}{
-data frame (chr, dist, snp, ...). If given, \code{step} will be ignored.
+Data frame (chr, dist, snp, ...). If given, \code{step} will be ignored.
 }
   \item{method}{
-whether "Haldane" or "Kosambi" mapping function should be used.
+Whether "Haldane" or "Kosambi" mapping function should be used.
 }
   \item{na.str}{
-string for missing values.
+String for missing values.
 }
   \item{verbose}{
-a logical variable. If TRUE, certain information will be printed out during calculation.
+A logical variable. If TRUE, certain information will be printed out during calculation.
 }
 }
 \details{
