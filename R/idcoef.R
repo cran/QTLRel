@@ -221,7 +221,7 @@ kinship<- function(ped,ids){
 
    ped<- ped[,c("id","sire","dam")]
    ksp<- matrix(-999.9,nrow=nrow(ped),ncol=nrow(ped))
-   out<- .C("kinship",
+   out<- .C("kinshipc",
             ped = as.integer(t(ped)),
             nr = as.integer(nrow(ped)),
             nc = as.integer(ncol(ped)),

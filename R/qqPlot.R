@@ -92,7 +92,7 @@ qFn. <- function(t,x){
 Fn <- function(t,x){
    t<- as.double(t)
    x<- as.double(x)
-   .C("Fn",
+   .C("Fnc",
       t = as.double(t),
       as.integer(length(t)),
       as.double(x),
@@ -107,7 +107,7 @@ qFn <- function(t,x){
    t<- as.double(t)
    x<- as.double(x)
       x<- sort(x, decreasing = FALSE) # must sort to call "qFn"
-   .C("qFn",
+   .C("qFnc",
       t = as.double(t),
       as.integer(length(t)),
       as.double(x),

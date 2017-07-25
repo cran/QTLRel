@@ -62,7 +62,7 @@ void genMatr();
       *n = sizeof(LONGLONG);
    }
 
-   void kinship(int* pedigree, int *nr, int* nc, double* ksp){
+   void kinshipc(int* pedigree, int *nr, int* nc, double* ksp){
       int i;
       int* ped[*nr]; for(i=0;i<*nr;i++) ped[i]=pedigree+i*(*nc);
       double* kc[*nr]; for(i=0;i<*nr;i++) kc[i]=ksp+i*(*nr);

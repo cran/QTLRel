@@ -31,7 +31,7 @@
       }
    }
 
-   void Fn(double* t, int* nt, double* x, int* nx){
+   void Fnc(double* t, int* nt, double* x, int* nx){
       int i, j;
       double s;
       for(i=0; i<*nt; i++){
@@ -43,7 +43,7 @@
       }
    }
 
-   void qFn(double* t, int* nt, double* x, int* nx){
+   void qFnc(double* t, int* nt, double* x, int* nx){
       int i, j, jj = 0;
       for(i=0; i<*nt; i++){
          if(t[i] <= 0.0) t[i] = -1e+300;
