@@ -5,7 +5,7 @@
 
 \description{
   Convert the data for a QTL mapping experiment from the R/qtl format
-  (see \url{http://www.rqtl.org}) to that used by QTLRel.
+  (see http://www.rqtl.org) to that used by QTLRel.
 }
 
 \usage{

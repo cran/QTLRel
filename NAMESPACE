@@ -1,8 +1,8 @@
 useDynLib(QTLRel, .registration = TRUE)
 
 export(aicVC,mAIC,
-	blup,estVC,fv,
-	scanOne,scanTwo,gvar,qtlVar,nullSim,gls,
+	blup,estVC,
+	scanOne,scanTwo,qtlVar,nullSim,gls,
 	lodci,.lodci,
 	genoProb,genoImpute,genoPos,rem,
 	pedRecode,hapSim,genoSim,
@@ -18,13 +18,13 @@ importFrom("graphics", "abline", "axis", "image", "lines", "mtext",
      "par", "plot", "points")
 importFrom("stats", "anova", "approx", "contrasts", "formula", ".getXlevels",
      "lm", "lm.fit", "lm.wfit", "logLik", "model.frame", "model.matrix",
-     "model.response", "nlm", "nlminb", "optim", "optimize",
+     "model.response", "nlm", "nlminb", "optim", "optimHess", "optimize",
      "ppoints", "quantile", "reorder", "rmultinom", "runif",
      "terms", "uniroot", "var")
 
 S3method(aicVC, default)
 S3method(blup, aic)
-S3method(blup, bgv)
+S3method(blup, VC)
 S3method(estVC, default)
 S3method(genMatrix, cic)
 S3method(genMatrix, default)
@@ -32,7 +32,7 @@ S3method(genoProb, default)
 S3method(plot, scanOne)
 S3method(plot, scanTwo)
 S3method(print, aic)
-S3method(print, bgv)
+S3method(print, VC)
 S3method(print, scanOne)
 S3method(qqPlot, default)
 S3method(scanOne, default)

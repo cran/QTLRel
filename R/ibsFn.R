@@ -11,13 +11,13 @@ ibs<- function(x){
       ibs.1(x)
    }else if(length(dim(x))==2){
       ibs.2(x)
-   }else stop("Input not correct...")
+   }else stop("Input not correct...", call.=FALSE)
 }
 
 ibs.1<- function(prdat){
 # prdat$pr: n by 3 by ? matrix, conditional probabilities
    if(any(prdat<0 | prdat>1))
-      stop("Input not correct: probabilities out of range...")
+      stop("Input not correct: probabilities out of range...", call.=FALSE)
    nr<- dim(prdat)[1]
    nc<- dim(prdat)[3]
    npairs<- nr*(nr+1)/2
@@ -65,7 +65,7 @@ ibs.2<- function(gdat){
               (gdata=="AB")*2 +
               (gdata=="BB")*3
    if(any(!is.element(unique(c(gdata)),c(1,2,3))))
-      stop("gdat: wrong genotye input...")
+      stop("'gdat': wrong genotye input...", call.=FALSE)
    nr<- nrow(gdata)
    nc<- ncol(gdata)
    npairs<- nr*(nr+1)/2
@@ -119,7 +119,7 @@ genMatrix.default<- function(x){
               (gdata=="AB")*2 +
               (gdata=="BB")*3
    if(any(!is.element(unique(c(gdata)),c(1,2,3))))
-      stop("Only genotypes AA, AB and BB (or 1, 2, 3) allowed...")
+      stop("Only genotypes AA, AB and BB (or 1, 2, 3) allowed...", call.=FALSE)
    nr<- nrow(gdata)
    nc<- ncol(gdata)
    npairs<- nr*(nr+1)/2

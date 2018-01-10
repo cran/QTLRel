@@ -6,7 +6,7 @@ genoProb <-
             gr=2,
             pos=NULL,
             method=c("Haldane","Kosambi"),
-            verbose=FALSE)
+            msg=FALSE)
 {
    UseMethod("genoProb")
 }
@@ -20,7 +20,7 @@ genoImpute <-
             pos=NULL,
             method=c("Haldane","Kosambi"),
             na.str="NA",
-            verbose=FALSE)
+            msg=FALSE)
 {
    if(!is.null(prd) && is.element("Pr",class(prd))){
       genoImpute.Pr(prd=prd,
@@ -33,7 +33,7 @@ genoImpute <-
                          pos=pos,
                          method=method,
                          na.str=na.str,
-                         verbose=verbose)
+                         msg=msg)
    }
 }
 
@@ -42,7 +42,7 @@ root<- function(infcn, intv, nit = 250, tol = 1e-06) {
 # intv: vector of length 2, infcn(intv[1])*infcn(intv[2])<0
 # nit: number of iterations
    if(length(intv)!=2)
-      stop("intv in root: input two numbers.")
+      stop("'intv' in root: input two numbers.", call.=FALSE)
    assign("Infcn", infcn)
    if(Infcn(intv[2])==0){
       value<- intv[2]
@@ -64,7 +64,7 @@ root<- function(infcn, intv, nit = 250, tol = 1e-06) {
 mappingFunc<- function(r,method=c("Haldane","Kosambi")){
 # r: recombination rate
    method<- match.arg(method)
-   if(any(r<0 || r>0.5)) stop("mappingFunc: r out of range!")
+   if(any(r<0 || r>0.5)) stop("mappingFunc: r out of range!", call.=FALSE)
 
    if(method=="Haldane"){
       return(-1/2*log(1-2*r))
@@ -76,7 +76,7 @@ mappingFunc<- function(r,method=c("Haldane","Kosambi")){
 mappingFuncInv<- function(d,method=c("Haldane","Kosambi")){
 # d: distance in M
    method<- match.arg(method)
-   if(any(d<0)) stop("mappingFunc: d out of range!")
+   if(any(d<0)) stop("mappingFunc: d out of range!", call.=FALSE)
 
    if(method=="Haldane"){
       return(1/2*(1-exp(-2*d)))
@@ -88,8 +88,8 @@ mappingFuncInv<- function(d,method=c("Haldane","Kosambi")){
 rFn<- function(r,n=2){
 # r: recombination rate at F2
 # n: target generation
-   if(any(r<0 || r>0.5)) stop("rFn: r out of range!")
-   if(n<2) stop("rFn: wrong generation specified.")
+   if(any(r<0 || r>0.5)) stop("rFn: r out of range!", call.=FALSE)
+   if(n<2) stop("rFn: wrong generation specified.", call.=FALSE)
 
    (1-(1-r)^(n-2)*(1-2*r))/2
 }
@@ -101,7 +101,7 @@ genoProb.default <-
             gr=2,
             pos,
             method=c("Haldane","Kosambi"),
-            verbose=FALSE)
+            msg=FALSE)
 {
 # gdat: matrix of marker data, each row represents an individual
 #    1-AA, 2-AB, 3-BB, 0-missing
@@ -112,11 +112,13 @@ genoProb.default <-
       gmap<- gmap[order(gmap$chr,gmap$dist),]
    snp<- intersect(colnames(gdat),gmap$snp)
    idx<- is.element(colnames(gdat),snp)
-      if(sum(idx)!=ncol(gdat) && verbose) cat("Some markers were excluded from genotype data.\n")
+   if(sum(idx)!=ncol(gdat) && msg)
+      cat("   Some markers were excluded from genotype data.\n")
    gdat<- gdat[,idx]
    idx<- is.element(gmap$snp,snp)
-      if(sum(idx)!=nrow(gmap) && verbose) cat("Some markers were excluded from genetic map.\n")
-   if(verbose) cat("There are",length(snp),"markers to be used.\n")
+   if(sum(idx)!=nrow(gmap) && msg)
+      cat("   Some markers were excluded from genetic map.\n")
+   if(msg) cat("   There are",length(snp),"markers to be used.\n", sep="")
    gmap<- gmap[idx,]
 
    gdat<- gdat[,match(gmap$snp,colnames(gdat))]
@@ -133,18 +135,18 @@ genoProb.default <-
    chrTmp<- NULL
    distTmp<- NULL
    snpTmp<- NULL
-   if(verbose) cat("Processing...")
+   if(msg) cat("   Processing...")
 #   cat("  Please wait or press 'ctrl-c' to abort...\n")
    for(i in 1:length(chrs)){
       ii<- chrs[i]
-      if(verbose) cat(ii,"...")
+      if(msg) cat(ii,"...")
       idx<- gmap$chr==ii
       if(!any(pos$chr==ii)) next
 
       at<- is.element(pos$snp[pos$chr==ii],colnames(gdat)[idx]);
          at<- cumsum(at)
       pdat<- genoPr1(as.matrix(gdat[,idx]),dist=gmap$dist[idx],
-         pos=pos$dist[pos$chr==ii],at=at,gr=gr,method=method,verbose=verbose)
+         pos=pos$dist[pos$chr==ii],at=at,gr=gr,method=method,msg=msg)
       distTmp<- c(distTmp,pdat$dist)
       chrTmp<- c(chrTmp,rep(ii,length(pdat$dist)))
       if(!is.null(pos$snp)) snpTmp<- c(snpTmp,as.character(pos$snp[pos$chr==ii]))
@@ -153,7 +155,7 @@ genoProb.default <-
       probs[[2]]<- cbind(probs[[2]],pdat$pr[[2]])
       probs[[3]]<- cbind(probs[[3]],pdat$pr[[3]])
    } 
-   if(verbose) cat("Done.\n\n")
+   if(msg) cat("   Done.\n\n")
 
    out<- array(0,dim=c(nrow(gdat),3,ncol(probs[[1]])))
    out[,1,]<- probs[[1]]
@@ -171,7 +173,7 @@ genoProb.default <-
 }
 
 # P(Q|MN) for one individual and one chromosome
-genoPr0<- function(mdat,nn,dist,pos,at,gr,method,verbose){
+genoPr0<- function(mdat,nn,dist,pos,at,gr,method,msg){
 # mdat: marker data for one individual
 #   1-AA, 2-AB, 3-BB, 0-missing
 # dist: in cM, one chromsome
@@ -196,14 +198,14 @@ genoPr0<- function(mdat,nn,dist,pos,at,gr,method,verbose){
             pdat = as.double(pdat),
             error = as.logical(err),
             PACKAGE="QTLRel")
-   if(verbose)
-      if(out$error) cat("individual",nn,"not imputable...")
+   if(msg)
+      if(out$error) cat("   Warning: individual",nn,"not imputable...\a\n", sep="")
 
    matrix(out$pdat,ncol=3,byrow=TRUE)
 }
 
 # P(Q|MN) for n individual and one chromosome
-genoPr1<- function(mdat,dist,pos,at,gr,method,verbose){
+genoPr1<- function(mdat,dist,pos,at,gr,method,msg){
 # mdat: n by ? matrix, marker data
 #   1-AA, 2-AB, 3-BB, 0-missing
 # dist: in cM, one chromsome
@@ -213,13 +215,13 @@ genoPr1<- function(mdat,dist,pos,at,gr,method,verbose){
    if(is.vector(mdat)) mdat<- t(as.matrix(mdat))
    probs<- vector("list",3)
    for(nn in 1:nrow(mdat)){
-      pdat<- genoPr0(mdat,nn,dist,pos,at,gr,method,verbose)
+      pdat<- genoPr0(mdat,nn,dist,pos,at,gr,method,msg)
       probs[[1]]<- rbind(probs[[1]],pdat[,1]) # P(1|MN)
       probs[[2]]<- rbind(probs[[2]],pdat[,2]) # P(2|MN)
       probs[[3]]<- rbind(probs[[3]],pdat[,3]) # P(3|MN)
 
       tmp<- sum(is.na(pdat))
-      if(tmp>0) cat(tmp,"NAs for",nn,"-th individual...\n")
+      if(tmp>0) cat("   ", tmp,"NAs for",nn,"-th individual...\n", sep="")
    }
 
    list(pr=probs,dist=pos)
@@ -281,23 +283,23 @@ genoImpute.default <-
             pos=NULL,
             method=c("Haldane","Kosambi"),
             na.str="NA",
-            verbose=FALSE)
+            msg=FALSE)
 {
    if(!is.matrix(gdat) && !is.data.frame(gdat))
-      stop("genetype data should be in a matrix or a data frame.")
+      stop("Genetype data should be in a matrix or a data frame.", call.=FALSE)
    gdat<- as.matrix(gdat)
    gn<- setdiff(unique(c(gdat)),na.str)
    if(length(gn)!=3){
-      cat("there are",length(gn),"genotypes:\n")
+      cat("   There are",length(gn),"genotypes:\n", sep="")
       print(gn)
-      stop("there should be only three genotypes...")
+      stop("There should be only three genotypes...", call.=FALSE)
    }
    gn<- sort(gn)
    gdat<- (gdat==gn[1])*1 + (gdat==gn[2])*2 + (gdat==gn[3])*3
       if(is.na(na.str)){
          gdat<- replace(gdat,is.na(gdat),0)
       }else gdat<- replace(gdat,gdat==na.str,0)
-   prdat<- genoProb(gdat,gmap,step=step,gr=gr,pos=pos,method=method,verbose=verbose)
+   prdat<- genoProb(gdat,gmap,step=step,gr=gr,pos=pos,method=method,msg=msg)
    prd<- prdat$pr
       prd<- round(prd,5)
    dd<- dim(prd)
@@ -321,20 +323,20 @@ genoImpute.Pr <-
    prd<- prd$pr
    if(!missing(gdat)){
       if(!is.matrix(gdat) && !is.data.frame(gdat))
-         stop("genetype data should be in a matrix or data frame.")
+         stop("Genetype data should be in a matrix or data frame.", call.=FALSE)
       gdat<- as.matrix(gdat)
       iin<- intersect(dimnames(prd)[[1]],rownames(gdat))
       jjn<- intersect(dimnames(prd)[[3]],colnames(gdat))
       if(length(iin)<1 || length(jjn)<1)
-         stop("no data could be imputed. check input...")
+         stop("no data could be imputed. check input...", call.=FALSE)
       if(length(iin)<nrow(gdat) || length(jjn)<ncol(gdat))
-         cat("warning: only part of data could be imputed. you might check input.\a\n")
+         cat("   Warning: only part of data could be imputed. you might check input.\a\n")
       prd<- prd[match(iin,dimnames(prd)[[1]]),,match(jjn,dimnames(prd)[[3]])]
    }
    gn<- unique(dimnames(prd)[[2]])
-   if(length(gn)!=3) stop("there should be only three genotypes...")
+   if(length(gn)!=3) stop("There should be only three genotypes...", call.=FALSE)
    if(!setequal(gn,unique(dimnames(prd)[[2]])))
-      stop("check marker genotypes for consistency...")
+      stop("Check marker genotypes for consistency...", call.=FALSE)
    gn<- sort(gn)
    prd<- round(prd,5)
    dd<- dim(prd)

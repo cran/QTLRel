@@ -95,7 +95,7 @@ lodci<- function(llk,cv=0,lod=1.5,drop=3){
 
 # local LOD support interval
 flod<- function(llk,cv,lod=1.5,int=F){
-   if(any(cv<lod)) stop("LOD too large.")
+   if(any(cv<lod)) stop("LOD too large.", call.=FALSE)
    if(max(llk$y)<cv) return(c(NA,NA))
    ii<- c(1:nrow(llk))[llk$y == max(llk$y)]
    ii<- ii[1]

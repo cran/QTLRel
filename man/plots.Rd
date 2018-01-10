@@ -50,14 +50,19 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdat.imp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+pheno<- pdatF8[!is.na(pdatF8$bwt) & !is.na(pdatF8$sex),]
+ii<- match(rownames(pheno), rownames(gdatF8))
+geno<- gdatF8[ii,]
+ii<- match(rownames(pheno), rownames(gmF8$AA))
+v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
+
+gdat.imp<- genoImpute(geno, gmap=gmapF8, step=Inf,
    gr=8, na.str=NA)
 # estimate variance components
-o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
+o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 
 # genome scan
-llk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, vc=o, gdat=gdat.imp)
+llk<- scanOne(y=pheno$bwt, x=pheno$sex, vc=o, gdat=gdat.imp)
 
 # plotting
 plot(llk, gmap=gmapF8) # gmap is needed

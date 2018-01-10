@@ -8,7 +8,7 @@ Calculate the probability of a genotype at a locus conditional on the genotypes 
 }
 \usage{
 genoProb(gdat, gmap, step = Inf, gr = 2, pos = NULL, method=c("Haldane",
-   "Kosambi"), verbose = FALSE)
+   "Kosambi"), msg = FALSE)
 }
 \arguments{
   \item{gdat}{
@@ -29,7 +29,7 @@ Data frame (chr, dist, snp, ...). If given, \code{step} will be ignored.
   \item{method}{
 Whether "Haldane" or "Kosambi" mapping function should be used.
 }
-  \item{verbose}{
+  \item{msg}{
 A logical variable. If TRUE, certain information will be printed out during calculation.
 }
 }
@@ -56,7 +56,7 @@ gdtmp<- gdatF8
 # In case an individual is not imputable, then
 # one needs to assign genotypes manually
 prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", verbose=TRUE)
+   gr=8, method="Haldane", msg=TRUE)
 prDat$pr[1:5,,1:5]
 }
 }

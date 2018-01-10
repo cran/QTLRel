@@ -7,14 +7,20 @@ Recode a Pedigree
 Prepare a pedigree in a format that is suitable for certain functions
 }
 \usage{
-pedRecode(ped, ids)
+pedRecode(ped, ids, all = TRUE, msg = TRUE)
 }
 \arguments{
   \item{ped}{
-A pedigree, which is a data frame (id, sire, dam, ...). If "sex" is a component, male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", etc. Note: 0 is reserved for unknown \code{sire}, \code{dam} or \code{sex}.
+A pedigree, which is a data frame (id, sire, dam, ...). If "sex" is a component, male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ..., which should be in an increasing order. Note: 0 is reserved for unknown \code{sire}, \code{dam} or \code{sex}. If a sire/dam is an inbred founder, its ID should be tagged by character 'i' (e.g. 1i, 2i, etc.).
 }
   \item{ids}{
 If given, only individuals with \code{ids} and their ancestors are kept in the recoded pedigree.
+}
+  \item{all}{
+If false, sires and dams with no parents are treated as unknown.
+}
+  \item{msg}{
+If false, messages are suppressed.
 }
 }
 \details{

@@ -8,7 +8,7 @@ plot.scanOne<- function(x,...){
 
    lrt<- data.frame(y=x$p)
    if(is.null(x$chr)){
-      if(is.null(xTmp$gmap)) stop("need: gmap...")
+      if(is.null(xTmp$gmap)) stop("Need: gmap...", call.=FALSE)
       gmap<- xTmp$gmap
       idx<- match(names(x$p),gmap$snp)
       lrt$chr<- gmap$chr[idx]
@@ -72,6 +72,7 @@ plotit<- function(lrt,cv,bychr=FALSE,chr.labels=TRUE,
       }
 
       if(length(unique(lrt$chr))>1){
+         lrt$chr<- reorder(factor(lrt$chr))
          xyplot(y~dist|chr,data=lrt,
             groups=groups,
             panel=function(x,y,...){
@@ -112,7 +113,7 @@ plotit<- function(lrt,cv,bychr=FALSE,chr.labels=TRUE,
       groups<- lrt$group
          groups<- sort(unique(groups))
       ngr<- length(groups)
-      if(ngr>1) cat("  Groups:",as.character(groups),"\n")
+      if(ngr>1) cat("  Groups: ",as.character(groups),"\n", sep="")
       chr<- unique(lrt$chr)
          nchr<- length(chr)
       for(i in 1:ngr){
@@ -180,7 +181,7 @@ plot.scanTwo<- function(x,...){
 # a genetic map 'gmap' is needed
    lst<- list(...)
    if(is.null(lst$gmap))
-      stop("need a genetic map 'gmap'.")
+      stop("Need a genetic map 'gmap'.", call.=FALSE)
    qqint<- x
    gmap<- lst$gmap
    v<- as.matrix(qqint)

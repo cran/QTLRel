@@ -3,26 +3,29 @@ W.inv<- function(W, symmetric=TRUE,inverse=TRUE){
    eW <- eigen(W, symmetric=symmetric)
    d <- eW$values
    if (min(d) <0  && abs(min(d))>sqrt(.Machine$double.eps))
-       stop("'W' is not positive definite")
+       stop("'W' is not positive definite.", call.=FALSE)
    else d[d<=0]<- ifelse(inverse, Inf, 0)
    A <- diag(d^ifelse(inverse, -0.5, 0.5)) %*% t(eW$vector)
    A # t(A)%*%A = W^{-1}
 }
 
 # adapted from lm.gls in MASS
-lmGls<- function (formula, data, A, ...) {
-    call <- match.call()
-    m <- match.call(expand.dots = FALSE)
-    m$A <- NULL
-    m[[1L]] <- as.name("model.frame")
-    m <- eval.parent(m)
-    Terms <- attr(m, "terms")
-    yy <- model.response(m)
+lmGls<- function (formula, data, A, contrasts = NULL, ...) {
+    mf<- match.call(expand.dots = FALSE)
+        m<- match(c("formula", "data"), names(mf), 0L)
+        mf<- mf[c(1L, m)]
+        mf$drop.unused.levels<- TRUE
+        mf[[1L]]<- quote(stats::model.frame)
+        mf<- eval(mf, parent.frame())
+    Terms <- attr(mf, "terms")
+    yy <- model.response(mf, "numeric")
        y<- A%*%yy
-    xx <- model.matrix(Terms, m, contrasts)
-       x<- A%*%xx; colnames(x)[1]<- "(Intercept)"
+    xx <- model.matrix(Terms, mf, contrasts)
+       x<- A%*%xx
     dtf<- data.frame(y=y,x)
+
     fit<- lm(y~.-1, data=dtf, ...)
+    names(fit$coefficients)[1]<- "(Intercept)"
 
     fit
 }
@@ -483,10 +486,10 @@ scanOne<-
 
 {
    if(!all(is.finite(y)))
-      stop("y: non-numeric or infinite data points not allowed.")
+      stop("y: non-numeric or infinite data points not allowed.", call.=FALSE)
    if(!missing(x))
       if(any(sapply(x,is.infinite) | sapply(x,is.na)))
-         stop("x: missing or infinite data points not allowed.")
+         stop("x: missing or infinite data points not allowed.", call.=FALSE)
    UseMethod("scanOne")
 }
 
@@ -503,16 +506,17 @@ scanOne.default<-
             rmv = TRUE)
 {
    if(!is.null(vc)){
-      if(is.element("bgv",attr(vc,"class"))){
-         nb<- length(vc$par) - sum(vc$nnl)
+      if(is.element("VC",attr(vc,"class"))){
+         nv<- length(vc$v)
+         nb<- length(vc$par) - nv
          nr<- nrow(vc$y)
          cov<- matrix(0,nrow=nr,ncol=nr)
-         for(i in 1:vc$nv)
-            if(vc$nnl[i]) cov<- cov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+         for(i in 1:nv)
+            cov<- cov + vc$v[[i]]*vc$par[nb+i]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
-         if(!is.matrix(vc)) stop("vc should be a matrix.")
-         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
+         if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
          cov<- vc
       }
    }else cov<- diag(nrow(as.matrix(y)))
@@ -524,26 +528,30 @@ scanOne.default<-
       }
    }else{
       if(any(is.na(gdat)))
-         stop("There are missing genotypes...")
-      tb<- sort(union(as.matrix(gdat),NULL))
-      tbf<- NULL
-      for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
-         if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.\n")
-      tbf<- apply(tbf,2,min)
-      idx<- (tbf < nrow(gdat)*minorGenoFreq)
+         stop("There are missing genotypes...", call.=FALSE)
+      if(numGeno){
+         idx<- FALSE
+      }else{
+         tb<- sort(union(as.matrix(gdat),NULL))
+         tbf<- NULL
+         for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
+            if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
+         tbf<- apply(tbf,2,min)
+         idx<- (tbf < nrow(gdat)*minorGenoFreq)
+      }
       if(sum(idx)>0){
          if(rmv){
             gdat<- as.matrix(gdat)
             tb<- sort(union(as.matrix(gdat),NULL))
             tbf<- NULL
             for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
-               if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.\n")
+               if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
             tbf<- apply(tbf,2,min)
             idx<- (tbf < nrow(gdat)*minorGenoFreq)
             gdat<- gdat[,!idx]
             rm(tb,tbf,ii,idx)
          }else{
-            cat("minor genotype frequency is too small at one or more SNPs.\n")
+            cat("   Minor genotype frequency is too small at one or more SNPs.\a\n")
             return(NULL)
         }
       }
@@ -691,10 +699,10 @@ scanTwo<-
 
 {
    if(!all(is.finite(y)))
-      stop("y: non-numeric or infinite data points not allowed.")
+      stop("y: non-numeric or infinite data points not allowed.", call.=FALSE)
    if(!missing(x))
       if(any(sapply(x,is.infinite) | sapply(x,is.na)))
-         stop("x: missing or infinite data points not allowed.")
+         stop("x: missing or infinite data points not allowed.", call.=FALSE)
    UseMethod("scanTwo")
 }
 
@@ -709,16 +717,17 @@ scanTwo.default<-
             rmv = TRUE)
 {
    if(!is.null(vc)){
-      if(is.element("bgv",attr(vc,"class"))){
-         nb<- length(vc$par) - sum(vc$nnl)
+      if(is.element("VC",attr(vc,"class"))){
+         nv<- length(vc$v)
+         nb<- length(vc$par) - nv
          nr<- nrow(vc$y)
          cov<- matrix(0,nrow=nr,ncol=nr)
-         for(i in 1:vc$nv)
-            if(vc$nnl[i]) cov<- cov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+         for(i in 1:nv)
+            cov<- cov + vc$v[[i]]*vc$par[nb+i]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
-         if(!is.matrix(vc)) stop("vc should be a matrix.")
-         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
+         if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
          cov<- vc
       }
    }else cov<- diag(nrow(as.matrix(y)))
@@ -726,26 +735,30 @@ scanTwo.default<-
       pv<- scanTwo.1(y=y,x=x,prdat=prdat,cov=cov)
    }else{
       if(any(is.na(gdat)))
-         stop("There are missing genotypes...")
-      tb<- sort(union(as.matrix(gdat),NULL))
-      tbf<- NULL
-      for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
-         if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.\n")
-      tbf<- apply(tbf,2,min)
-      idx<- (tbf < nrow(gdat)*minorGenoFreq)
+         stop("There are missing genotypes...", call.=FALSE)
+      if(numGeno){
+         idx<- FALSE
+      }else{
+         tb<- sort(union(as.matrix(gdat),NULL))
+         tbf<- NULL
+         for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
+            if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
+         tbf<- apply(tbf,2,min)
+         idx<- (tbf < nrow(gdat)*minorGenoFreq)
+      }
       if(sum(idx)>0){
          if(rmv){
             gdat<- as.matrix(gdat)
             tb<- sort(union(as.matrix(gdat),NULL))
             tbf<- NULL
             for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
-               if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.\n")
+               if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
             tbf<- apply(tbf,2,min)
             idx<- (tbf < nrow(gdat)*minorGenoFreq)
             gdat<- gdat[,!idx]
             rm(tb,tbf,ii,idx)
          }else{
-            cat("minor genotype frequency is too small at one or more SNPs.\n")
+            cat("   Minor genotype frequency is too small at one or more SNPs.\a\n")
             return(NULL)
         }
       }
@@ -773,16 +786,17 @@ gls<- function(formula,data=NULL,vc=NULL,test=c("none","F")){
 
    nr<- nrow(xx)
    if(!is.null(vc)){
-      if(is.element("bgv",attr(vc,"class"))){
-         nb<- length(vc$par) - sum(vc$nnl)
+      if(is.element("VC",attr(vc,"class"))){
+         nv<- length(vc$v)
+         nb<- length(vc$par) - nv
          nr<- nrow(vc$y)
          cov<- matrix(0,nrow=nr,ncol=nr)
-         for(i in 1:vc$nv)
-            if(vc$nnl[i]) cov<- cov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+         for(i in 1:nv)
+            cov<- cov + vc$v[[i]]*vc$par[nb+i]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
-         if(!is.matrix(vc)) stop("vc should be a matrix.")
-         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
+         if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
          cov<- vc
       }
    }else cov<- diag(nrow(as.matrix(yy)))

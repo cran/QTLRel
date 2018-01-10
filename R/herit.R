@@ -6,23 +6,6 @@ smpl<- function(pr,x){
    y
 }
 
-# estimate variances of (genetic) components
-gvar<- function (par, ov){
-# par: parameter estimates
-# ov: ov$v is a list of genetic matrices
-   str<- c("AA", "DD", "HH", "AD", "MH", "EE")
-   if(!is.null(par)) par<- par[str]
-   ov<- ov$v[str]
-   vv <- rep(NA, 6)
-      names(vv)<- str
-   for (i in 1:6){
-      v0<- ov[[i]]*par[i]
-         v0<- diag(v0)
-      vv[i]<- mean(v0)
-   }
-   vv
-}
-
 # estimate QTL variances
 qtlVar<- function(lrt,prdat,simulation=FALSE,nsim=25){
 # lrt: data frame (a,d,...)

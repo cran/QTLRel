@@ -7,8 +7,7 @@ Estimate Variance Component Parameters
 Estimate model parameters for covariates, genetic variance components and residual effect.
 }
 \usage{
-estVC(y, x, v = vector("list", 6), initpar, nit = 25,
-   method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
+estVC(y, x, v = list(E=diag(length(y))), initpar, nit = 25,
    control = list(), hessian = FALSE)
 }
 \arguments{
@@ -19,18 +18,15 @@ A numeric vector or a numeric matrix of one column (representing a phenotype for
 A data frame or matrix, representing covariates if not missing.
 }
   \item{v}{
-A list of variance components (AA, DD, HH, AD, MH, EE,...), where "AA" and "DD" are respectively additive and dominance genetic matrices, "HH", "AD" and "MH" are other genetic matrices that one may be interested in (see \code{\link{aicVC}}), "EE" is the residual matrix that is usually assumed to be an identity matrix, and "..." are other random components of interest. If a genetic component is not considered, it should be set to NULL.
+A list of variance components of interest. Note: \code{E} is reserved for residual (or environmental) variance and can be missed in \code{v}; it is considered to be an identify matirx if it is missing.
 
-However, if \code{v} is provided as a single matrix, it is considered to be "AA".
+\code{v} can be provided as a single matrix, representing a variance component other than \code{E}.
 }
   \item{initpar}{
 Optional initial parameter values.
 }
   \item{nit}{
-Number of iterations to call \code{\link{optim}} for optimization.
-}
-  \item{method}{
-The optimization method to be used. See \code{\link{optim}} for details.
+Maximum number of iterations for optimization. Ignored if there are not more than two variance components.
 }
   \item{control}{
 A list of control parameters to be passed to \code{\link{optim}}.
@@ -64,20 +60,21 @@ data(miscEx)
 
 \dontrun{
 # no sex effect
-o<- estVC(y=pdatF8$bwt, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
+pheno<- pdatF8[!is.na(pdatF8$bwt) & !is.na(pdatF8$sex),]
+ii<- match(rownames(pheno), rownames(gmF8$AA))
+v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
+
+o<- estVC(y=pheno$bwt, v=v)
 o
 
 # sex as fixed effect
-fo<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
+fo<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 fo
 2*(fo$value-o$value) # log-likelihood test statistic
 
 # sex as random effect
-SM<- rem(~sex, data=pdatF8)
-ro<- estVC(y=pdatF8$bwt, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, SE=SM$sex, EE=diag(length(pdatF8$bwt))))
+SM<- rem(~sex, data=pheno)
+ro<- estVC(y=pheno$bwt, v=c(v,list(Sex=SM$sex)))
 ro
 2*(ro$value-o$value) # log-likelihood test statistic
 }

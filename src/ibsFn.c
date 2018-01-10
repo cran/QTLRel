@@ -25,11 +25,16 @@ void deltaFn();
          //signal(SIGINT, &userInt);
          int nn;
          nn = (*nr)*((*nr)+1)/2;
-         double* ptr[(*nr)*3]; for(int i=0; i<(*nr)*3; i++) ptr[i]=prA+i*(*nc);
-         double** prAp[(*nr)]; for(int i=0; i<(*nr); i++) prAp[i]=ptr+i*3;
-         double* ibsp[nn]; for(int i=0; i<nn; i++) ibsp[i]=ibs+i*9;
+         double* ptr[(*nr)*3];
+            for(int i=0; i<(*nr)*3; i++) ptr[i]=prA+i*(*nc);
+         double** prAp[(*nr)];
+            for(int i=0; i<(*nr); i++) prAp[i]=ptr+i*3;
+         double** ibsp = (double**) malloc(sizeof(double*) * nn);
+            for(int i=0; i<nn; i++) ibsp[i]=ibs+i*9;
 
          ibsPr(prAp,(*nr),(*nc),ibsp);
+
+         free(ibsp);
          R_CheckUserInterrupt();//if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
    }
 
@@ -37,10 +42,14 @@ void deltaFn();
          //signal(SIGINT, &userInt);
          int nn;
          nn = (*nr)*((*nr)+1)/2;
-         int* gdatp[(*nr)]; for(int i=0;i<(*nr);i++) gdatp[i]=gdat+i*(*nc);
-         double* ibsp[nn]; for(int i=0;i<nn;i++) ibsp[i]=ibs+i*9;
+         int* gdatp[(*nr)];
+            for(int i=0;i<(*nr);i++) gdatp[i]=gdat+i*(*nc);
+         double** ibsp = (double**) malloc(sizeof(double*) * nn);
+            for(int i=0;i<nn;i++) ibsp[i]=ibs+i*9;
 
          ibsFn(gdatp,(*nr),(*nc),ibsp);
+
+         free(ibsp);
          R_CheckUserInterrupt();//if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
    }
 
@@ -48,9 +57,13 @@ void deltaFn();
          //signal(SIGINT, &userInt);
          int nn;
          nn = (*nr)*((*nr)+1)/2;
-         int* gdatp[(*nr)]; for(int i=0;i<(*nr);i++) gdatp[i]=gdat+i*(*nc);
-         double* deltap[nn]; for(int i=0;i<nn;i++) deltap[i]=delta+i*5;
+         int* gdatp[(*nr)];
+            for(int i=0;i<(*nr);i++) gdatp[i]=gdat+i*(*nc);
+         double** deltap = (double**) malloc(sizeof(double*) * nn);
+            for(int i=0;i<nn;i++) deltap[i]=delta+i*5;
          deltaFn(gdatp,(*nr),(*nc),deltap);
+
+         free(deltap);
          R_CheckUserInterrupt();//if(stopIt) {stopIt = 0; error(_("Exit without finish.\a\n"));}
    }
 //}

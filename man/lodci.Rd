@@ -38,17 +38,22 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdtmp<- gdatF8
+pheno<- pdatF8[!is.na(pdatF8$bwt) & !is.na(pdatF8$sex),]
+ii<- match(rownames(pheno), rownames(gdatF8))
+geno<- gdatF8[ii,]
+ii<- match(rownames(pheno), rownames(gmF8$AA))
+v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
+
+gdtmp<- geno
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 # run 'genoProb'
 prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", verbose=TRUE)
+   gr=8, method="Haldane", msg=TRUE)
 # estimate variance components
-o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
+o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 
 # genome scan
-llk.hk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, vc=o, prdat=prDat)
+llk.hk<- scanOne(y=pheno$bwt, x=pheno$sex, vc=o, prdat=prDat)
 
 # extract LOD support intervals
 tmp<- data.frame(y=llk.hk$p, chr=llk.hk$chr, dist=llk.hk$dist)

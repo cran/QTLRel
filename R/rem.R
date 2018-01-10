@@ -4,17 +4,17 @@ rem.1<- function(b,z=1){
    b<- as.matrix(b)[,1]
    nn<- length(b)
    if(length(z)==1){
-      if(z!=1) stop("Check formula for errors.")
+      if(z!=1) stop("Check formula for errors.", call.=FALSE)
       z<- rep(1,nn)
    }else{
       z<- as.matrix(z)[,1]
       if(!is.numeric(z) || length(z)!=nn)
-         stop("Check formula for errors.")
+         stop("Check formula for errors.", call.=FALSE)
    }
    mtr<- matrix(0,nrow=nn,ncol=nn)
    buv<- unique(b)
    if(length(buv)<2)
-      stop("No variation in the group variable?")
+      stop("No variation in the group variable?", call.=FALSE)
    for(i in 1:length(buv)){
       idx<- b==buv[i]
       mtr[idx,idx]<- z[idx]%o%z[idx]
@@ -29,17 +29,17 @@ rem.2<- function(b,a,z=1){
    b<- as.matrix(b)[,1]
    nn<- length(b)
    if(length(z)==1){
-      if(z!=1) stop("Check formula for errors.")
+      if(z!=1) stop("Check formula for errors.", call.=FALSE)
       z<- rep(1,nn)
    }else{
       z<- as.matrix(z)[,1]
       if(!is.numeric(z) || length(z)!=nn)
-         stop("Check formula for errors.")
+         stop("Check formula for errors.", call.=FALSE)
    }
    mtr<- matrix(0,nrow=nn,ncol=nn)
    auv<- unique(a)
    if(length(auv)<2)
-      stop("No variation in the group variable?")
+      stop("No variation in the group variable?", call.=FALSE)
    for(i in 1:length(auv)){
       idx<- a==auv[i]
       buv<- unique(b[idx])
@@ -56,7 +56,7 @@ rem<- function(formula,data){
    mlst<- list()
    formula<- deparse(formula)
    if(length(grep("~",formula,))<1)
-      stop("Check formula for errors.")
+      stop("Check formula for errors.", call.=FALSE)
    tms<- strsplit(formula,split="~",fixed=TRUE)[[1]]
       tms<- tms[-1]
       tms<- strsplit(tms,split="+",fixed=TRUE)[[1]]
@@ -65,7 +65,7 @@ rem<- function(formula,data){
       tt<- tms[i]
          tt<- strsplit(tt,"|",fixed=TRUE)[[1]]
       if(length(tt)<1 || length(tt)>2){
-         stop("Check formula for errors.")
+         stop("Check formula for errors.", call.=FALSE)
       }else if(length(tt)==1){
          zz<- 1
       }else if(length(tt)==2){

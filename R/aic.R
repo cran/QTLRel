@@ -17,46 +17,44 @@ estRR <-
 
 print.aic <- function(x,...)
 {
-   cat("aic:",x$aic,"\n")   
+   cat("AIC: ",x$aic,"\n", sep="")   
 #   cat("maximum likelihood:",x$model$val,"\n")
-   cat("model parameters:\n   "); print(x$model$par)
+   cat("Model parameters:\n"); print(x$model$par)
 }
 
 aicVC <- 
    function(y,
             x,
-            v = vector("list",6),
+            v = list(E=diag(length(y))),
             initpar,
             k = 2,
-            init = 6,
-            keep = 6,
+            init = 1,
+            keep = 1,
             direction = c("forward","backward"),
             nit = 25,
-            verbose = FALSE,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
+            msg = FALSE,
             control = list(),
             hessian = FALSE)
 {
    if(!all(is.finite(y)))
-      stop("y: non-numeric or infinite data points not allowed.")
+      stop("y: non-numeric or infinite data points not allowed.", call.=FALSE)
    if(!missing(x))
       if(any(sapply(x,is.infinite) | sapply(x,is.na)))
-         stop("x: missing or infinite data points not allowed.")
+         stop("x: missing or infinite data points not allowed.", call.=FALSE)
    UseMethod("aicVC")
 }
 
 aicVC.default <- 
    function(y,
             x,
-            v = vector("list",6),
+            v = list(E=diag(length(y))),
             initpar,
             k = 2,
-            init = 6,
-            keep = 6,
+            init = 1,
+            keep = 1,
             direction = c("forward","backward"),
             nit = 25,
-            verbose = FALSE,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
+            msg = FALSE,
             control = list(),
             hessian = FALSE)
 {
@@ -69,8 +67,7 @@ aicVC.default <-
             k = k,
             init = init,
             nit = nit,
-            verbose = verbose,
-            method = method,
+            msg = msg,
             control = control,
             hessian = hessian)
    }else if(direction=="backward"){
@@ -81,11 +78,10 @@ aicVC.default <-
             k = k,
             keep = keep,
             nit = nit,
-            verbose = verbose,
-            method = method,
+            msg = msg,
             control = control,
             hessian = hessian)
-   }else stop("only forward or backward is considered.")
+   }else stop("Only forward or backward is considered.", call.=FALSE)
    out
 }
 
@@ -93,28 +89,57 @@ aicVC.default <-
 aicVCf <-
    function(y,
             x,
-            v = vector("list",6),
+            v = list(E=diag(length(y))),
             initpar,
             k = 2,
-            init = 6,
+            init = 1,
             nit = 25,
-            verbose = FALSE,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
+            msg = FALSE,
             control = list(),
             hessian = FALSE)
 {
-# estimate all background genetic variance (bgv)
+# estimate all background genetic variance (VC)
 # y: ny by 1 matrix, response
 # x: covariates
-# v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 2000 pp635)
+# v: list of variance components
 #    serve as the largest possible model
 # initpar: initial parameters, will be initilized automatically if missing
 # k: penalty on each parameter
-# init: indicator of the initial model. only v[[6]] by default
+# init: indicator of the initial model. only E by default
 # nit: number of iterations to call optim()
-# method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
+   fv <- function(vv){
+   # vv: list of variance components
+      if(is.matrix(vv)){
+         vv<- list(A=vv,E=diag(nrow(vv)))
+      }
+
+      nv<- length(vv)
+      if(nv>0){
+         nnl<- NULL
+         for(i in 1:nv){
+            nnl<- c(nnl,!is.null(vv[[i]]))
+            if(!is.null(vv[[i]])){
+               if(!all(is.finite(vv[[i]])))
+                  stop("Only finite numerical elements are allowed in variance matrices!", call.=FALSE)
+            }
+         }
+         nn<- cumsum(nnl)
+      }
+
+      list(v=vv,nv=nv,nnl=nnl,nn=nn)
+   }
+
+   if(!is.element("E",names(v))){
+      v$E<- diag(length(y))
+      init<- c(init,length(v))
+
+      n<- match("E",names(v))
+      init<- union(init,n)
+      rm(n)
+   }
+
    v0<- vector("list",length(v))
       names(v0)<- names(v)
    for(i in 1:length(init))
@@ -126,14 +151,14 @@ aicVCf <-
              lik = NULL,
              trace = NULL)
 
-   if(verbose)
-      cat("\nModel with variance components:",names(ov$v)[ov$nnl],"\n")
-   oo<- estVC(y=y,x=x,v=ov$v,initpar=initpar,nit=nit,method=method,control=control,hessian=hessian)
+   if(msg)
+      cat("\nModel with variance components: ",names(ov$v)[ov$nnl],"\n", sep="")
+   oo<- estVC(y=y,x=x,v=ov$v,initpar=initpar,nit=nit,control=control,hessian=hessian)
    ob$aic<- -2*oo$value+length(oo$par)*k
    ob$model<- oo
    ob$lik<- c(lik=oo$value,ob$lik)
    ob$trace<- rbind(ov$nnl,ob$trace)
-   if(verbose){
+   if(msg){
       cat("*** initial model:",ov$nnl,"\n")
       cat("*** aic:",ob$aic,"\n\n")
    }
@@ -150,16 +175,16 @@ aicVCf <-
          v0[ns[i]]<- list(v[[ns[i]]])
          ov0<- fv(v0)
          if(all(ov$nnl == ov0$nnl)) next
-         if(verbose)
-            cat("Model with variance components:",names(ov0$v)[ov0$nnl],"\n")
-         o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,method=method,control=control,hessian=hessian)
+         if(msg)
+            cat("Model with variance components: ",names(ov0$v)[ov0$nnl],"\n", sep="")
+         o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,control=control,hessian=hessian)
          ob$lik<- c(lik=o0$value,ob$lik)
          ob$trace<- rbind(ov0$nnl,ob$trace)
          if(-2*o0$value+length(o0$par)*k < -2*oo0$value+length(oo0$par)*k - 1e-5){
             oo0<- o0
             vv0<- ov0
          }
-         if(verbose) cat("   aic:",-2*o0$value+length(o0$par)*k,"\n")
+         if(msg) cat("AIC:",-2*o0$value+length(o0$par)*k,"\n", sep="")
       }
       if(-2*oo0$value+length(oo0$par)*k < ob$aic - 1e-5){
          oo<- oo0
@@ -171,7 +196,7 @@ aicVCf <-
          go<- TRUE
          if(sum(!ov$nnl)==0) go<- FALSE
 
-         if(verbose){
+         if(msg){
             cat("*** selected model:",ov$nnl,"\n")
             cat("*** aic:",ob$aic,"\n\n")
          }
@@ -189,42 +214,71 @@ aicVCf <-
 aicVCb <-
    function(y,
             x,
-            v=vector("list",6),
+            v = list(E=diag(length(y))),
             initpar,
-            k=2,
-            keep=6,
-            nit=25,
-            verbose=FALSE,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
+            k = 2,
+            keep = 1,
+            nit = 25,
+            msg = FALSE,
             control = list(),
             hessian = FALSE)
 {
-# estimate all background genetic variance (bgv)
+# estimate all background genetic variance (VC)
 # y: ny by 1 matrix, response
 # x: covariates
-# v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
+# v: list of variance components
 #    serve as the large possible model
 # initpar: initial parameters, will be initilized automatically if missing
 # k: penalty on each parameter
-# keep: terms to be kept. v[[6]] is kept (won't drop) by default
+# keep: terms to be kept. E is kept (won't drop) by default
 # nit: number of iterations to call optim()
-# method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
+   fv <- function(vv){
+   # vv: list of variance components
+      if(is.matrix(vv)){
+         vv<- list(A=vv,E=diag(nrow(vv)))
+      }
+
+      nv<- length(vv)
+      if(nv>0){
+         nnl<- NULL
+         for(i in 1:nv){
+            nnl<- c(nnl,!is.null(vv[[i]]))
+            if(!is.null(vv[[i]])){
+               if(!all(is.finite(vv[[i]])))
+                  stop("Only finite numerical elements are allowed in variance matrices!", call.=FALSE)
+            }
+         }
+         nn<- cumsum(nnl)
+      }
+
+      list(v=vv,nv=nv,nnl=nnl,nn=nn)
+   }
+
+   if(!is.element("E",names(v))){
+      v$E<- diag(length(y))
+      keep<- c(keep,length(v))
+
+      n<- match("E",names(v))
+      keep<- union(keep,n)
+      rm(n)
+   }
+
    ov<- fv(v)
    ob<- list(aic = NULL,
              model = NULL,
              lik = NULL,
              trace = NULL)
 
-   if(verbose)
-      cat("\nModel with variance components:",names(ov$v)[ov$nnl],"\n")
-   oo<- estVC(y=y,x=x,v=ov$v,initpar=initpar,nit=nit,method=method,control=control,hessian=hessian)
+   if(msg)
+      cat("\nModel with variance components: ",names(ov$v)[ov$nnl],"\n", sep="")
+   oo<- estVC(y=y,x=x,v=ov$v,initpar=initpar,nit=nit,control=control,hessian=hessian)
    ob$aic<- -2*oo$value+length(oo$par)*k
    ob$model<- oo
    ob$lik<- c(lik=oo$value,ob$lik)
    ob$trace<- rbind(ov$nnl,ob$trace)
-   if(verbose){
+   if(msg){
       cat("*** initial model:",ov$nnl,"\n")
       cat("*** aic:",ob$aic,"\n\n")
    }
@@ -240,16 +294,16 @@ aicVCb <-
          v0<- ov$v
          v0[ns[i]]<- list(NULL)
          ov0<- fv(v0)
-         if(verbose)
-            cat("Model with variance components:",names(ov0$v)[ov0$nnl],"\n")
-         o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,method=method,control=control,hessian=hessian)
+         if(msg)
+            cat("Model with variance components: ",names(ov0$v)[ov0$nnl],"\n", sep="")
+         o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,control=control,hessian=hessian)
          ob$lik<- c(lik=o0$value,ob$lik)
          ob$trace<- rbind(ov0$nnl,ob$trace)
          if(-2*o0$value+length(o0$par)*k < -2*oo0$value+length(oo0$par)*k - 1e-5){
             oo0<- o0
             vv0<- ov0
          }
-         if(verbose) cat("   aic:",-2*o0$value+length(o0$par)*k,"\n")
+         if(msg) cat("AIC: ",-2*o0$value+length(o0$par)*k,"\n",sep="")
       }
       if(-2*oo0$value+length(oo0$par)*k < ob$aic - 1e-5){
          oo<- oo0
@@ -259,9 +313,9 @@ aicVCb <-
          go<- TRUE
          if(sum(ov$nnl & kpt)<1) go<- FALSE
 
-         if(verbose){
-            cat("*** selected model:",ov$nnl,"\n")
-            cat("*** aic:",ob$aic,"\n\n")
+         if(msg){
+            cat("*** selected model: ",ov$nnl,"\n",sep="")
+            cat("*** AIC: ",ob$aic,"\n\n",sep="")
          }
       }
    }
@@ -271,7 +325,7 @@ aicVCb <-
          v0<- ov$v
          v0[1:(length(v0)-1)]<- vector("list",length(v0)-1)
          ov0<- fv(v0)
-         o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,method=method,control=control,hessian=hessian)
+         o0<- estVC(y=y,x=x,v=ov0$v,nit=nit,control=control,hessian=hessian)
          ob$lik<- c(lik=o0$value,ob$lik)
          ob$trace<- rbind(ov0$nnl,ob$trace)
       }
@@ -299,7 +353,7 @@ AICb <-
             uu,
             dd,
             kk,
-            verbose = FALSE)
+            msg = FALSE)
 {
    xx<- t(uu)%*%xx
    oo<- NULL
@@ -313,7 +367,7 @@ AICb <-
          oo1<- oo
          aic1<- aic
          xin1<- xin
-         if(verbose) cat("b")
+         if(msg) cat("b")
          for(i in 1:length(ii)){
             xin0<- xin
             xin0[ii[i]]<- FALSE
@@ -331,16 +385,16 @@ AICb <-
                aic1<- aic0
                xin1<- xin0
                go<- TRUE
-               if(verbose) cat(".")
+               if(msg) cat(".")
             }
          }
          if(go){
-            if(sum(xin1)!=sum(xin)-1) stop("drop stage in AICb: something wrong.")
+            if(sum(xin1)!=sum(xin)-1) stop("Drop stage in AICb: something wrong.", call.=FALSE)
             oo<- oo1
             aic<- aic1
             xin<- xin1
 
-            if(verbose) cat("-")
+            if(msg) cat("-")
          }
       }
    }
@@ -359,7 +413,7 @@ AICf <-
             dd,
             kk,
             scope,
-            verbose = FALSE)
+            msg = FALSE)
 {
    xx<- t(uu)%*%xx
    if(missing(scope)) scope<- rep(TRUE,length(xin))
@@ -372,7 +426,7 @@ AICf <-
       oo2<- oo
       aic2<- aic
       xin2<- xin
-      if(verbose) cat("f")
+      if(msg) cat("f")
       for(i in 1:length(ii)){
          if(!scope[ii[i]]) next
          xin0<- xin
@@ -389,15 +443,15 @@ AICf <-
             aic2<- aic0
             xin2<- xin0
             go<- TRUE
-            if(verbose) cat(".")
+            if(msg) cat(".")
          }
       }
       if(go){
-         if(sum(xin2)!=sum(xin)+1) stop("move stage in ICf: something wrong.")
+         if(sum(xin2)!=sum(xin)+1) stop("Move stage in ICf: something wrong.", call.=FALSE)
          oo<- oo2
          aic<- aic2
          xin<- xin2
-         if(verbose) cat("+")
+         if(msg) cat("+")
       }
    }
 
@@ -415,7 +469,7 @@ AICmove <-
             uu,
             dd,
             kk,
-            verbose=FALSE)
+            msg=FALSE)
 {
    xx<- t(uu)%*%xx
    go<- FALSE
@@ -435,7 +489,7 @@ AICmove <-
          xin1<- xin
          oo1<- oo
          aic1<- aic
-         if(verbose) cat("<")
+         if(msg) cat("<")
          for(j in mn:mx){
             if(i==ii[i] || !scope[j]) next
             xin0<- xin
@@ -453,7 +507,7 @@ AICmove <-
                aic1<- aic0
                xin1<- xin0
                go<- TRUE
-               if(verbose) cat(".")
+               if(msg) cat(".")
             }
          }
 
@@ -479,7 +533,7 @@ mAIC.default <-
             k = 2,
             direction = c("both", "backward", "forward"),
             ext = FALSE,
-            verbose = FALSE)
+            msg = FALSE)
 {
 # y: single trait
 # x: covariates
@@ -488,27 +542,28 @@ mAIC.default <-
 # xin: indicator of gdat columns at start
 # k: panelty,e.g., 0.05 threshold/number of parameters
    if(!is.null(vc)){
-      if(is.element("bgv",attr(vc,"class"))){
-         nb<- length(vc$par) - sum(vc$nnl)
+      if(is.element("VC",attr(vc,"class"))){
+         nv<- length(vc$v)
+         nb<- length(vc$par) - nv
          nr<- nrow(vc$y)
          vcov<- matrix(0,nrow=nr,ncol=nr)
-         for(i in 1:vc$nv)
-            if(vc$nnl[i]) vcov<- vcov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+         for(i in 1:nv)
+            vcov<- vcov + vc$v[[i]]*vc$par[nb+i]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
-         if(!is.matrix(vc)) stop("vc should be a matrix.")
-         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
+         if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
          vcov<- vc
       }
    }else vcov<- diag(0,nrow(as.matrix(y)))
 #   dd<- svd(vcov); uu<- dd$u; dd<- dd$d
    dd<- eigen(vcov,symmetric=T); uu<- dd$vec; dd<- dd$val
-      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance may not be positive definite.")
+      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance may not be positive definite.", call.=FALSE)
    dd<- abs(dd)
 
    if(is.matrix(y) || is.data.frame(y)){
       if(dim(y)[2]>1)
-         warning("y: only the first column will be analzed.")
+         cat("   Warning: y: only the first column will be analzed.\a\n")
       y<- y[,1]
    }
    if(!missing(x)){
@@ -521,7 +576,7 @@ mAIC.default <-
       yy<- as.matrix(yy)
 
    if(any(is.na(gdat)))
-      stop("There are missing genotypes...")
+      stop("There are missing genotypes...", call.=FALSE)
    if(is.numeric(gdat)){
       gdat<- matrix(as.character(gdat),nrow=nrow(gdat))
    }
@@ -538,33 +593,33 @@ mAIC.default <-
 
    loci.idx<- 1:length(xin)
 if(ext){
-   if(verbose)
-      cat("Remove extraneous QTL...\n")
-   tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,verbose=verbose)
-   if(verbose) cat("Done.\n")
+   if(msg)
+      cat("   Remove extraneous QTL...\n")
+   tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,msg=msg)
+   if(msg) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
       aic<- tmp$aic
       xin=tmp$xin
    }
-   if(verbose){
-      cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-      cat("Log-likelihood:",oo$val,"\n")
+   if(msg){
+      cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+      cat("   Log-likelihood: ",oo$val,"\n",sep="")
       cat(date(),"\n\n")
    }
 
-   if(verbose)
-      cat("Move QTL to the best locations...\n")
-   tmp<- AICmove(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,chrIdx=chrIdx,uu=uu,dd=dd,kk=k,verbose=verbose)
-   if(verbose) cat("Done.\n")
+   if(msg)
+      cat("   Move QTL to the best locations...\n")
+   tmp<- AICmove(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,chrIdx=chrIdx,uu=uu,dd=dd,kk=k,msg=msg)
+   if(msg) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
       aic<- tmp$aic
       xin=tmp$xin
    }
-   if(verbose){
-      cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-      cat("Log-likelihood:",oo$val,"\n")
+   if(msg){
+      cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+      cat("   Log-likelihood: ",oo$val,"\n",sep="")
       cat(date(),"\n\n")
    }
 }
@@ -573,24 +628,24 @@ if(ext){
    forward<- direction=="both" || direction=="forward"
    backward<- direction=="both" || direction=="backward"
    go<- TRUE
-   if(verbose){
-      if(forward && backward) cat("Stepwise selection...\n")
-      else if(forward) cat("Forward selection...\n")
-      else cat("Backward selection...\n")
+   if(msg){
+      if(forward && backward) cat("   Stepwise selection...\n")
+      else if(forward) cat("   Forward selection...\n")
+      else cat("   Backward selection...\n")
    }
    while(go){
       go<- FALSE
       if(backward){
-         tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,verbose=verbose)
+         tmp<- AICb(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,msg=msg)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
             xin=tmp$xin
 
-            if(verbose){
-               cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-               cat("Log-likelihood:",oo$val,"\n")
-               cat("AIC:",aic,"\n")
+            if(msg){
+               cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+               cat("   Log-likelihood: ",oo$val,"\n",sep="")
+               cat("   AIC: ",aic,"\n",sep="")
                cat(date(),"\n\n")
             }
             go<- TRUE
@@ -599,26 +654,26 @@ if(ext){
       }
 
       if(forward){# scope will be missing
-         tmp<- AICf(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,verbose=verbose)
+         tmp<- AICf(aic=aic,xin=xin,yy=yy,xx=x,gdat=gdat,uu=uu,dd=dd,kk=k,msg=msg)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
             xin=tmp$xin
 
-            if(verbose){
-               cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-               cat("Log-likelihood:",oo$val,"\n")
-               cat("AIC:",aic,"\n")
+            if(msg){
+               cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+               cat("   Log-likelihood: ",oo$val,"\n",sep="")
+               cat("   AIC: ",aic,"\n",sep="")
                cat(date(),"\n\n")
             }
             go<- TRUE
          }
       }
    }
-   if(verbose){
-      cat("Done.\n")
-      cat("There are",sum(xin),"putative QTL.\n")
-      cat("Log-likelihood:",oo$val,"\n\n")
+   if(msg){
+      cat("   Done.\n")
+      cat("   There are ",sum(xin)," putative QTL.\n",sep="")
+      cat("   Log-likelihood: ",oo$val,"\n\n",sep="")
    }
 
    list(model=oo,aic=aic,snp=colnames(gdat)[xin],xin=xin)
@@ -650,7 +705,7 @@ AICb.HK <-
             uu,
             dd,
             kk,
-            verbose = FALSE)
+            msg = FALSE)
 {
    xx<- t(uu)%*%xx
    oo<- NULL
@@ -664,7 +719,7 @@ AICb.HK <-
          oo1<- oo
          aic1<- aic
          xin1<- xin
-         if(verbose) cat("b")
+         if(msg) cat("b")
          for(i in 1:length(ii)){
             xin0<- xin
             xin0[ii[i]]<- FALSE
@@ -680,16 +735,17 @@ AICb.HK <-
                aic1<- aic0
                xin1<- xin0
                go<- TRUE
-               if(verbose) cat(".")
+               if(msg) cat(".")
             }
          }
          if(go){
-            if(sum(xin1)!=sum(xin)-1) stop("drop stage in AICb: something wrong.")
+            if(sum(xin1)!=sum(xin)-1)
+               stop("Drop stage in AICb: something wrong.", call.=FALSE)
             oo<- oo1
             aic<- aic1
             xin<- xin1
 
-            if(verbose) cat("-")
+            if(msg) cat("-")
          }
       }
    }
@@ -708,7 +764,7 @@ AICf.HK <-
             dd,
             kk,
             scope,
-            verbose = FALSE)
+            msg = FALSE)
 {
    xx<- t(uu)%*%xx
    if(missing(scope)) scope<- rep(TRUE,length(xin))
@@ -721,7 +777,7 @@ AICf.HK <-
       oo2<- oo
       aic2<- aic
       xin2<- xin
-      if(verbose) cat("f")
+      if(msg) cat("f")
       for(i in 1:length(ii)){
          if(!scope[ii[i]]) next
          xin0<- xin
@@ -736,15 +792,15 @@ AICf.HK <-
             aic2<- aic0
             xin2<- xin0
             go<- TRUE
-            if(verbose) cat(".")
+            if(msg) cat(".")
          }
       }
       if(go){
-         if(sum(xin2)!=sum(xin)+1) stop("move stage in ICf: something wrong.")
+         if(sum(xin2)!=sum(xin)+1) stop("Move stage in ICf: something wrong.", call.=FALSE)
          oo<- oo2
          aic<- aic2
          xin<- xin2
-         if(verbose) cat("+")
+         if(msg) cat("+")
       }
    }
 
@@ -761,7 +817,7 @@ AICmove.HK <-
             uu,
             dd,
             kk,
-            verbose = FALSE)
+            msg = FALSE)
 {
    xx<- t(uu)%*%xx
    go<- FALSE
@@ -781,7 +837,7 @@ AICmove.HK <-
          xin1<- xin
          oo1<- oo
          aic1<- aic
-         if(verbose) cat("<")
+         if(msg) cat("<")
          for(j in mn:mx){
             if(i==ii[i] || !scope[j]) next
             xin0<- xin
@@ -797,7 +853,7 @@ AICmove.HK <-
                aic1<- aic0
                xin1<- xin0
                go<- TRUE
-               if(verbose) cat(".")
+               if(msg) cat(".")
             }
          }
 
@@ -822,7 +878,7 @@ mAIC.HK <-
             k = 2,
             direction = c("both", "backward", "forward"),
             ext = FALSE,
-            verbose = FALSE)
+            msg = FALSE)
 {
 # y: single trait
 # x: covariates
@@ -830,27 +886,28 @@ mAIC.HK <-
 # xin: indicator of prdat$pr columns at start
 # k: panelty,e.g., 0.05 threshold/number of parameters
    if(!is.null(vc)){
-      if(is.element("bgv",attr(vc,"class"))){
-         nb<- length(vc$par) - sum(vc$nnl)
+      if(is.element("VC",attr(vc,"class"))){
+         nv<- length(vc$v)
+         nb<- length(vc$par) - nv
          nr<- nrow(vc$y)
          vcov<- matrix(0,nrow=nr,ncol=nr)
-         for(i in 1:vc$nv)
-            if(vc$nnl[i]) vcov<- vcov + vc$v[[i]]*vc$par[nb+vc$nn[i]]
+         for(i in 1:nv)
+            vcov<- vcov + vc$v[[i]]*vc$par[nb+i]
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
-         if(!is.matrix(vc)) stop("vc should be a matrix.")
-         if(!is.numeric(vc)) stop("vc should be a numeric matrix.")
+         if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
+         if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
          vcov<- vc
       }
    }else vcov<- diag(0,nrow(as.matrix(y)))
 #   dd<- svd(vcov); uu<- dd$u; dd<- dd$d
    dd<- eigen(vcov,symmetric=T); uu<- dd$vec; dd<- dd$val
-      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance: may not be positive definite.")
+      if(min(dd)<0 && abs(min(dd))>sqrt(.Machine$double.eps)) stop("Variance-covariance: may not be positive definite.", call.=FALSE)
    dd<- abs(dd)
 
    if(is.matrix(y) || is.data.frame(y)){
       if(dim(y)[2]>1)
-         warning("y: only the first column will be analzed.")
+         cat("   Warning: y: only the first column will be analzed.\a\n")
       y<- y[,1]
    }
    if(!missing(x)){
@@ -873,33 +930,33 @@ mAIC.HK <-
 
    loci.idx<- 1:length(xin)
 if(ext){
-   if(verbose)
-      cat("Remove extraneous QTL...\n")
-   tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
-   if(verbose) cat("Done.\n")
+   if(msg)
+      cat("   Remove extraneous QTL...\n")
+   tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,msg=msg)
+   if(msg) cat("   Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
       aic<- tmp$aic
       xin=tmp$xin
    }
-   if(verbose){
-      cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-      cat("Log-likelihood:",oo$val,"\n")
+   if(msg){
+      cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+      cat("   Log-likelihood: ",oo$val,"\n",sep="")
       cat(date(),"\n\n")
    }
 
-   if(verbose)
-      cat("Move QTL to the best locations...\n")
-   tmp<- AICmove.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
-   if(verbose) cat("Done.\n")
+   if(msg)
+      cat("   Move QTL to the best locations...\n")
+   tmp<- AICmove.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,msg=msg)
+   if(msg) cat("Done.\n")
    if(!is.null(tmp$oo)){
       oo<- tmp$oo
       aic<- tmp$aic
       xin=tmp$xin
    }
-   if(verbose){
-      cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-      cat("Log-likelihood:",oo$val,"\n")
+   if(msg){
+      cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+      cat("   Log-likelihood: ",oo$val,"\n")
       cat(date(),"\n\n")
    }
 }
@@ -908,24 +965,24 @@ if(ext){
    forward<- direction=="both" || direction=="forward"
    backward<- direction=="both" || direction=="backward"
    go<- TRUE
-   if(verbose){
-      if(forward && backward) cat("Stepwise selection...\n")
-      else if(forward) cat("Forward selection...\n")
-      else cat("Backward selection...\n")
+   if(msg){
+      if(forward && backward) cat("   Stepwise selection...\n")
+      else if(forward) cat("   Forward selection...\n")
+      else cat("   Backward selection...\n")
    }
    while(go){
       go<- FALSE
       if(backward){
-         tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
+         tmp<- AICb.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,msg=msg)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
             xin=tmp$xin
 
-            if(verbose){
-               cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-               cat("Log-likelihood:",oo$val,"\n")
-               cat("AIC:",aic,"\n")
+            if(msg){
+               cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+               cat("   Log-likelihood: ",oo$val,"\n",sep="")
+               cat("   AIC: ",aic,"\n",sep="")
                cat(date(),"\n\n")
             }
             go<- TRUE
@@ -934,26 +991,26 @@ if(ext){
       }
 
       if(forward){# scope will be missing
-         tmp<- AICf.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,verbose=verbose)
+         tmp<- AICf.HK(aic=aic,xin=xin,yy=yy,xx=x,prdat=prdat,uu=uu,dd=dd,kk=k,msg=msg)
          if(!is.null(tmp$oo)){
             oo<- tmp$oo
             aic<- tmp$aic
             xin=tmp$xin
 
-            if(verbose){
-               cat("There are",sum(xin),"candidate QTL: ",loci.idx[xin],"\n")
-               cat("Log-likelihood:",oo$val,"\n")
-               cat("AIC:",aic,"\n")
+            if(msg){
+               cat("   There are ",sum(xin)," candidate QTL: ",loci.idx[xin],"\n",sep="")
+               cat("   Log-likelihood: ",oo$val,"\n",sep="")
+               cat("   AIC: ",aic,"\n",sep="")
                cat(date(),"\n\n")
             }
             go<- TRUE
          }
       }
    }
-   if(verbose){
-      cat("Done.\n")
-      cat("There are",sum(xin),"putative QTL.\n")
-      cat("Log-likelihood:",oo$val,"\n\n")
+   if(msg){
+      cat("   Done.\n")
+      cat("   There are ",sum(xin)," putative QTL.\n",sep="")
+      cat("   Log-likelihood: ",oo$val,"\n\n",sep="")
    }
 
    list(model=oo,aic=aic,snp=prdat$snp[xin],xin=xin)
@@ -970,13 +1027,13 @@ mAIC<-
             k = 2,
             direction = c("both", "backward", "forward"),
             ext = FALSE,
-            verbose = FALSE)
+            msg = FALSE)
 {
    if(!all(is.finite(y)))
-      stop("y: non-numeric or infinite data points not allowed.")
+      stop("y: non-numeric or infinite data points not allowed.", call.=FALSE)
    if(!missing(x))
       if(any(sapply(x,is.infinite) | sapply(x,is.na)))
-         stop("x: missing or infinite data points not allowed.")
+         stop("x: missing or infinite data points not allowed.", call.=FALSE)
    if(is.null(prdat) || !is.element("Pr",class(prdat))){
       mAIC.default(y = y,
                    x = x,
@@ -987,7 +1044,7 @@ mAIC<-
                    k = k,
                    direction = direction,
                    ext = ext,
-                   verbose = verbose)
+                   msg = msg)
    }else{
       mAIC.HK(y = y,
               x = x,
@@ -997,7 +1054,7 @@ mAIC<-
               k = k,
               direction = direction,
               ext = ext,
-              verbose = verbose)
+              msg = msg)
    }
 }
 

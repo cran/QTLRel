@@ -60,7 +60,7 @@ freeSpace<- function(){
        k<- a[length(a)-2]
        k<- as.double(k)/2^10 # in Mb
     }else if(os.type=="windows"){
-       cat("You may need administrator's privilidge to run this program\a\n")
+       cat("   You may need administrator's privilidge to run this program.\a\n")
        a<- system("fsutil volume diskfree c:",intern=T)
        n<- c(nchar(a[1]),
              nchar(strsplit(a[1],":")[[1]][2]),
@@ -106,17 +106,18 @@ ped.local.no<- function(ped,oids){
 
    if(missing(oids)){
       oids<- ped$old[ped$generation==ngen]
-   }else oids<- trim(oids)
+   }
+   oids<- sapply(oids,as.character)
    jj<- match(oids,ped$old)
-   ids<- ped$id[jj]
+   ids<- sapply(ped$id[jj],as.character)
    ii<- is.element(ped$id,ids)
       ii<- rbind(NULL,ii)
    if(ngen>1) for(n in ngen:2){# (n-1)-th generation
       idx<- match(ids,ped$id)
-      idx<- ped$generation[idx]<gens[n]
+         idx<- ped$generation[idx]<gens[n]
       jj<- match(ids[!idx],ped$id)
-      jj<- is.element(ped$id,ped$sire[jj]) |
-           is.element(ped$id,ped$dam[jj])
+         jj<- is.element(ped$id,ped$sire[jj]) |
+              is.element(ped$id,ped$dam[jj])
       ids<- union(ids[idx],ped$id[jj])
       idx<- is.element(ped$id,ids)
       ii<- rbind(idx,ii)
@@ -130,7 +131,7 @@ ped.opt<- function(ped,ids,ns,df=3){
 # ped: object of pedRecode
 # ids: old ids of interest
 # ns: object of ped.local.no
-   if(df<0) stop("'df': should be non-negative.")
+   if(df<0) stop("'df': should be non-negative.", call.=FALSE)
    fs<- freeSpace() # free disk space
    if(missing(ns)){
       nn<- ped.local.no(ped,ids)
@@ -203,33 +204,33 @@ ans<- function(prompt="Continue?") {
 # kinship coefficients #
 ########################
 
-kinship<- function(ped,ids){
+kinship<- function(ped,ids,all=TRUE,msg=TRUE){
    k<- -999
    k<- .C("getsize",k=as.integer(k),
           PACKAGE="QTLRel")$k
       k<- sqrt(2^(8*k-1)-1)
       k<- floor(k)
-   ped<- pedRecode(ped)
+   if(missing(ids))
+      ids<- ped$id
+      ids<- sapply(ids,as.character)
+   ped<- pedRecode(ped,ids=ids,all=all,msg=msg)
    if(nrow(ped)>k)
-      stop("Pedigree is too large.")
-   if(missing(ids)){
-      ids<- ped$old
-   }
+      stop("Pedigree is too large.", call.=FALSE)
    idx<- match(ids,ped$old)
    if(any(is.na(idx)))
-         stop("Check ids for errors.")
+         stop("Check ids for errors.", call.=FALSE)
 
    ped<- ped[,c("id","sire","dam")]
    ksp<- matrix(-999.9,nrow=nrow(ped),ncol=nrow(ped))
    out<- .C("kinshipc",
             ped = as.integer(t(ped)),
-            nr = as.integer(nrow(ped)),
-            nc = as.integer(ncol(ped)),
+             nr = as.integer(nrow(ped)),
+             nc = as.integer(ncol(ped)),
             ksp = as.double(ksp),
-            PACKAGE="QTLRel")
+        PACKAGE = "QTLRel")
    ksp<- matrix(out$ksp,nrow=nrow(ped),byrow=TRUE)
       ksp<- ksp[idx,idx]
-      rownames(ksp)<- colnames(ksp)<- trim(as.character(ids))
+      rownames(ksp)<- colnames(ksp)<- trim(sapply(ids,as.character))
    ksp
 }
 
@@ -237,14 +238,28 @@ kinship<- function(ped,ids){
 # calculate identity coefficients #
 ###################################
 
-cic<- function(ped,ids,inter,df=3,ask=FALSE,verbose=FALSE){
-   cicTmp(ped=ped,ids=ids,inter=inter,df=df,ask=ask,verbose=verbose)
+cic<- function(ped,ids,inter,df=3,ask=FALSE,msg=FALSE){
+   cicTmp(ped=ped,ids=ids,inter=inter,df=df,ask=ask,msg=msg)
 }
 
-cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
-   if(!is.ll()) cat("Warning: your system does not seem to support integers of 8+ bytes.\n") 
+cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
+   if(!is.ll()) cat("   Warning: your system does not seem to support integers of 8+ bytes.\n") 
    if(missing(ids)) ids<- ped$id
-   ped<- pedRecode(ped=ped,ids=ids)
+   ids<- sapply(ids,as.character)
+      ids<- trim(ids)
+   ped<- pedRecode(ped=ped,ids=ids,all=TRUE,msg=TRUE)
+      ped$id<- sapply(ped$id,as.character)
+      idx<- ped$sire < 0
+      sire<- sapply(ped$sire,as.character)
+      if(any(idx))
+         sire[idx]<- paste(sire[idx],"i",sep="")
+         ped$sire<- sire
+      idx<- ped$dam < 0
+      dam<- sapply(ped$dam,as.character)
+      if(any(idx))
+         dam[idx]<- paste(dam[idx],"i",sep="")
+         ped$dam<- dam
+   rm(sire,dam,idx)
    ped.No<- ped.local.no(ped,oids=ids)
       pedN<- rowSums(ped.No)
    if(missing(inter)){
@@ -252,12 +267,12 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    }else{
       gr<- inter
       if(any(!is.element(gr,ped$generation)))
-         stop("'inter' incorrectly specified.")
+         stop("'inter' incorrectly specified.", call.=FALSE)
    }
-   if(verbose){
+   if(msg){
       cat("  Carry-over number of individuals in each generation:\n")
       print(pedN)
-      cat("  Will go over generations:",as.character(gr),"\n")
+      cat("  Will go over generations: ",sapply(gr,as.character),"\n", sep="")
    }
    if(ask){
       ansTmp<- ans(prompt="Continue?")
@@ -273,7 +288,7 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
       nnTmp<- nnTmp[-c(1,length(nnTmp))]
    if(length(nnTmp)>0)
       if(any(nnTmp>fmaxSize()))
-         stop("Hardware limitation. Try others.")
+         stop("Hardware limitation. Try others.", call.=FALSE)
    ped$generation<- match(ped$generation,grTmp)
 
    DIR<- paste(".data",format(Sys.time(), "%Y%m%d%H%M%S"),sep="")
@@ -282,25 +297,24 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
    on.exit({
       unlink(DIR,recursive=TRUE,force=TRUE)
       if(length(dir(pattern=paste("\\",DIR,sep=""),all.files=TRUE))>0)
-         cat(paste("  Exit successfully! But you may mannually remove folder '", DIR, "'\n",sep="")) else
-         cat("  Exit successfully!\n")
+         cat(paste("  You may mannually remove folder '", DIR, "'\a\n",sep=""))
    })
    str<- paste(DIR,"/idcoef",sep="")
    if(length(gr)<2){
-      stop("Something wrong. check inter?")
+      stop("Something wrong. check inter?", call.=FALSE)
    }else if(length(gr)>1){
       for(n in 2:length(gr)){
-         if(verbose) cat(" ",as.character(grTmp[gr[n]]),sep="")
+         if(msg) cat(" ",sapply(grTmp[gr[n]],as.character),sep="")
 
-         infs<- paste(str,as.character(grTmp[gr[n-1]]),".",1:4,sep="")
-         outfs<- paste(str,as.character(grTmp[gr[n]]),".",1:4,sep="")
+         infs<- paste(str,sapply(grTmp[gr[n-1]],as.character),".",1:4,sep="")
+         outfs<- paste(str,sapply(grTmp[gr[n]],as.character),".",1:4,sep="")
          idTop<- ped$id[ped.No[gr[n-1],]]
          idBot<- ped$id[ped.No[gr[n],]]
          pedTmp<- ped[ped.No[gr[n-1],],]
-         idx<- ped$generation>gr[n-1] &
-               ped$generation<=gr[n]
-         pedTmp<- rbind(pedTmp,ped[idx,])
-         pedTmp<- pedRecode(pedTmp,ids=idBot)
+            idx<- ped$generation>gr[n-1] &
+                  ped$generation<=gr[n]
+            pedTmp<- rbind(pedTmp,ped[idx,])
+            pedTmp<- pedRecode(pedTmp,ids=idBot,all=FALSE,msg=FALSE)
          top<- is.element(pedTmp$old,idTop)
          if(n==2) top<- -999
          if(n<length(gr)){
@@ -308,40 +322,38 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,verbose=TRUE){
             pedTmp<- pedTmp[,c("id","sire","dam")]
             tmp<- .C("phicw",
                      pedigree = as.integer(t(pedTmp)),
-                     nr = as.integer(nrow(pedTmp)),
-                     nc = as.integer(ncol(pedTmp)),
-                     id = as.integer(idTmp),
-                     nid = as.integer(length(idTmp)),
-                     top = as.integer(top),
-                     as.character(infs),
-                     as.character(outfs),
-                     PACKAGE="QTLRel")
+                           nr = as.integer(nrow(pedTmp)),
+                           nc = as.integer(ncol(pedTmp)),
+                           id = as.integer(idTmp),
+                          nid = as.integer(length(idTmp)),
+                          top = as.integer(top),
+                                as.character(infs),
+                                as.character(outfs),
+                      PACKAGE = "QTLRel")
          }else{
-            ids<- trim(ids)
             idx<- match(ids,ped$old)
             idTmp<- pedTmp$id[match(ped$id[idx],pedTmp$old)]
             pedTmp<- pedTmp[,c("id","sire","dam")]
             idcf<- rep(-999.9,length(ids)*(length(ids)+1)/2*9)
             idcf<- .C("phicr",
                       pedigree = as.integer(t(pedTmp)),
-                      nr = as.integer(nrow(pedTmp)),
-                      nc = as.integer(ncol(pedTmp)),
-                      id = as.integer(idTmp),
-                      nid = as.integer(length(idTmp)),
-                      top = as.integer(top),
-                      as.character(infs),
-                      idcf = as.double(idcf),
-                      verbose = as.integer(verbose),
-                      PACKAGE="QTLRel")$idcf
+                            nr = as.integer(nrow(pedTmp)),
+                            nc = as.integer(ncol(pedTmp)),
+                            id = as.integer(idTmp),
+                           nid = as.integer(length(idTmp)),
+                           top = as.integer(top),
+                                 as.character(infs),
+                          idcf = as.double(idcf),
+                       msg = as.integer(msg),
+                       PACKAGE = "QTLRel")$idcf
           }
       }
-      if(verbose) cat("Done\n")
+      if(msg) cat("   Done\n")
    }
    idcf<- matrix(idcf,ncol=9,byrow=TRUE)
       colnames(idcf)<- paste("d",1:9,sep="")
 
    rns<- matrix("NA",nrow=nrow(idcf),ncol=2)
-   ids<- trim(as.character(ids))
    ii<- 0
    for(i in 1:length(ids)){
       for(j in 1:i){
@@ -370,7 +382,7 @@ genMatrix.cic<- function(x){
    str<- unlist(str)
    str<- matrix(str,ncol=2,byrow=T)
    if(!setequal(str[,1],str[,2])){
-      cat("Failed to extract IDs...\n")
+      cat("   Warning: Failed to extract IDs...\a\n")
       ids<- 1:nn
    }else ids<- str[(nr+1) - (nn:1),2]
 
@@ -394,16 +406,16 @@ genMatrix.cic<- function(x){
 #   AA<- 2*ksp
 #   MH<- MH - ib%o%ib
    o<- .C("gen_Matrix",
-          x = as.double(t(x)),
+           x = as.double(t(x)),
           nr = as.integer(nr),
           nc = as.integer(nc),
           nn = as.integer(nn),
-          ksp = as.double(t(ksp)),
+         ksp = as.double(t(ksp)),
           DD = as.double(t(DD)),
           AD = as.double(t(AD)),
           HH = as.double(t(HH)),
           MH = as.double(t(MH)),
-          PACKAGE="QTLRel")
+     PACKAGE = "QTLRel")
    ksp<- matrix(o$ksp,nrow=nn,byrow=TRUE)
       rownames(ksp)<- colnames(ksp)<- ids
    ib<- diag(ksp)
@@ -419,12 +431,12 @@ genMatrix.cic<- function(x){
    MH<- matrix(o$MH,nrow=nn,byrow=TRUE)
       rownames(MH)<- colnames(MH)<- ids
 
-   list(ib=ib,
-        AA=AA,
-        DD=DD,
-        AD=AD,
-        HH=HH,
-        MH=MH)
+   list(ib = ib,
+        AA = AA,
+        DD = DD,
+        AD = AD,
+        HH = HH,
+        MH = MH)
 }
 
 ###########

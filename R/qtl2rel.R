@@ -10,7 +10,7 @@ function(cross)
   #require(qtl) # need the qtl package for this function
 
   if(class(cross)[1] != "f2" || class(cross)[2] != "cross")
-    stop("Input must be an intercross.")
+    stop("Input must be an intercross.", call.=FALSE)
 
   n.ind <- qtl::nind(cross)
 
@@ -19,14 +19,14 @@ function(cross)
   if(is.null(id))
     id <- 1:n.ind
   if(!is.numeric(id)) {
-    warning("Creating arbitrary numeric IDs.")
+    cat("   Creating arbitrary numeric IDs.\a\n")
     id <- 1:n.ind
   }
 
   # deal with sex info
   sexpgm <- qtl::getsex(cross)
   if(is.null(sexpgm$sex)) {
-    warning("No sex information; treating all as females")
+    cat("   No sex information; treating all as females.\a\n")
     sex <- factor(rep("F", n.ind), levels=c("F", "M"))
   }
   else { # convert to F/M

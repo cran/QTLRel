@@ -1,4 +1,7 @@
 
+2017/12/10 improves speed on 'estVC' in case of one variance component
+2017/10/02 modify 'pedRecode' to allow inbred founders
+2017/08/15 use 'malloc' to assure successful creation of large vectors
 2016/02/01 modify 'pedF8' in examples to produce desired identify coefficients
 2015/11/12 remove compilation notes
 2014/04/04 fix a small bug

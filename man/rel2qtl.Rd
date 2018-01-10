@@ -5,7 +5,7 @@
 
 \description{
   Convert the data for a QTL mapping experiment from the QTLRel format
-  to that used by R/qtl (\url{http://www.rqtl.org}).
+  to that used by R/qtl (http://www.rqtl.org).
 }
 
 \usage{
@@ -19,7 +19,7 @@ rel2qtl(gdat, pdat, gmap)
 }
 
 \value{
-  A cross object for the R/qtl package (\url{http://www.rqtl.org}).
+  A cross object for the R/qtl package (http://www.rqtl.org).
 }
 
 \details{

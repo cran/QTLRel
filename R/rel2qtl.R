@@ -13,12 +13,12 @@ function(gdat, pdat, gmap)
   if(any(!is.element(id.pdat, id.gdat))) {
     missingind <- id.pdat[!is.element(id.pdat, id.gdat)]
     stop("Individuals in pdat that are not in gdat: ",
-               paste(missingind, collapse=":"))
+               paste(missingind, collapse=":"), call.=FALSE)
   }
   if(any(!is.element(id.gdat, id.pdat))) {
     missingind <- id.gdat[!is.element(id.gdat, id.pdat)]
     stop("Individuals in gdat that are not in pdat: ",
-               paste(missingind, collapse=":"))
+               paste(missingind, collapse=":"), call.=FALSE)
   }
 
   # reorder pdat as in gdat
@@ -30,17 +30,17 @@ function(gdat, pdat, gmap)
   mn.gmap <- as.character(gmap[,1])
 
   if(length(mn.gdat) != length(mn.gmap)) # different numbers of markers
-    stop("Different numbers of markers in gdat and gmap.")
+    stop("Different numbers of markers in gdat and gmap.", call.=FALSE)
 
   if(any(!is.element(mn.gdat, mn.gmap))) {
     missingmar <- mn.gdat[!is.element(mn.gdat, mn.gmap)]
     stop("Markers in gdat that are not in gmap: ",
-         paste(missingmar, collapse=":"))
+         paste(missingmar, collapse=":"), call.=FALSE)
   }
   if(any(!is.element(mn.gmap, mn.gdat))) {
     missingmar <- mn.gmap[!is.element(mn.gmap, mn.gdat)]
     stop("Markers in gmap that are not in gdat: ",
-         paste(missingmar, collapse=":"))
+         paste(missingmar, collapse=":"), call.=FALSE)
   }
 
   if(!all(mn.gmap == mn.gdat)) # reorder markers as in gmap
@@ -49,7 +49,7 @@ function(gdat, pdat, gmap)
   # determine chromosomes
   chr <- unique(as.character(gmap[,2]))
   if(any(chr=="X")) {
-    warning("Cannot convert X chromosome data.")
+    cat("   Cannot convert X chromosome data.\a\n")
     chr <- chr[chr != "X"]
   }
 

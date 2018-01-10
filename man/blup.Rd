@@ -16,8 +16,7 @@ An object from \code{\link{estVC}} or \code{\link{aicVC}}.
 }
 \value{
 \item{fixed}{BLUP for fixed effects.}
-\item{AA,DD,\dots}{BLUP for random (genetic) variance components "AA", "DD", \dots}
-\item{EE}{BLUP for residual effect.}
+\item{R, etc.}{BLUP for random effects.}
 }
 
 \seealso{
@@ -28,9 +27,11 @@ data(miscEx)
 
 \dontrun{
 # only consider additive genetic variance component
-o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
-b<- blup(o)
+pheno<- pdatF8[!is.na(pdatF8$bwt) & !is.na(pdatF8$sex),]
+ii<- match(rownames(pheno), rownames(gmF8$AA))
+v<- list(A=gmF8$AA[ii,ii],D=gmF8$DD[ii,ii])
+vc<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
+b<- blup(vc)
 }
 }
 

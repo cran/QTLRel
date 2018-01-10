@@ -100,7 +100,7 @@ void genMatr();
    }
 
    //store in idcf[,9]
-   void phicr(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, double* idcf,int* verbose){
+   void phicr(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, double* idcf, int* verbose){
          //signal(SIGINT, &userInt);
          int i;
          FILE* ifs[4];
@@ -124,7 +124,8 @@ void genMatr();
    void gen_Matrix(double* idcf, int* nr, int* nc, int* nn,
       double* ksp, double* DD, double* AD, double* HH, double* MH){
       int i;
-      double* idc[*nr]; for(i=0;i<*nr;i++) idc[i]=idcf+i*(*nc);
+      double** idc = (double**) malloc(sizeof(double*)*(*nr));
+         for(i=0;i<*nr;i++) idc[i]=idcf+i*(*nc);
       double* ks[*nn]; for(i=0;i<*nn;i++) ks[i]=ksp+i*(*nn);
       double* dd[*nn]; for(i=0;i<*nn;i++) dd[i]=DD+i*(*nn);
       double* ad[*nn]; for(i=0;i<*nn;i++) ad[i]=AD+i*(*nn);
@@ -132,6 +133,7 @@ void genMatr();
       double* mh[*nn]; for(i=0;i<*nn;i++) mh[i]=MH+i*(*nn);
 
       genMatr(idc, *nn, ks, dd, ad, hh, mh);
+      free(idc);
    }
 //}
 
@@ -140,7 +142,6 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
    int i, j, k, l;
    for(i=0;i<nid;i++){
       for(j=0;j<=i;j++){
-         R_CheckUserInterrupt();//if(stopIt) return;
          buff = phi2(id[i],id[j],ped,top,ifs);
          frwsize = fwrite(&buff,sizeof(double),1,ofs[0]);
          if(frwsize!=1){
@@ -152,7 +153,6 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
    for(i=0;i<nid;i++){
       for(j=0;j<=i;j++){
          for(k=0;k<=j;k++){
-            R_CheckUserInterrupt();//if(stopIt) return;
             buff = phi3(id[i],id[j],id[k],ped,top,ifs);
             frwsize = fwrite(&buff,sizeof(double),1,ofs[1]);
             if(frwsize!=1){
@@ -166,7 +166,6 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
       for(j=0;j<=i;j++){
          for(k=0;k<=j;k++){
             for(l=0;l<=k;l++){
-               R_CheckUserInterrupt();//if(stopIt) return;
                buff = phi4(id[i],id[j],id[k],id[l],ped,top,ifs);
                frwsize = fwrite(&buff,sizeof(double),1,ofs[2]);
                if(frwsize!=1){
@@ -181,7 +180,6 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
       for(j=0;j<=i;j++){
          for(k=0;k<=i;k++){
             for(l=0;l<=k;l++){
-               R_CheckUserInterrupt();//if(stopIt) return;
                buff = phi22(id[i],id[j],id[k],id[l],ped,top,ifs);
                frwsize = fwrite(&buff,sizeof(double),1,ofs[3]);
                if(frwsize!=1){
@@ -382,21 +380,22 @@ void checkages(int *a, int *b)
       *b = tmp;
    }
 }
-
 double phi(int a, int b, int** ped, double** kc)
 {
    if( a == 0 || b == 0){
       return 0;
    }
    if(a == b){
-//      buff = 0.5 + 0.5*kc[ped[a-1][1]-1][ped[a-1][2]-1];
+      if(a < 0) return 1.0;
       buff = 0.5 + 0.5*phi(ped[a-1][1], ped[a-1][2], ped, kc);
-   }else if(a < b){
-      if(ped[b-1][1]==0 && ped[b-1][2]==0) buff = 0;
-      else if(ped[b-1][1]==0) buff = (kc[a-1][ped[b-1][2]-1])/2.0;
-      else if(ped[b-1][2]==0) buff = (kc[a-1][ped[b-1][1]-1])/2.0;
-      else buff = (kc[a-1][ped[b-1][1]-1] + kc[a-1][ped[b-1][2]-1])/2.0;
    }else{
+      if(a < b) checkages(&a, &b);
+      if(a < 0) return 0.0;
+      if(b < 0 || ped[a-1][1] < 0 || ped[a-1][2] < 0){
+         buff = phi(ped[a-1][1], b, ped, kc) + phi(ped[a-1][2], b, ped, kc);
+         return buff/2.0;
+      }
+
       if(ped[a-1][1]==0 && ped[a-1][2]==0) buff = 0;
       else if(ped[a-1][1]==0) buff = (kc[ped[a-1][2]-1][b-1])/2.0;
       else if(ped[a-1][2]==0) buff = (kc[ped[a-1][1]-1][b-1])/2.0;
@@ -419,51 +418,36 @@ void kship(int** ped, int nr, double** kc)
 
 double phi2(int a, int b, int** ped, int* top, FILE** ifs)
 {
+   R_CheckUserInterrupt();
    if( a == 0 || b == 0)
-      return 0;
+      return 0.0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1){
       o0[0]=a; o0[1]=b;
       sort(o0,2,o,0);
       jj = s2(o);
       fseekerr = FSEEK(ifs[0],jj*sizeof(double),SEEK_SET);
-/*
-      counter = 3;
-      while(fseekerr && counter>0){
-         fseekerr = FSEEK(ifs[0],jj*sizeof(double),SEEK_SET);
-         counter--;
-      }
-      if(fseekerr){
-         error(_("Seeking errors (1) occurred repeatedly.\n"));
-      }
-*/
       frwsize = fread(&buff,sizeof(double),1,ifs[0]);
-/*
-      counter = 3;
-      while(frwsize!=1 && counter>0){
-         frwsize = fread(&buff,sizeof(double),1,ifs[0]);
-         counter--;
-      }
-      if(frwsize!=1){
-         error(_("Reading errors (1) occurred repeatedly.\n"));
-      }
-*/
 
       return(buff);
    }
-   if(a == b)
-      return (0.5 + 0.5*phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs));
-   else{
+   if(a == b){
+      if(a < 0) return 1.0;
+      else return (0.5 + 0.5*phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs));
+   }else{
       if(a < b){
-         int tmp = a;
-         a = b;
-         b = tmp;
+         checkages(&a,&b);
+//         int tmp = a;
+//         a = b;
+//         b = tmp;
       }
+      if(a < 0) return 0.0;
       return((phi2(ped[a-1][1],b, ped, top, ifs) + phi2(ped[a-1][2],b, ped, top, ifs))/2.0);
    }
 }
 
 double phi3(int a, int b, int c, int** ped, int* top, FILE** ifs)
 {
+   R_CheckUserInterrupt();
    if (a == 0 || b == 0 || c == 0) // case 0
       return 0.0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1 && top[c-1]==1){
@@ -472,48 +456,38 @@ double phi3(int a, int b, int c, int** ped, int* top, FILE** ifs)
       jj = s3(o);
 
       fseekerr = FSEEK(ifs[1],jj*sizeof(double),SEEK_SET);
-/*
-      counter = 3;
-      while(fseekerr && counter>0){
-         Rprintf("."); 
-         fseekerr = FSEEK(ifs[1],jj*sizeof(double),SEEK_SET);
-         counter--;
-      }
-      if(fseekerr){
-         error(_("Seeking errors (2) occurred repeatedly.\n"));
-      }
-*/
       frwsize = fread(&buff,sizeof(double),1,ifs[1]);
-/*
-      counter = 3;
-      while(frwsize!=1 && counter>0){
-         Rprintf(".");
-         frwsize = fread(&buff,sizeof(double),1,ifs[1]);
-         counter--;
-      }
-      if(frwsize!=1){
-         error(_("Reading errors (2) occurred repeatedly.\n"));
-      }
-*/
 
       return(buff);
    }
 
-   if (a == b && a == c) // case 1
-      return ((1.0 + 3.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
+   if (a == b && a == c){ // case 1
+      if(a < 0){
+         return 1.0;
+      }else{
+         return ((1.0 + 3.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
+      }
+   }
 
    checkages(&a,&c);
    checkages(&b,&c);
-   if(a == b) // case 2
-      return ((phi2(a, c, ped, top, ifs) + phi3(ped[a-1][1], ped[a-1][2], c, ped, top, ifs)) / 2.0);
+   if(a == b){ // case 2
+      if(a < 0){
+         return 0.0;
+      }else{
+         return ((phi2(a, c, ped, top, ifs) + phi3(ped[a-1][1], ped[a-1][2], c, ped, top, ifs)) / 2.0);
+      }
+   }
 
    checkages(&a,&b);
+   if(a < 0) return 0.0;
    return ((phi3(ped[a-1][1], b, c, ped, top, ifs) + phi3(ped[a-1][2], b, c, ped, top, ifs)) / 2.0);
 }
 
 
 double phi4(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
 {
+   R_CheckUserInterrupt();
    if (a == 0 || b == 0 || c == 0 || d == 0)
       return 0.0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1 && top[c-1]==1 && top[d-1]==1){
@@ -522,51 +496,48 @@ double phi4(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
       jj = s4(o);
 
       fseekerr = FSEEK(ifs[2],jj*sizeof(double),SEEK_SET);
-/*
-      counter = 3;
-      while(fseekerr && counter>0){
-         fseekerr = FSEEK(ifs[2],jj*sizeof(double),SEEK_SET);
-         counter--;
-      }
-      if(fseekerr){
-         error(_("Seeking errors (3) occurred repeatedly.\n"));
-      }
-*/
       frwsize = fread(&buff,sizeof(double),1,ifs[2]);
-/*
-      counter = 3;
-      while(frwsize!=1 && counter>0){
-         frwsize = fread(&buff,sizeof(double),1,ifs[2]);
-         counter--;
-      }
-      if(frwsize!=1){
-         error(_("Reading errors (3) occurred repeatedly.\n"));
-      }
-*/
 
       return(buff);
    }
 
-   if (a == b && a == c && a == d)   // case 1
-      return ((1.0 + 7.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 8.0);
+   if (a == b && a == c && a == d){   // case 1
+      if(a < 0){
+         return 1.0;
+      }else{
+         return ((1.0 + 7.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 8.0);
+      }
+   }
 
    checkages(&a,&d);
    checkages(&b,&d);
    checkages(&c,&d);
-   if(a == b && b == c)   // case 2
-      return ((phi2(a, d, ped, top, ifs) + 3.0 * phi3(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 4.0);
+   if(a == b && b == c){   // case 2
+      if(a < 0){
+         return 0.0;
+      }else{
+         return ((phi2(a, d, ped, top, ifs) + 3.0 * phi3(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 4.0);
+      }
+   }
 
    checkages(&a,&c);
    checkages(&b,&c);
-   if(a == b)   // case 3
-      return ((phi3(a, c, d, ped, top, ifs) + phi4(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
+   if(a == b){   // case 3
+      if(a < 0){
+         return 0.0;
+      }else{
+         return ((phi3(a, c, d, ped, top, ifs) + phi4(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
+      }
+   }
 
    checkages(&a,&b);
+   if(a < 0) return 0.0;
    return ((phi4(ped[a-1][1], b, c, d, ped, top, ifs) + phi4(ped[a-1][2], b, c, d, ped, top, ifs)) / 2.0);
 }
 
 double phi22(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
 {
+   R_CheckUserInterrupt();
    if( a == 0 || b == 0 || c == 0 || d == 0 )
       return 0.0;
    if(top[0]!=-999) if(top[a-1]==1 && top[b-1]==1 && top[c-1]==1 && top[d-1]==1){
@@ -575,47 +546,43 @@ double phi22(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
       jj = s22(o);
 
       fseekerr = FSEEK(ifs[3],jj*sizeof(double),SEEK_SET);
-/*
-      counter = 3;
-      while(fseekerr && counter>0){
-         fseekerr = FSEEK(ifs[3],jj*sizeof(double),SEEK_SET);
-         counter--;
-      }
-      if(fseekerr){
-         error(_("Seeking errors (4) occurred repeatedly.\n"));
-      }
-*/
       frwsize = fread(&buff,sizeof(double),1,ifs[3]);
-/*
-      counter = 3;
-      while(frwsize!=1 && counter>0){
-         frwsize = fread(&buff,sizeof(double),1,ifs[3]);
-         counter--;
-      }
-      if(frwsize!=1){
-         error(_("Reading errors (4) occurred repeatedly.\n"));
-      }
-*/
 
       return(buff);
    }
 
-   if( a == b && a == c && a == d ) // case 1 
-      return ((1.0 + 3.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
+   if( a == b && a == c && a == d ){ // case 1 
+      if(a < 0){
+         return 1.0;
+      }else{
+         return ((1.0 + 3.0 * phi2(ped[a-1][1], ped[a-1][2], ped, top, ifs)) / 4.0);
+      }
+   }
 
    checkages(&a,&b);
    checkages(&c,&d);
    if( a == c)
       checkages(&b,&d);
-   if( a == b && a == c ) // case 2
-      return ((phi2(a, d, ped, top, ifs) + phi3(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 2.0);
+   if( a == b && a == c ){ // case 2
+      if(a < 0){
+         return 0.0;
+      }else{
+         return ((phi2(a, d, ped, top, ifs) + phi3(ped[a-1][1], ped[a-1][2], d, ped, top, ifs)) / 2.0);
+      }
+   }
 
    if( a < c ){
       int tmp = a; a = c; c = tmp;
-      tmp = b; b = d; d = tmp;
+      tmp = b; b = d; d = tmp; //must switch; can't use checkages()
    }
-   if( a == b ) // case 3
-      return ((phi2(c, d, ped, top, ifs) + phi22(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
+   if( a == b ){ // case 3
+      if(a < 0){
+         return phi2(c, d, ped, top, ifs);
+      }else{
+         return ((phi2(c, d, ped, top, ifs) + phi22(ped[a-1][1], ped[a-1][2], c, d, ped, top, ifs)) / 2.0);
+      }
+   }
+   if(a < 0) return 0.0;
 
    if( a == c ) // case 4
       return ((2.0 * phi3(a, b, d, ped, top, ifs) + phi22(ped[a-1][1], b, ped[a-1][2], d, ped, top, ifs) +

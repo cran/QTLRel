@@ -10,7 +10,7 @@ Simulate distribution under the hypothesis of no QTL by permutation (of genotypi
 nullSim(y, x, gdat, prdat, ped, gmap, hap,
 	method = c("permutation","gene dropping"), vc = NULL, intcovar = NULL,
 	test = c("None","F","Chisq"), minorGenoFreq = 0.05, rmv = TRUE,
-	recode.pedigree = FALSE, gr = 2, ntimes = 10)
+	gr = 2, ntimes = 10)
 }
 \arguments{
   \item{y}{
@@ -52,9 +52,6 @@ Specify the minimum tolerable minor genotype frequency at a scanning locus if \c
   \item{rmv}{
 A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
 }
-  \item{recode.pedigree}{
-A logical variable. True if the pedigree needs to be recoded.
-}
   \item{gr}{
 The generation under consideration.
 }
@@ -79,37 +76,39 @@ A vector of numbers of length \code{ntimes} if \code{minorGenoFreq > 0} and \cod
 data(miscEx)
 
 \dontrun{
-# recode the pedigree for later use
-pedR<- pedRecode(pedF8)
-
 # impute missing genotypes
-gdatTmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+pheno<- pdatF8[!is.na(pdatF8$bwt) & !is.na(pdatF8$sex),]
+ii<- match(rownames(pheno), rownames(gdatF8))
+geno<- gdatF8[ii,]
+ii<- match(rownames(pheno), rownames(gmF8$AA))
+v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
+
+gdatTmp<- genoImpute(geno, gmap=gmapF8, step=Inf,
    gr=8, na.str=NA)
 # estimate variance components
-o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
+o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 
 # scan marker loci & permutation
-ex1<- nullSim(y=pdatF8$bwt, x=pdatF8$sex, gdat=gdatTmp,
+ex1<- nullSim(y=pheno$bwt, x=pheno$sex, gdat=gdatTmp,
 	method="permutation", vc=o, ntimes=10)
 dim(ex1)
 
 # scan marker loci & gene dropping
-ex2<- nullSim(y=pdatF8$bwt, x=pdatF8$sex, gdat=gdatTmp, ped=pedR,
+ex2<- nullSim(y=pheno$bwt, x=pheno$sex, gdat=gdatTmp, ped=ped,
 	gmap=gmapF8, method="gene", vc=o, ntimes=10)
 dim(ex2)
 
 # Haley-Knott method & permutation
-gdtmp<- gdatF8
+gdtmp<- geno
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", verbose=TRUE)
-ex3<- nullSim(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat,
+   gr=8, method="Haldane", msg=TRUE)
+ex3<- nullSim(y=pheno$bwt, x=pheno$sex, prdat=prDat,
 	method="permutation", vc=o, ntimes=10)
 dim(ex3)
 
 # Haley-Knott method & gene dropping
-ex4<- nullSim(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat, ped=pedR,
+ex4<- nullSim(y=pheno$bwt, x=pheno$sex, prdat=prDat, ped=ped,
 	gmap=gmapF8, method="gene", vc=o, gr=8, ntimes=10)
 dim(ex4)
 }

@@ -18,7 +18,7 @@ pk<- function(z, nx, ny = Inf){ # from R "stats"
 
 qk<- function(p, nx, ny = Inf){
    if(p<0 || p>1){
-      stop("probability should be between 0 and 1.")
+      stop("Probability should be between 0 and 1.", call.=FALSE)
    }
    func<- function(x) pk(x, nx, ny)-p
 
@@ -44,7 +44,7 @@ pkolm <- function(z, nx, ny = Inf){
 
 qkolm <- function(p, nx, ny = Inf){
    if(p<0 || p>1){
-      stop("probability should be between 0 and 1.")
+      stop("Probability should be between 0 and 1.", call.=FALSE)
    }
    func <-  function(y)
      .C("kolm", y = as.double(y), as.integer(length(y)),
@@ -75,7 +75,7 @@ Fn. <- function(t,x){
 
 qFn. <- function(t,x){
    if(any(t<0 | t>1))
-      stop("Probability should between 0 and 1.")
+      stop("Probability should between 0 and 1.", call.=FALSE)
 
    tmp<- Fn.0(x)
    nt<- length(t)
@@ -102,7 +102,7 @@ Fn <- function(t,x){
 
 qFn <- function(t,x){
    if(any(t<0 | t>1))
-      stop("Probability should between 0 and 1.")
+      stop("Probability should between 0 and 1.", call.=FALSE)
 
    t<- as.double(t)
    x<- as.double(x)
@@ -149,7 +149,7 @@ qqPlot.default <- function(y, x = "norm", ...,
 
    if(confidence){
       if(confidence<0 || confidence>1)
-         stop("confidence should be between 0 and 1")
+         stop("confidence should be between 0 and 1.", call.=FALSE)
       if(nsx*nsy > 5e+6){
          ka <- qkolm(confidence, nsx, nsy)
       }else ka<- qk(confidence, nsx, nsy) # exact
@@ -199,7 +199,7 @@ qqPlot.default <- function(y, x = "norm", ...,
          }
          if(qqline == "expected" && !confidence){
             qqline<- "observed"
-            warning("Observed qqline was drawn instead.")
+            cat("   Observed qqline was drawn instead.\a\n")
          }
          if(qqline != "none") abline(a, b, col = col, lty = lty, lwd = lwd)
       }

@@ -27,7 +27,7 @@ An object from \code{\link{genoProb}}.
 An object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness and environment.
 }
   \item{numGeno}{
-Whether to treat numeric coding of genotypes as numeric.
+Whether to treat numeric coding of genotypes as numeric. If true, \code{minorGenoFreq} will be ignored.
 }
   \item{minorGenoFreq}{
 Specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.

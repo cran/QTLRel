@@ -7,11 +7,11 @@ Calculate Jacquard condensed identity coefficients
 Calculate Jacquard condensed identity coefficients from a pedigree.
 }
 \usage{
-cic(ped, ids, inter, df=3, ask = FALSE, verbose = FALSE)
+cic(ped, ids, inter, df=3, ask = FALSE, msg = FALSE)
 }
 \arguments{
   \item{ped}{
-A pedigree, which is a data frame (id, sire, dam, ...). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ... If "sex" is included, male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). Note: 0 is reserved for unknown \code{sire}, \code{dam} or \code{sex}.
+A pedigree, which is a data frame (id, sire, dam, ...). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ... If "sex" is included, male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If a founder is inbred, its ID should be tagged by character 'i' (e.g. 1i, 2i, etc.). Note: 0 is reserved for unknown \code{sire}, \code{dam} or \code{sex}.
 }
   \item{ids}{
 IDs of the individuals for which to calculate the Jacquard condensed identity coefficients. If missing, all individuals in the pedigree \code{ped} will be considered.
@@ -25,7 +25,7 @@ If \code{inter} is missing, \code{df} is used to derive (optimal) \code{inter}. 
   \item{ask}{
 If true, users will be asked whether to proceed.
 }
-  \item{verbose}{
+  \item{msg}{
 If true, will print out some messages.
 }
 }
@@ -57,11 +57,11 @@ ids<- sample(pedF8$id[300:500],20)
 \dontrun{
 # run 'cic' for the sampled individuals
 # top-down
-oo<- cic(pedF8, ids=ids, df=Inf, verbose=TRUE)
+oo<- cic(pedF8, ids=ids, df=Inf, msg=TRUE)
 # bottom-up
-o0<- cic(pedF8, ids=ids, df=0, verbose=TRUE)
+o0<- cic(pedF8, ids=ids, df=0, msg=TRUE)
 # hybrid of top-down and bottom-up
-o2<- cic(pedF8, ids=ids, ask=TRUE, verbose=TRUE)
+o2<- cic(pedF8, ids=ids, ask=TRUE, msg=TRUE)
 # same results
 c(sum(abs(oo-o0) >1e-7),sum(abs(o2-o0) >1e-7))
 }

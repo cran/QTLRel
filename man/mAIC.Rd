@@ -9,7 +9,7 @@ Multiple QTL model selection by AIC criterion.
 }
 \usage{
 mAIC(y, x, gdat, prdat = NULL, vc = NULL, chrIdx, xin, k = 2,
-   direction = c("both","backward","forward"), ext = FALSE, verbose = FALSE)
+   direction = c("both","backward","forward"), ext = FALSE, msg = FALSE)
 }
 \arguments{
  \item{y}{
@@ -42,7 +42,7 @@ The mode of search: "both", "forward" or "backward" with default "both".
   \item{ext}{
 A logical variable. True if ones wants more exhaustive search.
 }
-  \item{verbose}{
+  \item{msg}{
 A logical variable. True if ones wants to track the process for monitoring purpose.
 }
 }
@@ -75,25 +75,30 @@ data(miscEx)
 
 \dontrun{
 # impute missing genotypes
-gdat.imp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
+pheno<- pdatF8[!is.na(pdatF8$bwt) & !is.na(pdatF8$sex),]
+ii<- match(rownames(pheno), rownames(gdatF8))
+geno<- gdatF8[ii,]
+ii<- match(rownames(pheno), rownames(gmF8$AA))
+v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
+
+gdat.imp<- genoImpute(geno, gmap=gmapF8, step=Inf,
    gr=8, na.str=NA)
 # estimate variance components
-o<- estVC(y=pdatF8$bwt, x=pdatF8$sex, v=list(AA=gmF8$AA,DD=gmF8$DD,
-	HH=NULL, AD=NULL, MH=NULL, EE=diag(length(pdatF8$bwt))))
+o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 
 # run 'genoProb'
-gdtmp<- gdatF8
+gdtmp<- geno
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", verbose=TRUE)
+   gr=8, method="Haldane", msg=TRUE)
 
 # genome scan
-llk.hk<- scanOne(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat, vc=o)
+llk.hk<- scanOne(y=pheno$bwt, x=pheno$sex, prdat=prDat, vc=o)
 xin<- llk.hk$p > 10
 
 # run 'mAIC' based on genome scan results
-mg<- mAIC(y=pdatF8$bwt, x=pdatF8$sex, prdat=prDat, vc=o, xin=xin,
-   k=5, direction="back", verbose=TRUE)
+mg<- mAIC(y=pheno$bwt, x=pheno$sex, prdat=prDat, vc=o, xin=xin,
+   k=5, direction="back", msg=TRUE)
 mg$model$value # likelihood of the final model
 }
 }

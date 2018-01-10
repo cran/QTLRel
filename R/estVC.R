@@ -2,72 +2,13 @@
 machineEps<- (.Machine$double.eps)^(2/4)
 inf<- max(1e+38,sqrt(.Machine$double.xmax))
 
-# extract info from specified variance components
-fv <- function(vv){
-# vv: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
-   nms<- c("AA","DD","HH","AD","MH","EE")
-   if(is.matrix(vv)){
-      cat("   Assume the input matrix is AA\n")
-      vv<- list(AA=vv,EE=diag(nrow(vv)))
-   }else if(any(!is.element(nms,names(vv)))){
-      cat("   Assume none of HH,AD and MH are incorporated...\n")
-   }
-
-   vvTmp<- vv
-      vvTmp$AA<- vvTmp$DD<- vvTmp$HH<- vvTmp$AD<- vvTmp$MH<- vvTmp$EE<- NULL
-   vv<- list(AA=vv$AA,
-             DD=vv$DD,
-             HH=vv$HH,
-             AD=vv$AD,
-             MH=vv$MH,
-             EE=vv$EE)
-      vv<- c(vv,vvTmp)
-   if(is.null(vv[[nms[2]]])){
-      if(!is.null(vv[[nms[3]]])){
-         vv[nms[3]]<- list(NULL)
-         cat(nms[3], "is set to null because", nms[2], "is null.\n")
-      }
-      if(!is.null(vv[[nms[5]]])){
-         vv[nms[5]]<- list(NULL)
-         cat(nms[5], "is set to null because", nms[2], "is null.\n")
-      }
-   }
-   if(is.null(vv[[nms[1]]])){
-      if(!is.null(vv[[nms[4]]])){
-        vv[nms[4]]<- list(NULL)
-        cat(nms[4], "is set to null because", nms[1], "is null.\n")
-      }
-   }
-   if(is.null(vv[[nms[3]]])){
-      if(!is.null(vv[[nms[4]]])){
-         vv[nms[4]]<- list(NULL)
-         cat(nms[4], "is set to null because", nms[3], "is null.\n")
-      }
-   }
-   nv<- length(vv)
-   if(nv>0){
-      nnl<- NULL
-      for(i in 1:nv){
-         nnl<- c(nnl,!is.null(vv[[i]]))
-         if(!is.null(vv[[i]])){
-            if(!all(is.finite(vv[[i]])))
-               stop("Only finite numerical elements are allowed in variance matrices!")
-         }
-      }
-      nn<- cumsum(nnl)
-   }else stop("At least the environmental variance component should be included.\n")
-
-   list(v=vv,nv=nv,nnl=nnl,nn=nn)
-}
-
 # one of the main functions, Nelder-Mead method
 estVC <-
    function(y,
             x,
-            v = vector("list",6),
+            v = list(E=diag(length(y))),
             initpar,
             nit = 25,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
             control = list(),
             hessian = FALSE)
 {
@@ -77,366 +18,524 @@ estVC <-
 estVC.default <-
    function(y,
             x,
-            v = vector("list",6),
+            v,
             initpar,
             nit = 25,
-            method = c("Nelder-Mead", "BFGS", "CG", "SANN"),
             control = list(),
             hessian = FALSE)
 {
    if(!all(is.finite(y)))
-      stop("y: non-numeric or infinite data points not allowed.")
+      stop("y: non-numeric or infinite data points not allowed.", call.=FALSE)
    if(!missing(x))
       if(any(sapply(x,is.infinite) | sapply(x,is.na)))
-         stop("x: missing or infinite data points not allowed.")
+         stop("x: missing or infinite data points not allowed.", call.=FALSE)
 
    if(!is.null(dim(y))){
-      if(length(dim(y))>2) stop("y: may be wrong.\n")
+      if(length(dim(y))>2) stop("y: may be wrong.", call.=FALSE)
       if(dim(y)[2]>1)
-         warning("y: only the fisrt column will be analyzed.")
+         cat("   Warning: y: only the fisrt column will be analyzed.\a\n")
       y<- y[,1]
+   }
+   xyf<- function(formula, data, contrasts = NULL){
+      mf<- match.call(expand.dots = FALSE)
+         m<- match(c("formula", "data"), names(mf), 0L)
+         mf<- mf[c(1L, m)]
+         mf$drop.unused.levels<- TRUE
+         mf[[1L]]<- quote(stats::model.frame)
+         mf<- eval(mf, parent.frame())
+      mt<- attr(mf, "terms")
+      x<- model.matrix(mt, mf, contrasts)
+      y<- model.response(mf, "numeric")
+
+      list(y=y, x=x)
    }
    if(!missing(x)){
       oTmp<- data.frame(y=y,x)
-   }else oTmp<- data.frame(y=y)
-   oTmp<- model.frame(y~.,oTmp)
-   y<- model.response(oTmp)
-   x<- model.matrix(y~.,oTmp)
-   method<-  match.arg(method)
+   }else{
+      oTmp<- data.frame(y=y)
+   }
+   xy<- xyf(y~., data=oTmp)
 
-   estVC.4(y = y,
-           x = x,
-           v = v,
-           initpar = initpar,
-           nit = nit,
-           method = method,
-           control = control,
-           hessian = hessian)
+   est.VC(y = xy$y,
+          x = xy$x,
+          v = v,
+          initpar = initpar,
+          nit = nit,
+          control = control,
+          hessian = hessian)
 }
 
-estVC.1 <-
+est.VC <-
    function(y,
             x,
             v,
             initpar,
             nit,
-            method,
             control,
             hessian)
 {
-# estimate all background genetic variance (bgv)
+# estimate all background genetic variance (VC)
 # y: vector, response
 # x: covariates
-# v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
+# v: list of variance components (optionally with residual E)
 # initpar: initial parameters, will be initilized automatically if missing
 # nit: number of iterations to call optim()
-# method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
+   if(is.matrix(v)) v<- list(v)
+   if(!is.null(v[["EE"]])){
+      cat("   We now use 'E' (not 'EE') for residual variance matrix; see documentation.\a\n")
+   }
    control$fnscale<- 1
+
+   .gls<- function(formula,data=NULL,vc=NULL){
+      cl <- match.call()
+      mf <- match.call(expand.dots = FALSE)
+      m <- match(c("formula", "data", "subset", "weights", "na.action", "offset"), names(mf), 0L)
+      mf <- mf[c(1L, m)]
+         mf$drop.unused.levels <- TRUE
+         mf[[1L]] <- quote(stats::model.frame)
+         mf <- eval(mf, parent.frame())
+      mt <- attr(mf, "terms")
+      yy <- model.response(mf, "numeric")
+      xx <- model.matrix(mt, mf)
+
+      nr<- nrow(xx)
+      if(!is.null(vc)){
+         if(is.list(vc)){
+            nv<- length(vc$v)
+            nb<- length(vc$par) - nv
+            nr<- nrow(vc$y)
+            cov<- matrix(0,nrow=nr,ncol=nr)
+            for(i in 1:nv)
+               cov<- cov + vc$v[[i]]*vc$par[nb+i]
+         }else{
+            if(is.data.frame(vc)) vc<- as.matrix(vc)
+            if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
+            if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
+            cov<- vc
+         }
+      }else cov<- diag(nrow(as.matrix(yy)))
+      A<- W.inv(cov)
+
+      y<- A%*%yy; attributes(y)<- attributes(yy)
+      x<- A%*%xx; attributes(x)<- attributes(xx)
+      dtf<- data.frame(y=y,x)
+
+      mdl<- lm.fit(x, y, singular.ok = TRUE)
+      class(mdl) <- "lm"
+      #mdl$data<- dtf
+      mdl$xlevels <- .getXlevels(mt, mf)
+      mdl$call <- match.call()
+      mdl$terms <- mt
+      mdl$model<- mf
+
+      mdl
+   }
+
+   ginv<- function(W, symmetric=TRUE){
+      eW <- eigen(W, symmetric=symmetric)
+      d <- eW$values
+      if(min(d) < .Machine$double.eps){
+         pd<- FALSE
+         cat("'W' not positive definite.\n")
+
+         d[d < .Machine$double.eps]<- Inf
+      }
+      A <- eW$vector%*%diag(1/d) %*% t(eW$vector)
+      A
+   }
+
+   ppfct<- function(y,x,v){# see Kang et al 2008 Genetics
+      ny<- length(y)
+
+      n<- match("E",names(v))
+      Q<- chol(v[[n]],pivot=FALSE)
+      rQ<- solve(Q)
+      eH<- eigen(t(rQ)%*%v[[-n]]%*%rQ, symmetric=TRUE)
+
+      S<- x%*%ginv(t(x)%*%x)%*%t(x)
+         S<- diag(1,ny) - S
+      eQ<- eigen(S, symmetric=TRUE) # note: S*S = S
+      rQ<- eQ$vector
+      eS<- eigen(t(rQ)%*%(S%*%v[[-n]]%*%S)%*%rQ, symmetric=TRUE)
+
+      U<- t(eS$vector)%*%t(rQ)
+      eta<- U%*%y
+
+      list(ny=ny, eta=eta, eH=eH, eS=eS, eQ=eQ)
+   }
+
+   optfct.2<- function(par,pp){
+      dd<- pp$eS$value*exp(par)+pp$eQ$value
+      idx<- dd > machineEps
+      tmp<- -pp$ny*log(pp$ny/2/pi) + pp$ny
+         tmp<- tmp + pp$ny*log(sum(pp$eta[idx]^2/dd[idx]))
+         tmp<- tmp + sum(log(pp$eH$value*exp(par)+1))
+      tmp/2
+   }
+
+   optfct<- function(par,y,x,v){
+      ny<- length(y)
+      nv<- length(v)
+      nb<- length(par) - nv
+      b<- par[1:nb]
+
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*exp(par[nb+i])
+      }
+      if(!all(is.finite(S)))
+         return(inf)
+
+      u<- x%*%b
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr))
+         return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp))
+         return(inf)
+
+      tmp
+   }
+   optfct.b<- function(vp,y,x,v){
+      ny<- length(y)
+      nv<- length(v)
+
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*exp(vp[i])
+      }
+      if(!all(is.finite(S)))
+         return(inf)
+
+      # it is slower to use lmGls
+      dd<- eigen(S,symmetric=T)
+         uu<- dd$vec
+         dd<- abs(dd$val)
+         dd[dd<machineEps]<- machineEps
+      yy<- t(uu)%*%y
+         yy<- as.matrix(yy)
+      xx<- t(uu)%*%x
+         xx<- as.matrix(xx)
+      b<- lm.wfit(x=xx,y=yy,w=1/dd)$coef
+         b[!is.finite(b)]<- 0
+      b
+   }
+   optfct.v<- function(par,bp,y,x,v){
+      ny<- length(y)
+      nv<- length(v)
+      nb<- length(par) - nv
+
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*exp(par[i])
+      }
+      if(!all(is.finite(S)))
+         return(inf)
+
+      u<- x%*%bp
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr))
+         return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp))
+         return(inf)
+
+      tmp
+   }
 
    ny<- length(y)
    nb<- ncol(x)
-   ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
-   for(i in 1:ov$nv){
-      if(ov$nnl[i]){
-         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
-         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+   if(is.null(v[["E"]])){# add residual variance
+      v$E<- diag(ny)
+      olm<- lm(y~.-1, data=data.frame(y=y,x))
+   }else{
+      olm<- .gls(y~.-1, data=data.frame(y=y,x), vc=v$E)
+   }
+   vr<- var(olm$res)*(ny-1)/ny
+   nv<- length(v)
+      idx<- rep(TRUE,nv)
+      for(n in 1:nv)
+         if(is.null(v[[n]])) idx[n]<- FALSE
+      v<- v[idx]
+      nv<- length(v)
+   rm(idx)
+
+   if(missing(initpar)){
+      initpar<- c(olm$coef, rep(vr,nv))
+      if(nv > 2) for(n in 1:nv){# skip nv = 2 due to optfct.2()
+         if(match("E",names(v))==n)
+            next
+         #oo<- nlminb(c(-9,log(vr)), optfct.v, bp=olm$coef, y=y, x=x, v=c(v[n],v["E"]),
+         #   lower=log(vr)-c(12,0), upper=log(vr)+c(3,0))
+         #if(oo$objective > inf-1)
+         #   cat("   Optimization possibly failed.\a\n")
+         #initpar[nb+n]<- exp(oo$par[1])
+         #rm(oo,n)
+         ### the following seems to save a little bit of time
+         oo<- .gls(y~.-1, data=data.frame(y=y,x), vc=v[[n]]+v[["E"]])
+         vrTmp<- var(oo$res)*(ny-1)/ny
+            vrTmp<- ifelse(vrTmp + machineEps > vr, vr*machineEps,
+               (vr-vrTmp)*mean(diag(v[["E"]]))/mean(diag(v[[n]]))
+            )
+         initpar[nb+n]<- min(max(vrTmp,1e-5), 1e+5)
+         rm(oo,vrTmp,n)
       }
+   }else{
+      if(length(initpar) < nb+length(v))
+         initpar<- c(initpar,vr)
    }
 
-   Sf<- function(par,a){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-         }
-      }
-      S
+   olm<- .gls(y~.-1, data=data.frame(y=y,x), vc=list(par=initpar,y=as.matrix(y),v=v))
+   initpar<- c(olm$coef, initpar[-(1:nb)]*var(olm$res)*(ny-1)/ny)
+
+   rm(olm,vr)
+
+   for(i in 1:nv){
+      initpar[nb+i]<- log(initpar[nb+i])
    }
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
+   rm(i)
 
-      S<- Sf(par,a)
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
+if(nv > 2){
+   lmt<- initpar[-(1:nb)]
+      names(lmt)<- names(v)
+   pparTmp<- initpar
+      oo<- nlminb(pparTmp[-c(1:nb)], optfct.v, bp=pparTmp[1:nb], y=y, x=x, v=v,
+         lower=-19, upper=pmax(7,lmt+5))
+      pparTmp[-c(1:nb)]<- oo$par
+   lmt<- pparTmp[-(1:nb)]
+      names(lmt)<- names(v)
+   val<- inf
+   if(missing(nit)) cnt<- 25 else
+      cnt<- nit
+   while(cnt>0){
+      pparTmp[1:nb]<- optfct.b(pparTmp[-(1:nb)], y, x, v)
+      oo<- nlminb(pparTmp[-c(1:nb)], optfct.v, bp=pparTmp[1:nb], y=y, x=x, v=v,
+         lower=-19, upper=pmax(7,lmt+5))
+         oo$value<- oo$objective
+      if(abs(val-oo$val) < machineEps && max(abs(pparTmp[-c(1:nb)]-oo$par)) < machineEps^0.75)
+         cnt<- 0
+      pparTmp[-c(1:nb)]<- oo$par
+      val<- oo$value
+      cnt<- cnt-1
    }
-
-   oo<- list(par=initpar)
-   val1<- val2<- inf
-   while(nit>0){
-      oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method=method,
-            control=control, hessian=FALSE)
-      if(ov$nnl[4]){
-         tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-         if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-      }
-
-      nit<- nit-1
-      val1<- val2
-      val2<- oo$value
-      if(abs(val2-val1)<machineEps && abs(val2-val1)<abs(val1)*machineEps)
-         break
+   if(cnt == 0){
+      cat("   Warning: optimization possibly failed. A larger 'nit' should be helpful.\a\n")
    }
 
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control,hessian=FALSE)
-      if(ov$nnl[4]){
-         tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-         if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
+   control$maxit<- 100
+   oo<- optim(pparTmp, optfct, y=y, x=x, v=v, method="Nelder-Mead",
+         control=control, hessian=FALSE)
+      for(i in 1:nv){
+         oo$par[nb+i]<- exp(oo$par[nb+i])
       }
-      for(i in 1:ov$nv){
-         if(ov$nnl[i]){
-            if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
-         }
+}else if(nv < 2){
+   oo<- optim(initpar, optfct, y=y, x=x, v=v, method="Nelder-Mead",
+         control=list(fnscale=1,maxit=3), hessian=FALSE)
+      for(i in 1:nv){
+         oo$par[nb+i]<- exp(oo$par[nb+i])
       }
+}else{
+   oo<- optimize(optfct.2, interval=c(-25,25), ppfct(y=y,x=x,v=v),
+      maximum=FALSE, tol=machineEps)
+
+   n<- match("E",names(v))
+   dlt<- exp(oo$minimum)
+   H<- v[[-n]]*dlt + v[[n]]
+   rH<- solve(H)
+   pXrH<- t(x)%*%rH
+   b<- solve(pXrH%*%x,pXrH%*%y)
+   R<- y - x%*%b
+      R<- t(R)%*%rH%*%R
+   ptmp<- initpar[-(1:nb)]
+      ptmp[n]<- R/ny
+      ptmp[-n]<- dlt*ptmp[n]
+   initpar[1:nb]<- as.vector(b)
+   initpar[-(1:nb)]<- ptmp
+
+   oo<- list(value=oo$objective, par=initpar)
+
+   rm(dlt,n,H,rH,pXrH,b,R,ptmp)
+}
 
 if(hessian){
-   control$maxit<- 1
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
+   hessf<- function(par,y,x,v){
+      ny<- length(y)
+      nv<- length(v)
+      nb<- length(par) - nv
+      b<- par[1:nb]
 
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-         }
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*par[nb+i]
       }
-      if(!all(is.finite(S))) return(inf)
+      #if(!all(is.finite(S))) return(inf)
 
       u<- x%*%b
       tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
+      #if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
+      tmp<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      #if(!is.finite(tmp)) return(inf)
 
       tmp
    }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=hessian)
-   oo$hessian<- -oo$hessian
+   ppar<- oo$par
+   for(i in 1:nv)
+      ppar[nb+i]<- pmax(ppar[nb+i], 1e-5)
+   control$ndeps<- rep(5e-6,length(ppar))
+   oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=control)
 }
-   oo$value<- as.numeric(oo$value)
 
    oo$value<- -oo$value
    attributes(oo$value)<- NULL
    names(oo$par)[1:nb]<- colnames(x)
-   names(oo$par)[nb+1:sum(ov$nnl)]<- names(ov$v[ov$nnl])
+   names(oo$par)[nb+1:nv]<- names(v)
    oo$y<- as.matrix(y)
    oo$x<- as.matrix(x)
    oo$v<- v
-   oo$nv<- ov$nv
-   oo$nnl<- ov$nnl
-   oo$nn<- ov$nn
-   class(oo)<- "bgv"
+   class(oo)<- "VC"
    oo
 }
 
-# NOTES: as accurate as but about 2.5 times as fast as estVC.1
-estVC.2 <-
+est.VC.1 <-
    function(y,
             x,
             v,
             initpar,
             nit,
-            method,
             control,
             hessian)
-{
-# estimate all background genetic variance (bgv)
+{### Fast; Trouble if E parameter is (nearly) 0 !!!
+# estimate all background genetic variance (VC)
 # y: vector, response
 # x: covariates
-# v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
+# v: list of variance components
 # initpar: initial parameters, will be initilized automatically if missing
 # nit: number of iterations to call optim()
-# method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
+   if(!is.null(v[["EE"]])){
+      cat("   We now use 'E' (not 'EE') for residual variance matrix; see documentation.\a\n")
+   }
    control$fnscale<- 1
 
    ny<- length(y)
    nb<- ncol(x)
-   ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
-   for(i in 1:ov$nv){
-      if(ov$nnl[i]){
-         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
-         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+   if(is.null(v[["E"]])){ # add residual variance
+      v$E<- diag(ny)
+      if(!missing(initpar))
+         initpar<- c(initpar,var(y))
+   }
+   nv<- length(v)
+      idx<- rep(TRUE,nv)
+      for(n in 1:nv)
+         if(is.null(v[[n]])) idx[n]<- FALSE
+      v<- v[idx]
+      nv<- length(v)
+   if(missing(initpar)){
+      initpar<- c(rep(mean(y),nb),rep(var(y),nv))
+      for(n in 1:nv){
+         initpar[nb+n]<- initpar[nb+n]/mean(diag(v[[n]]))
       }
    }
+   if(nv>1){
+      n<- match("E",names(v))
+      pTmp<- initpar[-(1:nb)]
+         pTmp[-n]<- pTmp[-n]/pTmp[n]
+      initpar[-(1:nb)]<- pTmp
+      rm(pTmp)
+   }else stop("There is no random effect; use other method instead.", call.=FALSE)
+   rm(idx,n)
 
-   Sf<- function(par,a){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+   for(i in 1:nv){
+      initpar[nb+i]<- log(initpar[nb+i])
+   }
+   rm(i)
+
+   Winv<- function(W, symmetric=TRUE, inverse=TRUE){
+      eW <- eigen(W, symmetric=symmetric)
+      d <- eW$values
+      if (min(d) <0  && abs(min(d))>machineEps)
+          stop("'W' is not positive definite.", call.=FALSE)
+      else d[d<=0]<- ifelse(inverse, Inf, 0)
+      A <- diag(d^ifelse(inverse, -0.5, 0.5)) %*% t(eW$vector)
+      list(A=A, d=d) # t(A)%*%A = W^{-1}
+   }
+   Sf<- function(par,v){
+   # par: not include E
+      S<- v$E
+      j<- match("E",names(v))
+      i<- 0
+      for(t in 1:length(v)){
+         if(t != j){
+            i<- i+1
+            S<- S + v[[i]]*exp(par[i])
          }
       }
       S
    }
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
+   optf<- function(par,y,x,v,opt=FALSE){
+   # par: not include E
+      S<- Sf(par,v)
+      WD<- Winv(S)
+      dtf<- data.frame(y=y,x)
+      o<- lmGls(y~.-1,data=dtf,A=WD$A)
 
-      S<- Sf(par,a)
-      if(!all(is.finite(S))) return(inf)
+      s2<- sum(o$res^2)/ny
+      n<- match("E",names(v))
+      coef<- rep(NA,length(v))
+         coef[-n]<- exp(par)*s2
+         coef[n]<- s2
+      names(coef)<- names(v)
+      coef<- c(o$coef, coef)
 
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
+      ny<- length(y)
+      lik<- log(2*pi)*(ny/2) + ny/2*(log(s2)+1) + sum(log(WD$d))/2
 
-      tmp
-   }
-   optfct.b<- function(a=list(par=initpar,nb=nb,ny=ny,ov=ov)){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(a$par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*a$par[a$nb+a$ov$nn[i]]
-         }
-      }
-      if(!all(is.finite(S))) return(a$par[1:a$nb])
-
-      dd<- eigen(S,symmetric=T)
-         uu<- dd$vec
-         dd<- abs(dd$val)
-         dd[dd<machineEps]<- machineEps
-      yy<- t(uu)%*%y
-         yy<- as.matrix(yy)
-      xx<- t(uu)%*%x
-         xx<- as.matrix(xx)
-      b<- lm.wfit(x=xx,y=yy,w=1/dd)$coef
-         b[!is.finite(b)]<- 0
-      b
-   }
-   optfct.v<- function(par,a=list(par=initpar,nb=nb,ny=ny,ov=ov)){
-      b<- a$par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$ov$nn[1]]+par[a$ov$nn[3]])/2)
-         if(abs(par[a$ov$nn[4]])>tmp) par[a$ov$nn[4]]<- sign(par[a$ov$nn[4]])*tmp
-      }
-
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
-         }
-      }
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
-   }
-
-   oo<- list(par=initpar)
-   val1<- val2<- inf
-   pparTmp<- initpar
-   if(length(initpar) < nb+2){
-      while(nit>0){
-         pparTmp[1:nb]<- optfct.b(a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-         oo<- optimize(optfct.v, interval=c(-1000,1000), a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),
-               maximum=FALSE)
-            pparTmp[-c(1:nb)]<- oo$objective
-            oo<- list(par=pparTmp, value=oo$minimum)
-            if(ov$nnl[4]){
-               tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-               if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-            }
-         pparTmp<- oo$par
-
-         val1<- val2
-         val2<- oo$value
-         if(abs(val2-val1)<machineEps && abs(val2-val1)<abs(val1)*machineEps)
-            break
-         nit<- nit-1
-      }
-   }else{
-      while(nit>0){
-         pparTmp[1:nb]<- optfct.b(a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-         oo<- optim(pparTmp[-c(1:nb)],optfct.v,gr=NULL,a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),
-                    method=method,control=control,hessian=FALSE)
-            pparTmp[-c(1:nb)]<- oo$par
-            oo$par<- pparTmp
-            if(ov$nnl[4]){
-               tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-               if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-            }
-         pparTmp<- oo$par
-
-         val1<- val2
-         val2<- oo$value
-         if(abs(val2-val1)<machineEps && abs(val2-val1)<abs(val1)*machineEps)
-            break
-         nit<- nit-1
+      if(opt){
+         lik
+      }else{
+         list(value=-lik, parameters=coef)
       }
    }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=FALSE)
-      if(ov$nnl[4]){
-         tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-         if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
+
+   pTmp<- initpar[-(1:nb)]
+      idx<- match("E",names(v))
+      pTmp<- pTmp[-idx]
+   val<- inf
+   if(missing(nit)) cnt<- 25 else
+      cnt<- nit
+   while(cnt > 0){
+      if(nv > 2){
+         oo<- optim(pTmp, optf, y=y, x=x, v=v, opt=TRUE, method="Nelder-Mead",
+            control=control, hessian=FALSE)
+      }else if(nv == 2){
+         oo<- nlminb(pTmp, optf, y=y, x=x, v=v, opt=TRUE, lower=-19, upper=19)
+         oo$value<- oo$objective
       }
-      for(i in 1:ov$nv){
-         if(ov$nnl[i]){
-            if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
-         }
-      }
+      if(abs(val-oo$val) < machineEps && max(abs(pTmp-oo$par)) < machineEps^0.75)
+         cnt<- 0
+      pTmp<- oo$par
+      val<- oo$value
+      cnt<- cnt-1
+   }
+
+   oo<- optf(pTmp,y=y,x=x,v=v,opt=FALSE)
 
 if(hessian){
-   control$maxit<- 1
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
+   hessf<- function(par,y,x,v){
+      ny<- length(y)
+      nb<- ncol(x)
+      nv<- length(v)
 
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-         }
+      b<- par[1:nb]
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*par[nb+i]
       }
       if(!all(is.finite(S))) return(inf)
 
@@ -444,392 +543,178 @@ if(hessian){
       tmp<- qr(S)
       if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      tmp<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
       if(!is.finite(tmp)) return(inf)
 
       tmp
    }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=hessian)
-   oo$hessian<- -oo$hessian
+   ppar<- oo$par
+   for(i in 1:nv)
+      ppar[nb+i]<- pmax(ppar[nb+i], 1e-5)
+   control$ndeps<- rep(5e-6,length(ppar))
+   oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=control)
 }
 
-   oo$value<- as.numeric(oo$value)
    oo$value<- -oo$value
    attributes(oo$value)<- NULL
    names(oo$par)[1:nb]<- colnames(x)
-   names(oo$par)[nb+1:sum(ov$nnl)]<- names(ov$v[ov$nnl])
+   names(oo$par)[nb+1:nv]<- names(v)
    oo$y<- as.matrix(y)
    oo$x<- as.matrix(x)
-   oo$v<- ov$v
-   oo$nv<- ov$nv
-   oo$nnl<- ov$nnl
-   oo$nn<- ov$nn
-   class(oo)<- "bgv"
+   oo$v<- v
+   class(oo)<- "VC"
    oo
 }
 
-# NOTES: as accurate as but about 5 times as fast as estVC.1
-# as accurate as but about 2 times as fast as estVC.2; may Not stable!!!
-estVC.3 <-
+est.VC.2 <-
    function(y,
             x,
             v,
             initpar,
             nit,
-            method,
             control,
             hessian)
-{
-# estimate all background genetic variance (bgv)
-# y: vector, response
-# x: desig matrix including overall mean !!!
-# v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
-# initpar: initial parameters, will be initilized automatically if missing
-# nit: number of iterations
-   control$fnscale<- 1
-   ny<- length(y)
-   nb<- ncol(x)
-   ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
-   for(i in 1:ov$nv){
-      if(ov$nnl[i]){
-         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
-         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
-      }
-   }
-
-   Sf<- function(par,a){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-         }
-      }
-      S
-   }
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
-
-      S<- Sf(par,a)
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
-   }
-   optfct.b<- function(a=list(par=par,nb=nb,ny=ny,ov=ov)){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(a$par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*a$par[a$nb+a$ov$nn[i]]
-         }
-      }
-      if(!all(is.finite(S))) return(a$par[1:a$nb])
-
-      dd<- eigen(S,symmetric=T)
-         uu<- dd$vec
-         dd<- abs(dd$val)
-         dd[dd<machineEps]<- machineEps
-      yy<- t(uu)%*%y
-         yy<- as.matrix(yy)
-      xx<- t(uu)%*%x
-         xx<- as.matrix(xx)
-      b<- lm.wfit(x=xx,y=yy,w=1/dd)$coef
-         b[!is.finite(b)]<- 0
-      b
-   }
-   optfct.v<- function(par,a=list(par=par,nb=nb,ny=ny,ov=ov)){
-      b<- a$par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$ov$nn[1]]+par[a$ov$nn[3]])/2)
-         if(abs(par[a$ov$nn[4]])>tmp) par[a$ov$nn[4]]<- sign(par[a$ov$nn[4]])*tmp
-      }
-
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
-         }
-      }
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
-   }
-
-   val1<- val2<- inf
-   pparTmp<- initpar
-   while(nit>0){
-      pparTmp[1:nb]<- optfct.b(a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-      oo<- nlm(optfct.v,pparTmp[-c(1:nb)],a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-         pparTmp[-c(1:nb)]<- oo$estimate; oo$value<- oo$minimum
-         oo$par<- pparTmp
-         if(ov$nnl[4]){
-            tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-            if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-         }
-      pparTmp<- oo$par
-      val1<- val2
-      val2<- oo$value
-      if(abs(val2-val1)<machineEps && abs(val2-val1)<abs(val1)*machineEps)
-         break
-      nit<- nit-1
-   }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=FALSE)
-      if(ov$nnl[4]){
-         tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-         if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-      }
-      for(i in 1:ov$nv){
-         if(ov$nnl[i]){
-            if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
-         }
-      }
-
-if(hessian){
-   control$maxit<- 1
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
-
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-         }
-      }
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
-   }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=hessian)
-   oo$hessian<- -oo$hessian
-}
-
-   oo$value<- as.numeric(oo$value)
-   oo$value<- -oo$value
-   attributes(oo$value)<- NULL
-   names(oo$par)[1:nb]<- colnames(x)
-   names(oo$par)[nb+1:sum(ov$nnl)]<- names(ov$v[ov$nnl])
-   oo$y<- as.matrix(y)
-   oo$x<- as.matrix(x)
-   oo$v<- ov$v
-   oo$nv<- ov$nv
-   oo$nnl<- ov$nnl
-   oo$nn<- ov$nn
-   class(oo)<- "bgv"
-   oo
-}
-
-# the above ones give more optional but less sensible solutions
-estVC.4 <-
-   function(y,
-            x,
-            v,
-            initpar,
-            nit,
-            method,
-            control,
-            hessian)
-{
-# estimate all background genetic variance (bgv)
+{### slow !!!
+# estimate all background genetic variance (VC)
 # y: vector, response
 # x: covariates
-# v: list of variance components -- list(AA,DD,HH,AD,MH,EE,...) (Abney 200 pp635)
+# v: list of variance components
 # initpar: initial parameters, will be initilized automatically if missing
 # nit: number of iterations to call optim()
-# method: the method to be used
 # control: A list of control parameters
 # hessian: logical. should a numerically differentiated Hessian matrix be returned?
+   if(!is.null(v[["EE"]])){
+      cat("   We now use 'E' (not 'EE') for residual variance matrix; see documentation.\a\n")
+   }
    control$fnscale<- 1
 
    ny<- length(y)
    nb<- ncol(x)
-   ov<- fv(v)
-   if(missing(initpar)) initpar<- c(rep(mean(y),ncol(x)),rep(var(y),sum(ov$nnl)))
-   for(i in 1:ov$nv){
-      if(ov$nnl[i]){
-         initpar[nb+ov$nn[i]]<- initpar[nb+ov$nn[i]]/mean(diag(ov$v[[i]]))
-         if(i!=4) initpar[nb+ov$nn[i]]<- log(initpar[nb+ov$nn[i]])
+   if(is.null(v[["E"]])){ # add residual variance
+      v$E<- diag(ny)
+      if(!missing(initpar))
+         initpar<- c(initpar,var(y))
+   }
+   nv<- length(v)
+      idx<- rep(TRUE,nv)
+      for(n in 1:nv)
+         if(is.null(v[[n]])) idx[n]<- FALSE
+      v<- v[idx]
+      nv<- length(v)
+   if(missing(initpar)){
+      initpar<- c(rep(mean(y),nb),rep(var(y),nv))
+      for(n in 1:nv){
+         initpar[nb+n]<- initpar[nb+n]/mean(diag(v[[n]]))
       }
    }
+   if(nv>1){
+      n<- match("E",names(v))
+      pTmp<- initpar[-(1:nb)]
+         pTmp[-n]<- pTmp[-n]/pTmp[n]
+      initpar[-(1:nb)]<- pTmp
+      rm(pTmp)
+   }else stop("There is no random effect; use other method instead.", call.=FALSE)
+   rm(idx,n)
 
-   Sf<- function(par,a){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
+   for(i in 1:nv){
+      initpar[nb+i]<- log(initpar[nb+i])
+   }
+   rm(i)
+
+   Winv<- function(W, symmetric=TRUE, inverse=TRUE){
+      eW <- eigen(W, symmetric=symmetric)
+      d <- eW$values
+      if (min(d) <0  && abs(min(d))>machineEps)
+          stop("'W' is not positive definite.", call.=FALSE)
+      else d[d<=0]<- ifelse(inverse, Inf, 0)
+      A <- diag(d^ifelse(inverse, -0.5, 0.5)) %*% t(eW$vector)
+      list(A=A, d=d) # t(A)%*%A = W^{-1}
+   }
+   optf<- function(par,y,x,v,opt=FALSE){
+   # par: not include E
+      ny<- length(y)
+      nv<- length(v)
+      cv<- log(var(y)) - 10
+      if(RPAR < cv){
+         S<- matrix(0, nrow=ny, ncol=ny)
+      }else{
+         S<- v$E
+      }
+      j<- match("E",names(v))
+      i<- 0
+      for(t in 1:length(v)){
+         if(t != j){
+            i<- i+1
+            S<- S + v[[i]]*exp(par[i])
          }
       }
-      S
-   }
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$nb+a$ov$nn[1]]+par[a$nb+a$ov$nn[3]])/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
+      rm(i,j,t)
+      WD<- Winv(S)
+      dtf<- data.frame(y=y,x)
+      o<- lmGls(y~.-1,data=dtf,A=WD$A)
+
+      s2<- sum(o$res^2)/ny
+      n<- match("E",names(v))
+      coef<- rep(NA,length(v))
+         coef[-n]<- exp(par)
+         if(RPAR >= cv){
+            coef[-n]<- coef[-n]*s2
+            coef[n]<- RPAR<<- s2
+         }else coef[n]<- RPAR<<- cv
+      names(coef)<- names(v)
+      coef<- c(o$coef, coef)
+
+      if(RPAR < cv){
+         u<- x%*%o$coef
+         tmp<- qr(S)
+         if(tmp$rank<ncol(tmp$qr)) return(inf)
+         ddtmp<- abs(diag(tmp$qr))
+         lik<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+         if(!is.finite(tmp)) return(inf)
+      }else{
+         lik<- log(2*pi)*(ny/2) + ny/2*(log(s2)+1) + sum(log(WD$d))/2
       }
-
-      S<- Sf(par,a)
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
-   }
-
-   optfct.b<- function(a=list(par=par,nb=nb,ny=ny,ov=ov)){
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(a$par[a$nb+a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*a$par[a$nb+a$ov$nn[i]]
-         }
+      if(opt){
+         lik
+      }else{
+         list(value=-lik, parameters=coef)
       }
-      if(!all(is.finite(S))) return(a$par[1:a$nb])
-
-      dd<- eigen(S,symmetric=T)
-         uu<- dd$vec
-         dd<- abs(dd$val)
-         dd[dd<machineEps]<- machineEps
-      yy<- t(uu)%*%y
-         yy<- as.matrix(yy)
-      xx<- t(uu)%*%x
-         xx<- as.matrix(xx)
-      b<- lm.wfit(x=xx,y=yy,w=1/dd)$coef
-         b[!is.finite(b)]<- 0
-      b
-   }
-   optfct.v<- function(par,a=list(par=par,nb=nb,ny=ny,ov=ov)){
-      b<- a$par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(exp(par[a$ov$nn[1]]+par[a$ov$nn[3]])/2)
-         if(abs(par[a$ov$nn[4]])>tmp) par[a$ov$nn[4]]<- sign(par[a$ov$nn[4]])*tmp
-      }
-
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*exp(par[a$ov$nn[i]])
-            }else S<- S + a$ov$v[[i]]*par[a$ov$nn[i]]
-         }
-      }
-      if(!all(is.finite(S))) return(inf)
-
-      u<- x%*%b
-      tmp<- qr(S)
-      if(tmp$rank<ncol(tmp$qr)) return(inf)
-      ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
-      if(!is.finite(tmp)) return(inf)
-
-      tmp
    }
 
-   upper<- rep(25,length(ov$v))
-      names(upper)<- names(ov$v)
-      upper["AD"]<- Inf
-      upper<- upper[ov$nnl]
-      upper<- c(rep(Inf,nb),upper)
-   val1<- val2<- inf
-   pparTmp<- initpar
-   while(nit>0){
-      pparTmp[1:nb]<- optfct.b(a=list(par=pparTmp,nb=nb,ny=ny,ov=ov))
-      oo<- nlminb(pparTmp[-c(1:nb)],optfct.v,a=list(par=pparTmp,nb=nb,ny=ny,ov=ov),upper=upper[-c(1:nb)])
-         pparTmp[-c(1:nb)]<- oo$par; oo$value<- oo$objective
-         oo$par<- pparTmp
-         if(ov$nnl[4]){
-            tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-            if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-         }
-#         for(i in 1:ov$nv){
-#            if(ov$nnl[i]){
-#               if(i!=4) oo$par[nb+ov$nn[i]]<- min(10,exp(oo$par[nb+ov$nn[i]]))
-#            }
-#         }
-      pparTmp<- oo$par
-      val1<- val2
-      val2<- oo$value
-      if(abs(val2-val1) < machineEps && abs(val2-val1)<abs(val1)*machineEps)
-         break
-      nit<- nit-1
+   pTmp<- initpar[-(1:nb)]
+      idx<- match("E",names(v))
+      RPAR<- pTmp[idx]
+      pTmp<- pTmp[-idx]
+   val<- inf
+   if(missing(nit)) cnt<- 25 else
+      cnt<- nit
+   while(cnt > 0){
+      if(nv > 2){
+         oo<- optim(pTmp, optf, y=y, x=x, v=v, opt=TRUE, method="Nelder-Mead",
+            control=control, hessian=FALSE)
+      }else if(nv == 2){
+         oo<- nlminb(pTmp, optf, y=y, x=x, v=v, opt=TRUE, lower=-19, upper=19)
+         oo$value<- oo$objective
+      }
+      if(abs(val-oo$val) < machineEps && max(abs(pTmp-oo$par)) < machineEps^0.75)
+         cnt<- 0
+      pTmp<- oo$par
+      val<- oo$value
+      cnt<- cnt-1
    }
 
-   oo<- nlminb(oo$par,optfct,gradient=NULL,a=list(nb=nb,ny=ny,ov=ov),upper=upper)
-      oo$value<- oo$objective
-      if(ov$nnl[4]){
-         tmp<- sqrt(exp(oo$par[nb+ov$nn[1]]+oo$par[nb+ov$nn[3]])/2)
-         if(abs(oo$par[nb+ov$nn[4]])>tmp) oo$par[nb+ov$nn[4]]<- sign(oo$par[nb+ov$nn[4]])*tmp
-      }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=FALSE)
-      for(i in 1:ov$nv){
-         if(ov$nnl[i]){
-            if(i!=4) oo$par[nb+ov$nn[i]]<- exp(oo$par[nb+ov$nn[i]])
-         }
-      }
+   oo<- optf(pTmp,y=y,x=x,v=v,opt=FALSE)
 
 if(hessian){
-   control$maxit<- 1
-   optfct<- function(par,a=list(nb=nb,ny=ny,ov=ov)){
-      b<- par[1:a$nb]
-      if(a$ov$nnl[4]){
-         tmp<- sqrt(par[a$nb+a$ov$nn[1]]*par[a$nb+a$ov$nn[3]]/2)
-         if(abs(par[a$nb+a$ov$nn[4]])>tmp) par[a$nb+a$ov$nn[4]]<- sign(par[a$nb+a$ov$nn[4]])*tmp
-      }
+   hessf<- function(par,y,x,v){
+      ny<- length(y)
+      nb<- ncol(x)
+      nv<- length(v)
 
-      S<- matrix(0,nrow=a$ny,ncol=a$ny)
-      for(i in 1:a$ov$nv){
-         if(a$ov$nnl[i]){
-            if(i!=4){
-               S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-            }else S<- S + a$ov$v[[i]]*par[a$nb+a$ov$nn[i]]
-         }
+      b<- par[1:nb]
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*par[nb+i]
       }
       if(!all(is.finite(S))) return(inf)
 
@@ -837,27 +722,180 @@ if(hessian){
       tmp<- qr(S)
       if(tmp$rank<ncol(tmp$qr)) return(inf)
       ddtmp<- abs(diag(tmp$qr))
-      tmp<- log(2*pi)*(a$ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      tmp<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
       if(!is.finite(tmp)) return(inf)
 
       tmp
    }
-   oo<- optim(oo$par, optfct, gr=NULL, a=list(nb=nb,ny=ny,ov=ov), method="Nelder-Mead",
-         control=control, hessian=hessian)
-   oo$hessian<- -oo$hessian
+   ppar<- oo$par
+   for(i in 1:nv)
+      ppar[nb+i]<- pmax(ppar[nb+i], 1e-5)
+   control$ndeps<- rep(5e-6,length(ppar))
+   oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=control)
 }
 
    oo$value<- -oo$value
    attributes(oo$value)<- NULL
    names(oo$par)[1:nb]<- colnames(x)
-   names(oo$par)[nb+1:sum(ov$nnl)]<- names(ov$v[ov$nnl])
+   names(oo$par)[nb+1:nv]<- names(v)
    oo$y<- as.matrix(y)
    oo$x<- as.matrix(x)
-   oo$v<- ov$v
-   oo$nv<- ov$nv
-   oo$nnl<- ov$nnl
-   oo$nn<- ov$nn
-   class(oo)<- "bgv"
+   oo$v<- v
+   class(oo)<- "VC"
+   oo
+}
+
+est.VC.3 <-
+   function(y,
+            x,
+            v,
+            initpar,
+            nit,
+            control,
+            hessian)
+{### Not very accurate !!!
+# estimate all background genetic variance (VC)
+# y: vector, response
+# x: covariates
+# v: list of variance components
+# initpar: initial parameters, will be initilized automatically if missing
+# nit: number of iterations to call optim()
+# control: A list of control parameters
+# hessian: logical. should a numerically differentiated Hessian matrix be returned?
+   if(!is.null(v[["EE"]])){
+      cat("   We now use 'E' (not 'EE') for residual variance matrix; see documentation.\a\n")
+   }
+   control$fnscale<- 1
+
+   ny<- length(y)
+   nb<- ncol(x)
+   if(is.null(v[["E"]])){ # add residual variance
+      v$E<- diag(ny)
+      if(!missing(initpar))
+         initpar<- c(initpar,var(y))
+   }
+   nv<- length(v)
+      idx<- rep(TRUE,nv)
+      for(n in 1:nv)
+         if(is.null(v[[n]])) idx[n]<- FALSE
+      v<- v[idx]
+      nv<- length(v)
+   if(missing(initpar)){
+      initpar<- c(rep(mean(y),nb),rep(var(y),nv))
+      for(n in 1:nv){
+         initpar[nb+n]<- initpar[nb+n]/mean(diag(v[[n]]))
+      }
+   }
+   if(nv>1){
+      n<- match("E",names(v))
+      pTmp<- initpar[-(1:nb)]
+         pTmp[-n]<- pTmp[-n]/pTmp[n]
+      initpar[-(1:nb)]<- pTmp
+      rm(pTmp)
+   }else stop("There is no random effect; use other method instead.", call.=FALSE)
+   rm(idx,n)
+
+   for(i in 1:nv){
+      initpar[nb+i]<- log(initpar[nb+i])
+   }
+   rm(i)
+
+   Winv<- function(W, symmetric=TRUE, inverse=TRUE){
+      eW <- eigen(W, symmetric=symmetric)
+      d <- eW$values
+      if (min(d) <0  && abs(min(d))>machineEps)
+          stop("'W' is not positive definite.", call.=FALSE)
+      else d[d<=0]<- ifelse(inverse, Inf, 0)
+      A <- diag(d^ifelse(inverse, -0.5, 0.5)) %*% t(eW$vector)
+      list(A=A, d=d) # t(A)%*%A = W^{-1}
+   }
+   optf<- function(par,y,x,v,opt=FALSE){
+      ny<- length(y)
+      nb<- ncol(x)
+      nv<- length(v)
+
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*exp(par[i])
+      }
+      if(!all(is.finite(S))) return(inf)
+      WD<- Winv(S)
+      dtf<- data.frame(y=y,x)
+      o<- lmGls(y~.-1,data=dtf,A=WD$A)
+
+      s2<- sum(o$res^2)/ny
+      ny<- length(y)
+      lik<- log(2*pi)*(ny/2) + ny/2*(log(s2)+1) + sum(log(WD$d))/2
+
+      if(opt){
+         lik
+      }else{
+         coef<- exp(par)
+         names(coef)<- names(v)
+         coef<- c(o$coef, coef)
+
+         list(value=-lik, parameters=coef)
+      }
+   }
+
+   pTmp<- initpar[-(1:nb)]
+   val<- inf
+   if(missing(nit)) cnt<- 25 else
+      cnt<- nit
+   while(cnt > 0){
+      if(nv > 1){
+         oo<- optim(pTmp, optf, y=y, x=x, v=v, opt=TRUE, method="Nelder-Mead",
+            control=control, hessian=FALSE)
+      }else{
+         oo<- nlminb(pTmp, optf, y=y, x=x, v=v, opt=TRUE, lower=-19, upper=19)
+         oo$value<- oo$objective
+      }
+      if(abs(val-oo$val) < machineEps && max(abs(pTmp-oo$par)) < machineEps^0.75)
+         cnt<- 0
+      pTmp<- oo$par
+      val<- oo$value
+      cnt<- cnt-1
+   }
+
+   oo<- optf(pTmp,y=y,x=x,v=v,opt=FALSE)
+
+if(hessian){
+   hessf<- function(par,y,x,v){
+      ny<- length(y)
+      nb<- ncol(x)
+      nv<- length(v)
+
+      b<- par[1:nb]
+      S<- matrix(0,nrow=ny,ncol=ny)
+      for(i in 1:nv){
+         S<- S + v[[i]]*par[nb+i]
+      }
+      if(!all(is.finite(S))) return(inf)
+
+      u<- x%*%b
+      tmp<- qr(S)
+      if(tmp$rank<ncol(tmp$qr)) return(inf)
+      ddtmp<- abs(diag(tmp$qr))
+      tmp<- log(2*pi)*(ny/2) + sum(log(ddtmp))/2 + t(y-u)%*%solve(tmp,y-u,tol=1e-15)*1/2
+      if(!is.finite(tmp)) return(inf)
+
+      tmp
+   }
+   ppar<- oo$par
+   for(i in 1:nv)
+      ppar[nb+i]<- pmax(ppar[nb+i], 1e-5)
+   control$ndeps<- rep(5e-6,length(ppar))
+   oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=control)
+}
+
+   oo$value<- -oo$value
+   attributes(oo$value)<- NULL
+   names(oo$par)[1:nb]<- colnames(x)
+   names(oo$par)[nb+1:nv]<- names(v)
+   oo$y<- as.matrix(y)
+   oo$x<- as.matrix(x)
+   oo$v<- v
+   class(oo)<- "VC"
    oo
 }
 
@@ -866,7 +904,7 @@ blup<- function(object)
    UseMethod("blup")
 }
 
-blup.bgv<- function(object){
+blup.VC<- function(object){
 # best linear unbiased prediction (BLUP) for all effects
 # y: ny by 1 matrix
 # x: design matrix including overall mean !!!
@@ -898,8 +936,8 @@ blup.bgv<- function(object){
    out
 }
 
-print.bgv<- function(x,...){
-   cat("\nvalue:\n"); print(x$value)
-   cat("\nparameters:\n"); print(x$par)
+print.VC<- function(x,...){
+   cat("value:\n"); print(x$value)
+   cat("parameters:\n"); print(x$par)
 }
 

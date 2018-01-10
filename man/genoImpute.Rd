@@ -8,7 +8,7 @@ Impute missing genotypic data in advance intercross lines (AIL).
 }
 \usage{
 genoImpute(gdat, gmap, prd = NULL, step = Inf, gr = 2, pos = NULL,
-   method = c("Haldane", "Kosambi"), na.str = "NA", verbose = FALSE)
+   method = c("Haldane", "Kosambi"), na.str = "NA", msg = FALSE)
 }
 \arguments{
   \item{gdat}{
@@ -35,7 +35,7 @@ Whether "Haldane" or "Kosambi" mapping function should be used.
   \item{na.str}{
 String for missing values.
 }
-  \item{verbose}{
+  \item{msg}{
 A logical variable. If TRUE, certain information will be printed out during calculation.
 }
 }
@@ -66,7 +66,7 @@ gdatF8[1:5,1:5]
 gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", verbose=TRUE)
+   gr=8, method="Haldane", msg=TRUE)
 
 # imputation based on 'genoProb' object
 tmp<- genoImpute(prd=prDat)
@@ -83,9 +83,9 @@ tmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
    gr=8, na.str=NA)
 sum(is.na(tmp))
 tmp[1:5, 1:5]
-# set "verbose=TRUE" for more information
+# set "msg=TRUE" for more information
 tmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
-   gr=8, na.str=NA, verbose=TRUE)
+   gr=8, na.str=NA, msg=TRUE)
 sum(is.na(tmp))
 tmp[1:5, 1:5]
 }
