@@ -8,7 +8,7 @@ Simulate distribution under the hypothesis of no QTL by permutation (of genotypi
 }
 \usage{
 nullSim(y, x, gdat, prdat, ped, gmap, hap,
-	method = c("permutation","gene dropping"), vc = NULL, intcovar = NULL,
+	method = c("permutation","gene dropping"), vc = NULL, intc = NULL,
 	test = c("None","F","Chisq"), minorGenoFreq = 0.05, rmv = TRUE,
 	gr = 2, ntimes = 10)
 }
@@ -40,7 +40,7 @@ Permutation or gene dropping.
   \item{vc}{
 An object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness. The scan will assume no polygenic variation if \code{vc} is NULL.
 }
-  \item{intcovar}{
+  \item{intc}{
 Covariates that interact with QTL.
 }
   \item{test}{

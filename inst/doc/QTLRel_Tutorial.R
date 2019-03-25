@@ -105,7 +105,7 @@ colnames(pdatF8.)<- c("sex","age","bwt","cage")
 pdatF8.[1:5,]
 pdatF8<- pdatF8.
 
-save(gdatF8, pdatF8, gmapF8, pedF8, pedF8.1, pedF8.2, file="QTLRelEx.RData")
+save(gdatF8, pdatF8, gmapF8, pedF8, pedF8.1, pedF8.2, file="data/QTLRelEx.RData")
 
 #########################
 # identity coefficients #
@@ -113,7 +113,7 @@ save(gdatF8, pdatF8, gmapF8, pedF8, pedF8.1, pedF8.2, file="QTLRelEx.RData")
 
 library(QTLRel)
 
-load("QTLRelEx.RData")
+load("data/QTLRelEx.RData")
 
 # identical kinship
 ksp<- kinship(pedF8, ids=rownames(pdatF8), all=TRUE, msg=FALSE)
@@ -143,7 +143,7 @@ gmF8$AA[1:3,1:5]
 
 max(abs(ksp - gmF8$AA/2))
 
-save(gdatF8, pdatF8, gmapF8, pedF8, pedF8.1, pedF8.2, gmF8, file="QTLRelEx.RData")
+save(gdatF8, pdatF8, gmapF8, pedF8, pedF8.1, pedF8.2, gmF8, file="data/QTLRelEx.RData")
 
 #######################
 # variance components #
@@ -183,14 +183,14 @@ dev.off()
 
 # genome scan: interactive sex
 lrt.sex<- scanOne(y=pdatTmp[,"bwt"], x=pdatTmp[,c("age")],
-    gdat=gdatTmpImputed, intcovar=pdatTmp[,c("sex")],vc=vc)
+    gdat=gdatTmpImputed, intc=pdatTmp[,c("sex")],vc=vc)
 pdf("bwt2.pdf")
   plot(lrt.sex,gmap=gmapF8,main="Body Weight") # plotting
 dev.off()
 
 # QTL by sex interaction
 lrtTmp<- lrt
-   lrtTmp$p<- lrt.sex$p - lrt$p
+   lrtTmp$LRT<- lrt.sex$LRT - lrt$LRT
 pdf("bwt3.pdf")
    plot(lrtTmp,gmap=gmapF8,main="Body Weight: QTL by Sex Effect") # plotting
 dev.off()
@@ -210,14 +210,14 @@ dev.off()
 
 # genome scan: Haley-Knott method, interactive sex
 lrtHK.sex<- scanOne(y=pdatTmp[,"bwt"], x=pdatTmp[,c("age")],
-    prd=prDat, intcovar=pdatTmp[,c("sex")],vc=vc)
+    prd=prDat, intc=pdatTmp[,c("sex")],vc=vc)
 pdf("bwt5.pdf")
    plot(lrtHK.sex,main="Body Weight (HK Method)") # plotting
 dev.off()
 
 # Haley-Knott method, QTL by sex interaction
 lrtHKTmp<- lrtHK
-   lrtHKTmp$p<- lrtHK.sex$p - lrtHK$p
+   lrtHKTmp$LRT<- lrtHK.sex$LRT - lrtHK$LRT
 pdf("bwt6.pdf")
    plot(lrtHKTmp,main="Body Weight (HK Method): QTL by Sex Effect") # plotting
 dev.off()
@@ -233,7 +233,7 @@ for(n in 1:ntimes){
    idx<- sample(1:nn,replace=FALSE) # permutation
    tmp<- scanOne(y=pdatTmp[,"bwt"],x=pdatTmp[,c("sex","age")],
        gdat=gdatTmpImputed[idx,], vc=vc)
-   cvMtr<- rbind(cvMtr,tmp$p)
+   cvMtr<- rbind(cvMtr,tmp$LRT)
    cat(n,"/",ntimes,"\r") # track process
 }
 
@@ -249,7 +249,7 @@ for(n in 1:ntimes){
    prdTmp$pr<- prdTmp$pr[idx,,]
    tmp<- scanOne(y=pdatTmp[,"bwt"], x=pdatTmp[,c("sex","age")],
        prd=prdTmp, vc=vc)
-   cvMtrHK<- rbind(cvMtrHK,tmp$p)
+   cvMtrHK<- rbind(cvMtrHK,tmp$LRT)
    cat(n,"/",ntimes,"\r")
 }
 
@@ -261,7 +261,7 @@ for(n in 1:ntimes){
    gdatTmp<- genoSim(pedR, gmapF8, ids=ids)
    tmp<- scanOne(y=pdatTmp[,"bwt"],x=pdatTmp[,c("sex","age")],
        gdat=gdatTmp, vc=vc)
-   cvMtrGD<- rbind(cvMtrGD,tmp$p)
+   cvMtrGD<- rbind(cvMtrGD,tmp$LRT)
    cat(n,"/",ntimes,"\r")
 }
 
@@ -276,7 +276,7 @@ dev.off()
 idx<- match(colnames(gdatTmpImputed),gmapF8$snp)
 Tmp<- data.frame(chr=gmapF8$chr[idx],
                  dist=gmapF8$dist[idx],
-                 y=lrt$p)
+                 y=lrt$LRT)
    Tmp<- Tmp[order(Tmp$chr,Tmp$dist),] # order by chromosome and distance
 pdf("bwt8.pdf")
 plotit(Tmp, cv=15, main="Mapping Plot of Body Weight", xlab="Chromosome",
@@ -302,7 +302,7 @@ dev.off()
 # lod ci
 Tmp<- data.frame(chr=lrtHK$chr,
                  dist=lrtHK$dist,
-                 y=lrtHK$p/(2*log(10))) # convert to LOD
+                 y=lrtHK$LRT/(2*log(10))) # convert to LOD
    Tmp$chr<- reorder(Tmp$chr)
    Tmp<- Tmp[order(Tmp$chr,Tmp$dist),] # order by chromosome and distance
 lc<- lodci(Tmp,cv=3.2,lod=1.5,drop=1.5)
@@ -333,8 +333,8 @@ for(i in 1:length(vc0$v))
    cov<- cov + vc0$v[[i]]*vc0$par[nb+i]
 tv<- mean(diag(cov)) # total variation
 eff<- NULL # QTL effects
-for(n in 1:length(lrtHK$par)){
-   eff<- rbind(eff,lrtHK$par[[n]][c("a","d")])
+for(n in 1:nrow(lrtHK$par)){
+   eff<- rbind(eff,lrtHK$par[n,c("a","d")])
 }
 eff<- data.frame(eff) # data frame!
 qv<- qtlVar(eff,prDat$pr) # per QTL variation

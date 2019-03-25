@@ -1,6 +1,6 @@
 
 nullSim<- function(y, x, gdat, prdat, ped, gmap, hap,
-   method=c("permutation","gene dropping"), vc=NULL, intcovar=NULL,
+   method=c("permutation","gene dropping"), vc=NULL, intc=NULL,
    test = c("None","F","Chisq"), minorGenoFreq=0.05, rmv=TRUE,
    gr=2, ntimes=10){
    matr<- NULL
@@ -15,7 +15,7 @@ nullSim<- function(y, x, gdat, prdat, ped, gmap, hap,
          pos<- gmap
          for(n in 1:ntimes){
             gdatTmp<- genoSim(pedR, gmap=gmap, ids=ids, hap=hap, method="Haldane")
-            llkTmp<- scanOne(y=y, x=x, gdat=gdatTmp, vc=vc, intcovar=intcovar,
+            llkTmp<- scanOne(y=y, x=x, gdat=gdatTmp, vc=vc, intc=intc,
                test=test, minorGenoFreq=minorGenoFreq, rmv=rmv)
 
             if(minorGenoFreq <= 0 && rmv) matr<- rbind(matr, llkTmp$p) else
@@ -30,7 +30,7 @@ nullSim<- function(y, x, gdat, prdat, ped, gmap, hap,
          for(n in 1:ntimes){
             gdatTmp<- genoSim(pedR, gmap=gmap, ids=ids, hap=hap, method="Haldane")
             prd<- genoProb(gdatTmp, gmap, gr=gr, pos=pos, method="Haldane", msg = FALSE)
-            llkTmp<- scanOne(y=y, x=x, prdat=prd, vc=vc, intcovar=intcovar,
+            llkTmp<- scanOne(y=y, x=x, prdat=prd, vc=vc, intc=intc,
                test=test, minorGenoFreq=minorGenoFreq, rmv=rmv)
 
             if(minorGenoFreq <= 0 && rmv) matr<- rbind(matr, llkTmp$p) else
@@ -43,7 +43,7 @@ nullSim<- function(y, x, gdat, prdat, ped, gmap, hap,
          if(missing(gdat)) stop("Either 'gdat' or 'prdat' should be provided.", call.=FALSE)
          for(n in 1:ntimes){
             idx<- sample(1:nrow(gdat),replace=FALSE)
-            llkTmp<- scanOne(y=y, x=x, gdat=gdat[idx,], vc=vc, intcovar=intcovar,
+            llkTmp<- scanOne(y=y, x=x, gdat=gdat[idx,], vc=vc, intc=intc,
                test=test, minorGenoFreq=minorGenoFreq, rmv=rmv)
 
             matr<- rbind(matr, llkTmp$p)
@@ -53,7 +53,7 @@ nullSim<- function(y, x, gdat, prdat, ped, gmap, hap,
          for(n in 1:ntimes){
             idx<- sample(1:dim(prdat$pr)[1], replace=FALSE)
             prd$pr<- prdat$pr[idx,,]
-            llkTmp<- scanOne(y=y, x=x, prdat=prd, vc=vc, intcovar=intcovar,
+            llkTmp<- scanOne(y=y, x=x, prdat=prd, vc=vc, intc=intc,
                test=test, minorGenoFreq=minorGenoFreq, rmv=rmv)
 
             matr<- rbind(matr, llkTmp$p)

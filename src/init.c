@@ -1,5 +1,5 @@
 
-#include "xxx.h"
+#include "QTLRelR.h"
 #include <R_ext/Rdynload.h> //R_CMethodDef
 //#include <Rdefines.h>
 
@@ -48,9 +48,26 @@ static const R_CMethodDef cMethods[] = {
     {NULL, NULL, 0}
 };
 
+static const
+R_FortranMethodDef fMethods[] = {
+   {"sc10", (DL_FUNC) &F77_NAME(sc10), 23},
+   {"sc11", (DL_FUNC) &F77_NAME(sc11), 25},
+   {"sc20", (DL_FUNC) &F77_NAME(sc20), 24},
+   {"sc21", (DL_FUNC) &F77_NAME(sc21), 26},
+   {"dsyev", (DL_FUNC) &F77_NAME(dsyev), 9},
+   {"dsyevr", (DL_FUNC) &F77_NAME(dsyevr), 21},
+   {NULL, NULL, 0}
+};
+
+static const
+R_CallMethodDef callMethods[] = {
+   //{"Cdqrls", (DL_FUNC) &Cdqrls, 4},
+   NULL
+};
+
 void R_init_QTLRel(DllInfo *dll)
 {
-    R_registerRoutines(dll, cMethods, NULL, NULL, NULL);
+    R_registerRoutines(dll, cMethods, callMethods, fMethods, NULL);
     R_useDynamicSymbols(dll, FALSE);
 //    R_forceSymbols(dll, TRUE);
 }

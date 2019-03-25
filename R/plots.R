@@ -6,11 +6,12 @@ plot.scanOne<- function(x,...){
    if(is.null(xTmp$xlab)) xlab<- "Chromosome"
    cv<- xTmp$cv
 
-   lrt<- data.frame(y=x$p)
+   if(is.null(x$LRT)) lrt<- data.frame(y=x$pval) else
+      lrt<- data.frame(y=x$LRT)
    if(is.null(x$chr)){
       if(is.null(xTmp$gmap)) stop("Need: gmap...", call.=FALSE)
       gmap<- xTmp$gmap
-      idx<- match(names(x$p),gmap$snp)
+      idx<- match(rownames(lrt),gmap$snp)
       lrt$chr<- gmap$chr[idx]
       lrt$dist<- gmap$dist[idx]
    }else{
@@ -18,10 +19,10 @@ plot.scanOne<- function(x,...){
       lrt$dist=x$dist
    }
    if(is.element("None",class(x))){
-      lrt$y<- x$p/(2*log(10))
+      lrt$y<- x$LRT/(2*log(10))
       plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,ylim=xTmp$ylim,xlab=xlab,ylab="LOD")
    }else{
-      lrt$y<- -log10(x$p)
+      lrt$y<- -log10(x$pval)
       plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,ylim=xTmp$ylim,
          xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
    }

@@ -8,7 +8,7 @@
      R CMD SHLIB -D_FILE_OFFSET_BITS=64 ibsFn.cc
 ****************************************************/
 
-#include "xxx.h"
+#include "QTLRelR.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 
 void ibsPr();

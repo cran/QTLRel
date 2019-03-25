@@ -12,7 +12,7 @@
   ULLONG_MAX 18446744073709551615ULL
 ****************************************************/
 
-#include "xxx.h"
+#include "QTLRelR.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 #if defined(linux) || defined(__linux__)
    #define FOPEN fopen64
@@ -37,6 +37,7 @@ LONGLONG jj;
 LONGLONG o0[4];
 LONGLONG o[4];
 
+void nfunc();
 void checkages();
 void kship();
 double phi2();
@@ -70,7 +71,7 @@ void genMatr();
    }
 
    //write to file outfs[4]: phi2(a,b), phi3(a,b,c), phi4(a,b,c,d) and phi22(a,b,c,d)
-   void phicw(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, char** outfs){
+   void phicw(int* pedigree, int* nr, int* nc, int* id, int* nid, int* top, char** infs, char** outfs){
          //signal(SIGINT, &userInt);
          FILE* ifs[4];
          int i;
@@ -100,7 +101,7 @@ void genMatr();
    }
 
    //store in idcf[,9]
-   void phicr(int* pedigree,int* nr,int* nc,int* id,int* nid, int* top, char** infs, double* idcf, int* verbose){
+   void phicr(int* pedigree, int* nr, int* nc, int* id, int* nid, int* top, char** infs, double* idcf, int* verbose){
          //signal(SIGINT, &userInt);
          int i;
          FILE* ifs[4];
@@ -138,7 +139,7 @@ void genMatr();
 //}
 
 // write to ofs[k]
-void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs){
+void idcoefw(int** ped, int nr, int* id, int nid, int* top, FILE** ifs, FILE** ofs){
    int i, j, k, l;
    for(i=0;i<nid;i++){
       for(j=0;j<=i;j++){
@@ -192,7 +193,7 @@ void idcoefw(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, FILE** ofs)
 }
 
 // store in idcf[i][j]
-void idcoefr(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, double* idcf,int verbose){
+void idcoefr(int** ped, int nr, int* id, int nid, int* top, FILE** ifs, double* idcf,int verbose){
    int i, j;
    double aa,bb,ab,aab,abb,aabb,aaxbb,abxab;
    LONGLONG ii;
@@ -227,7 +228,6 @@ void idcoefr(int** ped,int nr,int* id,int nid, int* top, FILE** ifs, double* idc
       }
    }
 }
-
 
 void genMatr(double** idcf, int nn, double** ksp, double** DD, double** AD, double** HH, double** MH){
    int i, j, ii=0;
@@ -372,6 +372,31 @@ LONGLONG s22(LONGLONG* x){
    return s;
 }
 
+/*----------------------------------------
+ nfunc: splits into nth threads
+ ----------------------------------------*/
+void nfunc(int nid, int nth, int * nn){
+// nid: number of individuals
+// nth: number of threads
+   double _tot = nid * (nid + 1) / 2.0;
+   double _pt = 0.0, _tmp = 0.0;
+   int _cnt = 1;
+   double a = _cnt*1.0/nth;
+   for(int i=0; i<nid; i++){
+      _pt += (i+1)/_tot;
+      if(_pt > a){
+         if(a > 0.5*(_pt + _tmp)){
+            nn[_cnt - 1] = i+1;
+         }else nn[_cnt - 1] = i;
+         _cnt += 1;
+         a = _cnt*1.0/nth;
+      }else{
+         _tmp = _pt;
+      }
+      if(_cnt > nth) break;
+   }
+}
+
 void checkages(int *a, int *b)
 {
    if (*a < *b){
@@ -380,6 +405,7 @@ void checkages(int *a, int *b)
       *b = tmp;
    }
 }
+
 double phi(int a, int b, int** ped, double** kc)
 {
    if( a == 0 || b == 0){
@@ -483,7 +509,6 @@ double phi3(int a, int b, int c, int** ped, int* top, FILE** ifs)
    if(a < 0) return 0.0;
    return ((phi3(ped[a-1][1], b, c, ped, top, ifs) + phi3(ped[a-1][2], b, c, ped, top, ifs)) / 2.0);
 }
-
 
 double phi4(int a, int b, int c, int d, int** ped, int* top, FILE** ifs)
 {

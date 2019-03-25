@@ -1,5 +1,5 @@
 
-#include "xxx.h"
+#include "QTLRelR.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 
 void conGenoPrs(int*, int, double*, double*, int , int*, int, int, double*, int*);

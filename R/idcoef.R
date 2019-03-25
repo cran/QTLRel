@@ -157,36 +157,60 @@ ped.opt<- function(ped,ids,ns,df=3){
    nn<- nn[ii]
    ii<- c(1:length(ii))[ii]
 
-   totdiskspace<- 0
+   #totdiskspace<- 0
    while(length(ii) > 2){
       if(length(ii)==3){
-         if(fn2s(nn[2]) > 0.99*fs){
+         if(fn2s(nn[2]) > 0.90*fs){
             nn<- nn[-2]
             ii<- ii[-2]
-         }else totdiskspace<- max(totdiskspace, fn2s(nn[2]))
+         }#else totdiskspace<- max(totdiskspace, fn2s(nn[2]))
          break
       }else if(length(ii)>3){
-         for(i in 2:(length(ii)-2)){
+         for(i in 2:(length(ii)-1)){
             jj<- fn2s(nn[c(i,i+1)])
             if(sum(jj) > 0.90*fs){
                if(jj[1]>jj[2]){
                   nn<- nn[-i]
                   ii<- ii[-i]
-               }else{
+               }else if(i+1 < length(ii)){
                   nn<- nn[-(i+1)]
                   ii<- ii[-(i+1)]
                }
                break
-            }else totdiskspace<- max(totdiskspace, sum(jj))
+            }#else if(i+1 < length(ii))
+               #totdiskspace<- max(totdiskspace, sum(jj))
          }
-         if(i==length(ii)-2) break
+         if(i==length(ii)-1) break
       }
    }
 
-   cat("  Total free disk space needed:", totdiskspace,"Mb...\n")
+   #cat("  Total free disk space needed:", totdiskspace,"Mb...\n")
    ped$generation<- reorder(factor(ped$generation))
    grsTmp<- sort(unique(ped$generation),decreasing=FALSE)
    grsTmp[ii] # (optimal) intermediate generations
+}
+
+checkDiskSpace<- function(ns,ask=FALSE){
+   fs<- freeSpace() # free disk space
+   totdiskspace<- 0
+   if(length(ns) > 1)
+      for(j in 1:(length(ns)-1)){
+         jj<- fn2s(1:2 + j - 1)
+         totdiskspace<- max(totdiskspace, sum(jj))
+      }
+   cat("  Total free disk space needed:", totdiskspace,"Mb...\n")
+   if(totdiskspace > 0.99*fs){
+      cat("  There isn't sufficient disk space...\n")
+      return(NULL)
+   }else if(totdiskspace > 0.90*fs){
+      cat("  There doesn't seem to be sufficient disk space...\n")
+      if(ask){
+         ansTmp<- ans(prompt="Continue?")
+         if(!ansTmp) return(NULL)
+      }
+      cat("  Make sure disk space is reserved for this usage only.\n")
+   }
+   invisible(totdiskspace)
 }
 
 ans<- function(prompt="Continue?") {
@@ -247,6 +271,7 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
    if(missing(ids)) ids<- ped$id
    ids<- sapply(ids,as.character)
       ids<- trim(ids)
+   pedS<- ped
    ped<- pedRecode(ped=ped,ids=ids,all=TRUE,msg=TRUE)
       ped$id<- sapply(ped$id,as.character)
       idx<- ped$sire < 0
@@ -266,13 +291,19 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
       gr<- ped.opt(ped,ids=ids,ns=pedN,df=df)
    }else{
       gr<- inter
-      if(any(!is.element(gr,ped$generation)))
+      if(any(!is.element(gr,sapply(pedS$generation,as.character))))
          stop("'inter' incorrectly specified.", call.=FALSE)
    }
+   grPed<- sort(unique(ped$generation),decreasing=FALSE)
+   gr<- match(gr,grPed)
+      gr<- sort(gr,decreasing=FALSE)
+      gr<- union(1,c(gr,length(grPed)))
+   checkDiskSpace(pedN[gr],ask=ask)
+
    if(msg){
       cat("  Carry-over number of individuals in each generation:\n")
       print(pedN)
-      cat("  Will go over generations: ",sapply(gr,as.character),"\n", sep="")
+      cat("  Will go over generations: ",sapply(grPed[gr],as.character),"\n", sep=" ")
    }
    if(ask){
       ansTmp<- ans(prompt="Continue?")
@@ -281,15 +312,12 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
    cat("  This may take hours or days to finish!\n")
    cat("  Please wait or press 'ctrl-c' to abort...\n")
 
-   grTmp<- sort(unique(ped$generation),decreasing=FALSE)
-   gr<- match(gr,grTmp)
-      gr<- sort(gr,decreasing=FALSE)
    nnTmp<- pedN[gr]
       nnTmp<- nnTmp[-c(1,length(nnTmp))]
    if(length(nnTmp)>0)
       if(any(nnTmp>fmaxSize()))
          stop("Hardware limitation. Try others.", call.=FALSE)
-   ped$generation<- match(ped$generation,grTmp)
+   ped$generation<- match(ped$generation,grPed)
 
    DIR<- paste(".data",format(Sys.time(), "%Y%m%d%H%M%S"),sep="")
 #   unlink(DIR,recursive=TRUE)
@@ -304,10 +332,10 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
       stop("Something wrong. check inter?", call.=FALSE)
    }else if(length(gr)>1){
       for(n in 2:length(gr)){
-         if(msg) cat(" ",sapply(grTmp[gr[n]],as.character),sep="")
+         if(msg) cat(" ",sapply(grPed[gr[n]],as.character),sep="")
 
-         infs<- paste(str,sapply(grTmp[gr[n-1]],as.character),".",1:4,sep="")
-         outfs<- paste(str,sapply(grTmp[gr[n]],as.character),".",1:4,sep="")
+         infs<- paste(str,sapply(grPed[gr[n-1]],as.character),".",1:4,sep="")
+         outfs<- paste(str,sapply(grPed[gr[n]],as.character),".",1:4,sep="")
          idTop<- ped$id[ped.No[gr[n-1],]]
          idBot<- ped$id[ped.No[gr[n],]]
          pedTmp<- ped[ped.No[gr[n-1],],]

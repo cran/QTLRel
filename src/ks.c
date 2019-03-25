@@ -2,7 +2,7 @@
    this file is copy from R-2.15.0.
 */
 
-#include "xxx.h"
+#include "QTLRelR.h"
 
 static double K(int n, double d);
 static void m_multiply(double *A, double *B, double *C, int m);

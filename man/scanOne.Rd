@@ -4,11 +4,11 @@
 Genome Scan for QTL
 }
 \description{
-Evaluate log-likelihood ratio test statistics or P-values at scanning loci along the genome.
+Evaluate likelihood ratio test statistics or P-values at scanning loci along the genome.
 }
 \usage{
-scanOne(y, x, gdat, prdat = NULL, vc = NULL, intcovar = NULL,
-   numGeno = FALSE, test = c("None","F","Chisq"),
+scanOne(y, x, gdat, prdat = NULL, vc = NULL, intc = NULL,
+   numGeno = FALSE, test = c("None","F","LRT"),
    minorGenoFreq = 0, rmv = TRUE)
 }
 \arguments{
@@ -19,22 +19,24 @@ A numeric vector or a numeric matrix of one column (representing a phenotype for
 A data frame or matrix, representing covariates if not missing.
 }
   \item{gdat}{
-Genotype data. Should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Optional if an object \code{prdat} from \code{\link{genoProb}} is used as an argument.
+Genotype data. Commonly, should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Optional if an object \code{prdat} from \code{\link{genoProb}} is used as an argument.
+
+If \code{gdat} is not numeric, there can be more than three genotypes. However, all scanning loci should have the same number of genotypes. Otherwise, we can split \code{gdat} into sub-matrices that each have the same number of genotypes and run the analysis for these sub-matrices one after another.
 }
   \item{prdat}{
-An object from \code{\link{genoProb}}, or in the same form.
+An object from \code{\link{genoProb}}, or in the same form. It should have a class "addEff" if allelic effects are assumed to be additive (see example below).
 }
   \item{vc}{
 An object from \code{\link{estVC}} or \code{\link{aicVC}}, or an estimated variance-covariance matrix induced by relatedness and environment.
 }
-  \item{intcovar}{
+  \item{intc}{
 Covariates that interact with QTL.
 }
   \item{numGeno}{
 Whether to treat numeric coding of genotypes as numeric. If true, \code{minorGenoFreq} will be ignored.
 }
   \item{test}{
-"None", "F" or "Chisq".
+"None", "F" or "LRT".
 }
   \item{minorGenoFreq}{
 Specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
@@ -50,8 +52,9 @@ It is possible to extend the Haley-Knott approach to multiple-allelic cases unde
 }
 \value{
 A list with at least the following components:
-   \item{p}{P-value at the snp (marker) if \code{test} is "F" or "Chisq", or the log-likelihood ratio statistic at the SNP (marker) if "test" is "None"}
-   \item{v}{Percentage of variation explained by QTL related effects at the snp (marker)}
+   \item{F or LRT}{the F-test or likelihood ratio test (LRT) statistic at the SNP (marker) if \code{test} is "F" or otherwise}
+   \item{pval}{P-value at the snp (marker) if \code{test} is "F" or "LRT"}
+   \item{v}{Variation explained by the SNP (marker)}
    \item{parameters}{Estimated parameters at all scanning loci, including additive effect \code{a} and dominance effect \code{d} if \code{prdat} is not NULL}
 }
 \references{
@@ -79,18 +82,23 @@ o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 gdtmp<- genoImpute(geno, gmap=gmapF8, step=Inf,
         gr=8, na.str=NA, msg=FALSE)
 # genome scan and plotting
-pv<- scanOne(y=pheno$bwt, x=pheno$sex, gdat=gdtmp, vc=o)
-pv
-plot(pv,gmap=gmapF8)
+lrt<- scanOne(y=pheno$bwt, x=pheno$sex, gdat=gdtmp, vc=o)
+lrt
+plot(lrt,gmap=gmapF8)
 
 # Haley-Knott method
 gdtmp<- geno; unique(unlist(gdtmp))
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
    gr=8, method="Haldane", msg=TRUE)
-pv.hk<- scanOne(y=pheno$bwt, x=pheno$sex, prdat=prDat, vc=o)
+pv.hk<- scanOne(y=pheno$bwt, intc=pheno$sex, prdat=prDat, vc=o, test="F")
 pv.hk
-plot(pv.hk)
+plot(pv.hk, gmap=gmapF8)
+
+# assume additive allelic effects
+class(prDat)<- c(class(prDat), "addEff")
+lrt.hk<- scanOne(y=pheno$bwt, intc=pheno$sex, prdat=prDat, vc=o)
+lrt.hk
 }
 }
 

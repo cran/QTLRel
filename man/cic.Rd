@@ -49,6 +49,9 @@ It is better to remove the working directory if the program is interrupted by ex
 
 Warning: you may need to run this program on a 64-bit machine in case of seeing such a message!
 }
+\seealso{
+\code{\link{pedRecode}} for more information.
+}
 \examples{
 data(miscEx)
 
@@ -59,10 +62,10 @@ ids<- sample(pedF8$id[300:500],20)
 # top-down
 oo<- cic(pedF8, ids=ids, df=Inf, msg=TRUE)
 # bottom-up
-o0<- cic(pedF8, ids=ids, df=0, msg=TRUE)
+o1<- cic(pedF8, ids=ids, df=0, msg=TRUE)
 # hybrid of top-down and bottom-up
 o2<- cic(pedF8, ids=ids, ask=TRUE, msg=TRUE)
 # same results
-c(sum(abs(oo-o0) >1e-7),sum(abs(o2-o0) >1e-7))
+c(sum(abs(oo-o1) >1e-7),sum(abs(o2-o1) >1e-7))
 }
 }

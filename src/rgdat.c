@@ -1,5 +1,5 @@
 
-#include "xxx.h"
+#include "QTLRelR.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 
 void rgeno1();

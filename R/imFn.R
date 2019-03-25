@@ -111,17 +111,24 @@ genoProb.default <-
    gmap$chr<- reorder(factor(gmap$chr))
       gmap<- gmap[order(gmap$chr,gmap$dist),]
    snp<- intersect(colnames(gdat),gmap$snp)
+   if(length(snp) == 0){
+      cat("Check to make sure 'gdat' is a matrix or data frame\n")
+      stop("   and column names of 'gdat' are correct marker names", call.=FALSE)
+   }
    idx<- is.element(colnames(gdat),snp)
-   if(sum(idx)!=ncol(gdat) && msg)
+   if(sum(idx)!=ncol(gdat) && msg){
       cat("   Some markers were excluded from genotype data.\n")
-   gdat<- gdat[,idx]
+      cat("   Make sure column names of 'gdat' are correct marker names.\n")
+   }
+   gdat<- as.matrix(gdat[,idx])
    idx<- is.element(gmap$snp,snp)
    if(sum(idx)!=nrow(gmap) && msg)
       cat("   Some markers were excluded from genetic map.\n")
-   if(msg) cat("   There are",length(snp),"markers to be used.\n", sep="")
+   if(msg) cat("   There are ",length(snp)," markers to be used.\n", sep="")
    gmap<- gmap[idx,]
 
-   gdat<- gdat[,match(gmap$snp,colnames(gdat))]
+   if(ncol(gdat) < 2) colnames(gdat)<- gmap$snp
+   gdat<- as.matrix(gdat[,match(gmap$snp,colnames(gdat))])
    chrs<- unique(gmap$chr)
       chrs<- as.character(chrs)
 
@@ -199,7 +206,7 @@ genoPr0<- function(mdat,nn,dist,pos,at,gr,method,msg){
             error = as.logical(err),
             PACKAGE="QTLRel")
    if(msg)
-      if(out$error) cat("   Warning: individual",nn,"not imputable...\a\n", sep="")
+      if(out$error) cat("   Warning: individual ",nn," not imputable...\a\n", sep="")
 
    matrix(out$pdat,ncol=3,byrow=TRUE)
 }
@@ -221,7 +228,7 @@ genoPr1<- function(mdat,dist,pos,at,gr,method,msg){
       probs[[3]]<- rbind(probs[[3]],pdat[,3]) # P(3|MN)
 
       tmp<- sum(is.na(pdat))
-      if(tmp>0) cat("   ", tmp,"NAs for",nn,"-th individual...\n", sep="")
+      if(tmp>0) cat("   ", tmp,"NAs for ",nn,"-th individual...\n", sep="")
    }
 
    list(pr=probs,dist=pos)
@@ -290,7 +297,7 @@ genoImpute.default <-
    gdat<- as.matrix(gdat)
    gn<- setdiff(unique(c(gdat)),na.str)
    if(length(gn)!=3){
-      cat("   There are",length(gn),"genotypes:\n", sep="")
+      cat("   There are ",length(gn)," genotypes:\n", sep="")
       print(gn)
       stop("There should be only three genotypes...", call.=FALSE)
    }

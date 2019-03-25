@@ -5,7 +5,7 @@ W.inv<- function(W, symmetric=TRUE,inverse=TRUE){
    if (min(d) <0  && abs(min(d))>sqrt(.Machine$double.eps))
        stop("'W' is not positive definite.", call.=FALSE)
    else d[d<=0]<- ifelse(inverse, Inf, 0)
-   A <- diag(d^ifelse(inverse, -0.5, 0.5)) %*% t(eW$vector)
+   A <- sweep(t(eW$vector), 1, d^ifelse(inverse, -0.5, 0.5), "*")
    A # t(A)%*%A = W^{-1}
 }
 
@@ -30,446 +30,554 @@ lmGls<- function (formula, data, A, contrasts = NULL, ...) {
     fit
 }
 
+# extract model matrix
+mdlMtr<- function (formula, data, contrasts = NULL, ...) {
+    mf<- match.call(expand.dots = FALSE)
+        m<- match(c("formula", "data"), names(mf), 0L)
+        mf<- mf[c(1L, m)]
+        mf$drop.unused.levels<- TRUE
+        mf[[1L]]<- quote(stats::model.frame)
+        mf<- eval(mf, parent.frame())
+    Terms <- attr(mf, "terms")
+    xx <- model.matrix(Terms, mf, contrasts)
+
+    xx
+}
+
 # generalized least squares test
 scanOne.0 <-
    function(y,
             x,
             prdat,
-            cov,
-            intcovar = NULL,
-            test = c("None","F","Chisq"))
+            hinvCov,
+            intc = NULL,
+            test = c("None","F","LRT"))
 {
 # prdat$pr: n by ? by ? matrix, allele probabilities
 # vc: object from estVC or aicVC
-# test: "Chisq", "F" or "Cp"
-   diag.cov<- diag(cov)
-   if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
-      if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
-         weights<- NULL
-      }else weights<- 1/diag.cov
-   }else weights<- NA
-   gcv<- W.inv(cov)
+# test: "LRT", "F" or "Cp"
    test<- match.arg(test)
 
-   nsnp<- dim(prdat$pr)[3]
-   if(!is.null(intcovar)) nint<- ncol(as.matrix(intcovar))
-   model.par<- vector("list",nsnp)
-      names(model.par)<- prdat$snp
-   P<- rep(Inf,nsnp)
-      names(P)<- prdat$snp
-   V<- P
-   if(is.null(intcovar)){
+   snp<- prdat$snp
+   chr<- prdat$chr
+   dist<- prdat$dist
+   opt<- switch(test,
+       "None" = 1,
+          "F" = 2,
+      "LRT" = 3
+   )
+
+   if(is.null(intc)){
       if(!missing(x)){
          oTmp<- data.frame(y=y,x)
       }else{
          oTmp<- data.frame(y=y)
       }
-      if( !is.null(weights[1]) && is.na(weights[1]) ){
-         g0<- lmGls(y~.,data=oTmp,A=gcv)
-      }else{
-         g0<- lm(y~.,data=oTmp,weights=weights)
-      }
-      if(test=="None"){
-         P0<- logLik(g0)
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,prdat$pr[,-1,k])
-            }else{
-               oTmp<- data.frame(y=y,a=prdat$pr[,-1,k])
-            }
+      xx<- mdlMtr(y~., data=oTmp)
+      xg<- as.matrix(prdat$pr[,1,] - prdat$pr[,3,])
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(y~.,data=oTmp,A=gcv)
-            }else{
-               g<- lm(y~.,data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- logLik(g)
-            V[k]<- sum(g$res^2)
-         }
-         P<- 2*(P-P0)
-      }else{
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,prdat$pr[,-1,k])
-            }else{
-               oTmp<- data.frame(y=y,prdat$pr[,-1,k])
-            }
+      cns2<- "g"
+      str<- colnames(xx)
+         str<- c(str,cns2)
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(y~.,data=oTmp,A=gcv)
-            }else{
-               g<- lm(y~.,data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- anova(g0,g,test=test)$P[2]
-            V[k]<- sum(g$res^2)
-         }
-      }
-      V<- sum(g0$res^2) - V
-         V<- V/sum(anova(g0)[,"Sum Sq"])
+      rm(prdat, oTmp, cns2); gc()
+
+      y<- as.vector(y)
+      n<- nrow(xx)
+      p<- ncol(xx)
+      ng<- dim(xg)[2]
+      ot<- .Fortran("sc10",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = hinvCov%*%xx,
+         p = as.integer(p),
+         xg = hinvCov%*%xg,
+         ng = as.integer(ng),
+         coefficients = mat.or.vec(ng,p+1),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+1),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+1,p+1),
+         b = double(p+1),
+         r0 = double(n),
+         r1 = double(n),
+         x1 = mat.or.vec(n,p),
+         x2 = double(n),
+         xty = double(p),
+         qty = double(p+1),
+         qraux = double(p+1),
+         work = mat.or.vec(p+1,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")]
    }else{
       if(!missing(x)){
-         oTmp<- data.frame(y=y,x,intcovar)
+         oTmp<- data.frame(y=y,x,intc)
       }else{
-         oTmp<- data.frame(y=y,intcovar)
+         oTmp<- data.frame(y=y,intc)
       }
-      if( !is.null(weights[1]) && is.na(weights[1]) ){
-         g0<- lmGls(y~.,data=oTmp,A=gcv)
-      }else{
-         g0<- lm(y~.,data=oTmp,weights=weights)
-      }
-      if(test=="None"){
-         P0<- logLik(g0)
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,prdat$pr[,-1,k])
-            }else{
-               oTmp<- data.frame(y=y,intcovar,prdat$pr[,-1,k])
-            }
-            nc<- ncol(oTmp); nq<- ncol(prdat$pr[,-1,k])-1
-            str<- paste(paste("(",paste(colnames(oTmp)[nc-nq-(nint:1)],collapse="+"),")",sep=""),
-                        paste("(",paste(colnames(oTmp)[(nc-nq):nc],collapse="+"),")",sep=""),
-                        sep=":")
-            str<- paste("y~.+",str,sep="")
+      xx<- mdlMtr(y~., data=oTmp)
+      xg<- as.matrix(prdat$pr[,1,] - prdat$pr[,3,])
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(formula(str),data=oTmp,A=gcv)
-            }else{
-               g<- lm(formula(str),data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- logLik(g)
-            V[k]<- sum(g$res^2)
-         }
-         P<- 2*(P-P0)
-      }else{
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,prdat$pr[,-1,k])
-            }else{
-               oTmp<- data.frame(y=y,intcovar,prdat$pr[,-1,k])
-            }
-            nc<- ncol(oTmp); nq<- ncol(prdat$pr[,-1,k])-1
-            str<- paste(paste("(",paste(colnames(oTmp)[nc-nq-(nint:1)],collapse="+"),")",sep=""),
-                        paste("(",paste(colnames(oTmp)[(nc-nq):nc],collapse="+"),")",sep=""),
-                        sep=":")
-            str<- paste("y~.+",str,sep="")
-
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(formula(str),data=oTmp,A=gcv)
-            }else{
-               g<- lm(formula(str),data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- anova(g0,g,test=test)$P[2]
-            V[k]<- sum(g$res^2)
-         }
+      oTmp<- data.frame(y=y,intc)
+      cns1<- colnames(mdlMtr(y~., data=oTmp))
+      cns2<- "g"
+      str<- colnames(xx)
+      for(s1 in cns1[-1]){
+         str<- c(str, paste(s1,cns2,sep=":"))
       }
-      V<- sum(g0$res^2) - V
-         V<- V/sum(anova(g0)[,"Sum Sq"])
+      str<- c(str,cns2)
+      nc<- length(cns1)-1
+
+      rm(x, prdat, oTmp, cns1, cns2, s1); gc()
+
+      y<- as.vector(y)
+      n<- nrow(xx)
+      p<- ncol(xx)
+      ng<- dim(xg)[2]
+      ot<- .Fortran("sc11",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = xx,
+         p = as.integer(p),
+         nc = as.integer(nc),
+         xg = xg,
+         ng = as.integer(ng),
+         gcv = t(hinvCov),
+         coefficients = mat.or.vec(ng,p+nc+1),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+nc+1),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+nc+1,p+nc+1),
+         b = double(p+nc+1),
+         r0 = double(n),
+         r1 = double(n),
+         x1 = mat.or.vec(n,p),
+         x2 = mat.or.vec(n,nc+1),
+         xty = double(p),
+         qty = double(p+nc+1),
+         qraux = double(p+nc+1),
+         work = mat.or.vec(p+nc+1,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")]
    }
+   names(ot$tt)<- 
+      names(ot$pval)<- 
+      names(ot$v)<- 
+      rownames(ot$coefficients)<- snp
+   nms<- c("LRT","pval","v","parameters")
+   if(test == "F") nms[1]<- "F"
+   names(ot)<- nms
+   colnames(ot$parameters)<- str
+   if(test == "None") ot[2]<- NULL
 
-   list(snp=prdat$snp,
-        chr=prdat$chr,
-        dist=prdat$dist,
-        p=P,
-        v=V*100,
-        parameters=model.par)
+   ot
 }
 
 scanOne.1 <-
    function(y,
             x,
             prdat,
-            cov,
-            intcovar = NULL,
-            test = c("None","F","Chisq"))
+            hinvCov,
+            intc = NULL,
+            test = c("None","F","LRT"))
 {
 # prdat$pr: n by 3 by ? matrix, conditional probabilities
 # vc: object from estVC or aicVC
-# test: "Chisq", "F" or "Cp"
-   diag.cov<- diag(cov)
-   if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
-      if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
-         weights<- NULL
-      }else weights<- 1/diag.cov
-   }else weights<- NA
-   gcv<- W.inv(cov)
+# test: "LRT", "F" or "Cp"
    test<- match.arg(test)
 
-   nsnp<- dim(prdat$pr)[3]
-   if(!is.null(intcovar)) nint<- ncol(as.matrix(intcovar))
-   model.par<- vector("list",nsnp)
-      names(model.par)<- prdat$snp
-   P<- rep(Inf,nsnp)
-      names(P)<- prdat$snp
-   V<- P
-   if(is.null(intcovar)){
+   snp<- prdat$snp
+   chr<- prdat$chr
+   dist<- prdat$dist
+   opt<- switch(test,
+       "None" = 1,
+          "F" = 2,
+        "LRT" = 3
+   )
+
+   if(is.null(intc)){
       if(!missing(x)){
          oTmp<- data.frame(y=y,x)
       }else{
          oTmp<- data.frame(y=y)
       }
-      if( !is.null(weights[1]) && is.na(weights[1]) ){
-         g0<- lmGls(y~.,data=oTmp,A=gcv)
-      }else{
-         g0<- lm(y~.,data=oTmp,weights=weights)
-      }
-      if(test=="None"){
-         P0<- logLik(g0)
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }else{
-               oTmp<- data.frame(y=y,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }
+      xx<- mdlMtr(y~., data=oTmp)
+      xg<- prdat$pr
+         xg<- aperm(xg, perm=c(1,3,2))
+         xg[,,1]<- prdat$pr[,1,]-prdat$pr[,3,]
+         xg[,,2]<- prdat$pr[,2,]
+         xg<- array(xg[,,1:2],dim=c(dim(prdat$pr)[c(1,3)],2))
+      for(k in 1:dim(xg)[3])
+         xg[,,k]<- hinvCov%*%xg[,,k]
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(y~.,data=oTmp,A=gcv)
-            }else{
-               g<- lm(y~.,data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- logLik(g)
-            V[k]<- sum(g$res^2)
-         }
-         P<- 2*(P-P0)
-      }else{
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }else{
-               oTmp<- data.frame(y=y,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }
+      cns2<- c("a", "d")
+      str<- colnames(xx)
+         str<- c(str,cns2)
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(y~.,data=oTmp,A=gcv)
-            }else{
-               g<- lm(y~.,data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- anova(g0,g,test=test)$P[2]
-            V[k]<- sum(g$res^2)
-         }
-      }
-      V<- sum(g0$res^2) - V
-         V<- V/sum(anova(g0)[,"Sum Sq"])
+      rm(k, prdat, oTmp, cns2); gc()
+print(dim(xg))
+      y<- as.vector(y)
+      n<- nrow(xx)
+      p<- ncol(xx)
+      ng<- dim(xg)[2]
+      nl<- dim(xg)[3]
+      ot<- .Fortran("sc20",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = hinvCov%*%xx,
+         p = as.integer(p),
+         xg = xg,
+         ng = as.integer(ng),
+         nl = as.integer(nl),
+         coefficients = mat.or.vec(ng,p+nl),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+nl),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+nl,p+nl),
+         b = double(p+nl),
+         r0 = double(n),
+         r1 = double(n),
+         x1 = mat.or.vec(n,p),
+         x2 = mat.or.vec(n,nl),
+         xty = double(p),
+         qty = double(p+nl),
+         qraux = double(p+nl),
+         work = mat.or.vec(p+nl,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")]
    }else{
       if(!missing(x)){
-         oTmp<- data.frame(y=y,x,intcovar)
+         oTmp<- data.frame(y=y,x,intc)
       }else{
-         oTmp<- data.frame(y=y,intcovar)
+         oTmp<- data.frame(y=y,intc)
       }
-      if( !is.null(weights[1]) && is.na(weights[1]) ){
-         g0<- lmGls(y~.,data=oTmp,A=gcv)
-      }else{
-         g0<- lm(y~.,data=oTmp,weights=weights)
-      }
-      if(test=="None"){
-         P0<- logLik(g0)
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }else{
-               oTmp<- data.frame(y=y,intcovar,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }
-            nc<- ncol(oTmp); nq<- ncol(prdat$pr[,-1,k])-1
-            str<- paste(paste("(",paste(colnames(oTmp)[nc-nq-(nint:1)],collapse="+"),")",sep=""),
-                        paste("(",paste(colnames(oTmp)[(nc-nq):nc],collapse="+"),")",sep=""),
-                        sep=":")
-            str<- paste("y~.+",str,sep="")
+      xx<- mdlMtr(y~., data=oTmp)
+      xg<- prdat$pr
+         xg<- aperm(xg, perm=c(1,3,2))
+         xg[,,1]<- prdat$pr[,1,]-prdat$pr[,3,]
+         xg[,,2]<- prdat$pr[,2,]
+         xg<- array(xg[,,1:2],dim=c(dim(prdat$pr)[c(1,3)],2))
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(formula(str),data=oTmp,A=gcv)
-            }else{
-               g<- lm(formula(str),data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- logLik(g)
-            V[k]<- sum(g$res^2)
-         }
-         P<- 2*(P-P0)
-      }else{
-         for(k in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }else{
-               oTmp<- data.frame(y=y,intcovar,a=prdat$pr[,1,k]-prdat$pr[,3,k],d=prdat$pr[,2,k])
-            }
-            nc<- ncol(oTmp); nq<- ncol(prdat$pr[,-1,k])-1
-            str<- paste(paste("(",paste(colnames(oTmp)[nc-nq-(nint:1)],collapse="+"),")",sep=""),
-                        paste("(",paste(colnames(oTmp)[(nc-nq):nc],collapse="+"),")",sep=""),
-                        sep=":")
-            str<- paste("y~.+",str,sep="")
-
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(formula(str),data=oTmp,A=gcv)
-            }else{
-               g<- lm(formula(str),data=oTmp,weights=weights)
-            }
-            model.par[[k]]<- g$coef
-            P[k]<- anova(g0,g,test=test)$P[2]
-            V[k]<- sum(g$res^2)
+      oTmp<- data.frame(y=y,intc)
+      cns1<- colnames(mdlMtr(y~., data=oTmp))
+      cns2<- c("a", "d")
+      str<- colnames(xx)
+      for(s1 in cns1[-1]){
+         for(s2 in cns2){
+            str<- c(str, paste(s1,s2,sep=":"))
          }
       }
-      V<- sum(g0$res^2) - V
-         V<- V/sum(anova(g0)[,"Sum Sq"])
+      str<- c(str,cns2)
+      nc<- length(cns1)-1
+
+      rm(prdat, oTmp, cns1, cns2, s1, s2); gc()
+
+      y<- as.vector(y)
+      n<- nrow(xx)
+      p<- ncol(xx)
+      ng<- dim(xg)[2]
+      nl<- dim(xg)[3]
+      ot<- .Fortran("sc21",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = xx,
+         p = as.integer(p),
+         nc = as.integer(nc),
+         xg = xg,
+         ng = as.integer(ng),
+         nl = as.integer(nl),
+         gcv = t(hinvCov),
+         coefficients = mat.or.vec(ng,p+nc*nl+nl),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+nc*nl+nl),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+nc*nl+nl,p+nc*nl+nl),
+         b = double(p+nc*nl+nl),
+         r0 = double(n),
+         r1 = double(n),
+         x1 = mat.or.vec(n,p),
+         x2 = mat.or.vec(n,nc*nl+nl),
+         xty = double(p),
+         qty = double(p+nc*nl+nl),
+         qraux = double(p+nc*nl+nl),
+         work = mat.or.vec(p+nc*nl+nl,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")]
    }
+   names(ot$tt)<- 
+      names(ot$pval)<- 
+      names(ot$v)<- 
+      rownames(ot$coefficients)<- snp
+   nms<- c("LRT","pval","v","parameters")
+   if(test == "F") nms[1]<- "F"
+   names(ot)<- nms
+   colnames(ot$parameters)<- str
+   if(test == "None") ot[2]<- NULL
+   ot$chr<- chr
+   ot$dist<- dist
 
-   list(snp=prdat$snp,
-        chr=prdat$chr,
-        dist=prdat$dist,
-        p=P,
-        v=V*100,
-        parameters=model.par)
+   ot
 }
 
 scanOne.2 <-
    function(y,
             x,
             gdat,
-            cov,
-            intcovar = NULL,
+            hinvCov,
+            intc = NULL,
             numGeno = FALSE,
-            test = c("None","F","Chisq"))
+            test = c("None","F","LRT"))
 {
 # gdat: n by ? matrix, marker data. Markers in columes!!!
 # vc: object from estVC or aicVC
-# intcover: covariates that interact with QTL
-# test: "Chisq", "F" or "Cp"
-   diag.cov<- diag(cov)
-   if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
-      if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
-         weights<- NULL
-      }else weights<- 1/diag.cov
-   }else weights<- NA
-   gcv<- W.inv(cov)
+# intc: covariates that interact with QTL
+# test: "LRT", "F" or "Cp"
    test<- match.arg(test)
-   if(numGeno){
-      num.geno<- I
-   }else num.geno<- as.factor
-
-   nsnp<- dim(gdat)[2]
-   if(!is.null(intcovar)) nint<- ncol(as.matrix(intcovar))
-   model.par<- vector("list",nsnp)
-      names(model.par)<- colnames(gdat)
-   P<- rep(Inf,nsnp)
-      names(P)<- colnames(gdat)
-   V<- P
-   if(is.null(intcovar)){
+   opt<- switch(test,
+       "None" = 1,
+          "F" = 2,
+        "LRT" = 3
+   )
+ 
+  if(is.null(intc)){
       if(!missing(x)){
          oTmp<- data.frame(y=y,x)
       }else{
          oTmp<- data.frame(y=y)
       }
-      if( !is.null(weights[1]) && is.na(weights[1]) ){
-         g0<- lmGls(y~.,data=oTmp,A=gcv)
+      xx<- mdlMtr(y~., data=oTmp)
+      if(numGeno){
+         xg<- as.matrix(gdat)
+            xg<- hinvCov%*%xg
+         nl<- 1
       }else{
-         g0<- lm(y~.,data=oTmp,weights=weights)
-      }
-      if(test=="None"){
-         P0<- logLik(g0)
-         for(j in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,snp=num.geno(gdat[,j]))
-            }else{
-               oTmp<- data.frame(y=y,snp=num.geno(gdat[,j]))
-            }
-
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(y~.,data=oTmp,A=gcv)
-            }else{
-               g<- lm(y~.,data=oTmp,weights=weights)
-            }
-            model.par[[j]]<- g$coef
-            P[j]<- logLik(g)
-            V[j]<- sum(g$res^2)
+         fct<- function(x){
+            nlevels(as.factor(x))
          }
-         P<- 2*(P - P0)
-      }else{
-         for(j in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,snp=num.geno(gdat[,j]))
-            }else{
-               oTmp<- data.frame(y=y,snp=num.geno(gdat[,j]))
-            }
-
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(y~.,data=oTmp,A=gcv)
-            }else{
-               g<- lm(y~.,data=oTmp,weights=weights)
-            }
-            model.par[[j]]<- g$coef
-            P[j]<- anova(g0,g,test=test)$P[2]
-            V[j]<- sum(g$res^2)
+         nl<- sapply(as.data.frame(gdat),fct)
+         tbl<- table(nl)
+         if(length(tbl) != 1){
+            print(tbl)
+            stop("Levels across scanning loci NOT identical!",call.=FALSE)
+         }else
+            nl<- max(nl)
+         xg<- array(NA, dim=c(nrow(gdat),ncol(gdat),nl))
+         for(j in 1:ncol(gdat)){
+            xt<- as.factor(gdat[,j])
+            idx<- !is.na(xt)
+            xt<- mdlMtr(~xt)
+            xg[idx,j,1:ncol(xt)]<- xt
          }
+         for(k in 1:nl)
+            xg[,,k]<- hinvCov%*%xg[,,k]
+         if(any(dim(xg)<2)) xg<- array(xg[,,-1], dim=c(dim(gdat),nl-1)) else
+            xg<- xg[,,-1]
+         nl<- nl-1
+
+         rm(fct,j,k,xt,idx)
       }
-      V<- sum(g0$res^2) - V
-         V<- V/sum(anova(g0)[,"Sum Sq"])
+
+      if(nl == 1) cns2<- "g" else
+         cns2<- paste("g",1:nl+1, sep="")
+      str<- colnames(xx)
+         str<- c(str,cns2)
+
+      cns<- colnames(gdat)
+
+      rm(gdat, oTmp, cns2); gc()
+
+      y<- as.vector(y)
+      n<- nrow(xx)
+      p<- ncol(xx)
+      ng<- dim(xg)[2]
+      if(nl < 1){
+         stop("'gdat': something wrong?")
+      }else if(nl == 1) ot<- .Fortran("sc10",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = hinvCov%*%xx,
+         p = as.integer(p),
+         xg = xg,
+         ng = as.integer(ng),
+         coefficients = mat.or.vec(ng,p+1),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+1),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+1,p+1),
+         b = double(p+1),
+         r0 = double(n),
+         r1 = double(n),
+         x1 = mat.or.vec(n,p),
+         x2 = double(n),
+         xty = double(p),
+         qty = double(p+1),
+         qraux = double(p+1),
+         work = mat.or.vec(p+1,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")] else ot<- .Fortran("sc20",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = hinvCov%*%xx,
+         p = as.integer(p),
+         xg = xg,
+         ng = as.integer(ng),
+         nl = as.integer(nl),
+         coefficients = mat.or.vec(ng,p+nl),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+nl),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+nl,p+nl),
+         b = double(p+nl),
+         r0 = double(n),
+         r1 = double(n),
+         x1 =  mat.or.vec(n,p),
+         x2 =  mat.or.vec(n,nl),
+         xty = double(p),
+         qty = double(p+nl),
+         qraux = double(p+nl),
+         work = mat.or.vec(p+nl,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")]
    }else{
       if(!missing(x)){
-         oTmp<- data.frame(y=y,x,intcovar)
+         oTmp<- data.frame(y=y,x,intc)
       }else{
-         oTmp<- data.frame(y=y,intcovar)
+         oTmp<- data.frame(y=y,intc)
       }
-      if( !is.null(weights[1]) && is.na(weights[1]) ){
-         g0<- lmGls(y~.,data=oTmp,A=gcv)
+      xx<- mdlMtr(y~., data=oTmp)
+      if(numGeno){
+         xg<- as.matrix(gdat)
+         nl<- 1
       }else{
-         g0<- lm(y~.,data=oTmp,weights=weights)
-      }
-      if(test=="None"){
-         P0<- logLik(g0)
-         for(j in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,snp=num.geno(gdat[,j]))
-            }else{
-               oTmp<- data.frame(y=y,intcovar,snp=num.geno(gdat[,j]))
-            }
-
-            nc<- ncol(oTmp)
-            str<- paste(colnames(oTmp)[nc-(nint:1)],colnames(oTmp)[nc],collapse="+",sep=":")
-            str<- paste("y~.+",str,sep="")
-
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(formula(str),data=oTmp,A=gcv)
-            }else{
-               g<- lm(formula(str),data=oTmp,weights=weights)
-            }
-            model.par[[j]]<- g$coef
-            P[j]<- logLik(g)
-            V[j]<- sum(g$res^2)
+         fct<- function(x){
+            nlevels(as.factor(x))
          }
-         P<- 2*(P-P0)
-      }else{
-         for(j in 1:nsnp){
-            if(!missing(x)){
-               oTmp<- data.frame(y=y,x,intcovar,snp=num.geno(gdat[,j]))
-            }else{
-               oTmp<- data.frame(y=y,intcovar,snp=num.geno(gdat[,j]))
-            }
+         nl<- sapply(as.data.frame(gdat),fct)
+            nl<- max(nl)
+         xg<- array(NA, dim=c(nrow(gdat),ncol(gdat),nl))
+         for(j in 1:ncol(gdat)){
+            xt<- as.factor(gdat[,j])
+            idx<- !is.na(xt)
+            xt<- mdlMtr(~xt)
+            xg[idx,j,1:ncol(xt)]<- xt
+         }
+         if(any(dim(xg)<2)) xg<- array(xg[,,-1], dim=c(dim(gdat),nl-1)) else
+            xg<- xg[,,-1]
+         nl<- nl-1
 
-            nc<- ncol(oTmp)
-            str<- paste(colnames(oTmp)[nc-(nint:1)],colnames(oTmp)[nc],collapse="+",sep=":")
-            str<- paste("y~.+",str,sep="")
+         rm(fct, j, xt, idx)
+      }
 
-            if( !is.null(weights[1]) && is.na(weights[1]) ){
-               g<- lmGls(formula(str),data=oTmp,A=gcv)
-            }else{
-               g<- lm(formula(str),data=oTmp,weights=weights)
-            }
-            model.par[[j]]<- g$coef
-            P[j]<- anova(g0,g,test=test)$P[2]
-            V[j]<- sum(g$res^2)
+      oTmp<- data.frame(y=y,intc)
+      cns1<- colnames(mdlMtr(y~., data=oTmp))
+      if(nl == 1) cns2<- "g" else
+         cns2<- paste("g",1:nl+1, sep="")
+      str<- colnames(xx)
+      for(s1 in cns1[-1]){
+         for(s2 in cns2){
+            str<- c(str, paste(s1,s2,sep=":"))
          }
       }
-      V<- sum(g0$res^2) - V
-         V<- V/sum(anova(g0)[,"Sum Sq"])
+      str<- c(str,cns2)
+      nc<- length(cns1)-1
+
+      cns<- colnames(gdat)
+
+      rm(gdat, oTmp, cns1, cns2, s1, s2); gc()
+
+      y<- as.vector(y)
+      n<- nrow(xx)
+      p<- ncol(xx)
+      ng<- dim(xg)[2]
+
+      if(nl < 1){
+         stop("'gdat': something wrong?")
+      }else if(nl ==1) ot<- .Fortran("sc11",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = xx,
+         p = as.integer(p),
+         nc = as.integer(nc),
+         xg = xg,
+         ng = as.integer(ng),
+         gcv = t(hinvCov),
+         coefficients = mat.or.vec(ng,p+nc+1),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+nc+1),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+nc+1,p+nc+1),
+         b = double(p+nc+1),
+         r0 = double(n),
+         r1 = double(n),
+         x1 = mat.or.vec(n,p),
+         x2 = mat.or.vec(n,nc+1),
+         xty = double(p),
+         qty = double(p+nc+1),
+         qraux = double(p+nc+1),
+         work = mat.or.vec(p+nc+1,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")] else ot<- .Fortran("sc21",
+         y = hinvCov%*%y,
+         n = as.integer(n),
+         x = xx,
+         p = as.integer(p),
+         nc = as.integer(nc),
+         xg = xg,
+         ng = as.integer(ng),
+         nl = as.integer(nl),
+         gcv = t(hinvCov),
+         coefficients = mat.or.vec(ng,p+nc*nl+nl),
+         tt = double(ng),
+         pval = double(ng),
+         v = double(ng),
+         opt = as.integer(opt),
+         pvt = 1L:(p+nc*nl+nl),
+         xtx = mat.or.vec(p,p),
+         qr = mat.or.vec(p+nc*nl+nl,p+nc*nl+nl),
+         b = double(p+nc*nl+nl),
+         r0 = double(n),
+         r1 = double(n),
+         x1 =  mat.or.vec(n,p),
+         x2 =  mat.or.vec(n,nc*nl+nl),
+         xty = double(p),
+         qty = double(p+nc*nl+nl),
+         qraux = double(p+nc*nl+nl),
+         work = mat.or.vec(p+nc*nl+nl,2),
+         PACKAGE = "QTLRel"
+      )[c("tt","pval","v", "coefficients")]
    }
+   names(ot$tt)<- 
+      names(ot$pval)<- 
+      names(ot$v)<- 
+      rownames(ot$coefficients)<- cns
+   nms<- c("LRT","pval","v","parameters")
+   if(test == "F") nms[1]<- "F"
+   names(ot)<- nms
+   colnames(ot$parameters)<- str
+   if(test == "None") ot[2]<- NULL
 
-   list(p=P,
-        v=V*100,
-        parameters=model.par)
+   ot
 }
 
 scanOne<- 
@@ -478,9 +586,9 @@ scanOne<-
             gdat,
             prdat = NULL,
             vc = NULL,
-            intcovar = NULL,
+            intc = NULL,
             numGeno = FALSE,
-            test = c("None","F","Chisq"),
+            test = c("None","F","LRT"),
             minorGenoFreq = 0,
             rmv = TRUE)
 
@@ -499,32 +607,35 @@ scanOne.default<-
             gdat,
             prdat = NULL,
             vc = NULL,
-            intcovar = NULL,
+            intc = NULL,
             numGeno = FALSE,
-            test = c("None","F","Chisq"),
+            test = c("None","F","LRT"),
             minorGenoFreq = 0,
             rmv = TRUE)
 {
    if(!is.null(vc)){
       if(is.element("VC",attr(vc,"class"))){
-         nv<- length(vc$v)
-         nb<- length(vc$par) - nv
-         nr<- nrow(vc$y)
-         cov<- matrix(0,nrow=nr,ncol=nr)
-         for(i in 1:nv)
-            cov<- cov + vc$v[[i]]*vc$par[nb+i]
+         if(is.null(vc$hinvCov)){
+            nv<- length(vc$v)
+            nb<- length(vc$par) - nv
+            nr<- nrow(vc$y)
+            cov<- matrix(0,nrow=nr,ncol=nr)
+            for(i in 1:nv)
+               cov<- cov + vc$v[[i]]*vc$par[nb+i]
+            hinvCov<- W.inv(cov)
+         }else hinvCov<- vc$hinvCov
       }else{
          if(is.data.frame(vc)) vc<- as.matrix(vc)
          if(!is.matrix(vc)) stop("'vc' should be a matrix.", call.=FALSE)
          if(!is.numeric(vc)) stop("'vc' should be a numeric matrix.", call.=FALSE)
-         cov<- vc
+         hinvCov<- W.inv(vc)
       }
-   }else cov<- diag(nrow(as.matrix(y)))
+   }else hinvCov<- diag(nrow(as.matrix(y)))
    if(!is.null(prdat)){
       if(is.element("addEff",class(prdat))){
-         pv<- scanOne.0(y=y,x=x,prdat=prdat,cov=cov,intcovar=intcovar,test=test)
+         pv<- scanOne.0(y=y,x=x,prdat=prdat,hinvCov=hinvCov,intc=intc,test=test)
       }else{
-         pv<- scanOne.1(y=y,x=x,prdat=prdat,cov=cov,intcovar=intcovar,test=test)
+         pv<- scanOne.1(y=y,x=x,prdat=prdat,hinvCov=hinvCov,intc=intc,test=test)
       }
    }else{
       if(any(is.na(gdat)))
@@ -548,7 +659,7 @@ scanOne.default<-
                if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
             tbf<- apply(tbf,2,min)
             idx<- (tbf < nrow(gdat)*minorGenoFreq)
-            gdat<- gdat[,!idx]
+            gdat<- as.matrix(gdat[,!idx])
             rm(tb,tbf,ii,idx)
          }else{
             cat("   Minor genotype frequency is too small at one or more SNPs.\a\n")
@@ -556,11 +667,12 @@ scanOne.default<-
         }
       }
 
-      gdat<- as.data.frame(gdat)
-      pv<- scanOne.2(y=y,x=x,gdat=gdat,cov=cov,intcovar=intcovar,numGeno=numGeno, test=test)
+      if(!numGeno)
+         gdat<- as.data.frame(gdat)
+      pv<- scanOne.2(y=y,x=x,gdat=gdat,hinvCov=hinvCov,intc=intc,numGeno=numGeno,test=test)
    }
 
-   class(pv)<- c("scanOne",test)
+   class(pv)<- c("scanOne",match.arg(test))
    pv
 }
 
@@ -570,13 +682,33 @@ print.scanOne <-
    tt<- x; class(tt)<- NULL
       tt$parameters<- NULL
       tt<- as.data.frame(tt)
-   if(length(tt$p)>5){
-      cat("Test statistic:\n")
-      print(tt[1:5,])
+   if(length(tt$LRT)>0){
+      idx<- 1:min(5,length(tt$LRT))
+
+      cat("Test statistic (LRT):\n")
+      print(tt$LRT[idx])
+      cat("... ...\n\n")
+
+      cat("Variance explained:\n")
+      print(tt$v[idx])
       cat("... ...\n\n")
 
       cat("Coefficients:\n")
-      print(x$par[1:5])
+      print(x$par[idx,])
+      cat("... ...\n\n")
+   }else if(length(tt$p)>0){
+      idx<- 1:min(5,length(tt$pval))
+
+      cat("Test statistic (P-value):\n")
+      print(tt$pval[idx])
+      cat("... ...\n\n")
+
+      cat("Variance explained:\n")
+      print(tt$v[idx])
+      cat("... ...\n\n")
+
+      cat("Coefficients:\n")
+      print(x$par[idx,])
       cat("... ...\n\n")
    }else{
       cat("Test statistic:\n")
@@ -594,7 +726,7 @@ scanTwo.1 <-
             prdat,
             cov)
 {
-   diag.cov<- diag(cov)
+   diag.cov<- diag(as.matrix(cov))
    if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
       if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
          weights<- NULL
@@ -646,7 +778,7 @@ scanTwo.2 <-
    if(numGeno){
       num.geno<- I
    }else num.geno<- as.factor
-   diag.cov<- diag(cov)
+   diag.cov<- diag(as.matrix(cov))
    if( max( abs( cov-diag(diag.cov) ) ) < min(1e-5,1e-5*max(diag.cov)) ){
       if( max(diag.cov-min(diag.cov)) < min(1e-5,1e-5*max(diag.cov)) ){
          weights<- NULL
@@ -755,7 +887,7 @@ scanTwo.default<-
                if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
             tbf<- apply(tbf,2,min)
             idx<- (tbf < nrow(gdat)*minorGenoFreq)
-            gdat<- gdat[,!idx]
+            gdat<- as.matrix(gdat[,!idx])
             rm(tb,tbf,ii,idx)
          }else{
             cat("   Minor genotype frequency is too small at one or more SNPs.\a\n")
@@ -763,7 +895,8 @@ scanTwo.default<-
         }
       }
 
-      gdat<- as.data.frame(gdat)
+      if(!numGeno)
+         gdat<- as.data.frame(gdat)
       pv<- scanTwo.2(y=y,x=x,gdat=gdat,cov=cov,numGeno=numGeno)
    }
 

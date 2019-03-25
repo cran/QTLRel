@@ -11,7 +11,7 @@ genMatrix(x)
 }
 \arguments{
   \item{x}{
-An object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an observation and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3) without missing genotypes.
+An object of \code{\link{cic}} or \code{\link{ibs}}, or genotypic data in a matrix or a data frame with each row representing an individual and each column a marker locus and entry being "AA", "AB", "BB" (or 1, 2, 3) without missing genotypes.
 }
 }
 \value{

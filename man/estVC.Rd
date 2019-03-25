@@ -18,7 +18,7 @@ A numeric vector or a numeric matrix of one column (representing a phenotype for
 A data frame or matrix, representing covariates if not missing.
 }
   \item{v}{
-A list of variance components of interest. Note: \code{E} is reserved for residual (or environmental) variance and can be missed in \code{v}; it is considered to be an identify matirx if it is missing.
+A list of matrices representing variance components of interest. Note: \code{E} is reserved for residual (or environmental) variance and can be missed in \code{v}; it is considered to be an identify matirx if it is missing.
 
 \code{v} can be provided as a single matrix, representing a variance component other than \code{E}.
 }

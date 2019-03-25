@@ -1,5 +1,5 @@
 
-#include "xxx.h"
+#include "QTLRelR.h"
 
 /*------------------------
  Kolmogorov distribution

@@ -20,6 +20,8 @@ qk<- function(p, nx, ny = Inf){
    if(p<0 || p>1){
       stop("Probability should be between 0 and 1.", call.=FALSE)
    }
+   p[p==0]<- 1e-300
+   p[p==1]<- 1 - 1e-300
    func<- function(x) pk(x, nx, ny)-p
 
    xx <- seq(-0.2,2.2,by=0.1)
@@ -46,6 +48,8 @@ qkolm <- function(p, nx, ny = Inf){
    if(p<0 || p>1){
       stop("Probability should be between 0 and 1.", call.=FALSE)
    }
+   p[p==0]<- 1e-300
+   p[p==1]<- 1 - 1e-300
    func <-  function(y)
      .C("kolm", y = as.double(y), as.integer(length(y)),
         PACKAGE="QTLRel")$y - p
@@ -76,6 +80,8 @@ Fn. <- function(t,x){
 qFn. <- function(t,x){
    if(any(t<0 | t>1))
       stop("Probability should between 0 and 1.", call.=FALSE)
+   t[t==0]<- 1e-300
+   t[t==1]<- 1 - 1e-300
 
    tmp<- Fn.0(x)
    nt<- length(t)
@@ -103,6 +109,8 @@ Fn <- function(t,x){
 qFn <- function(t,x){
    if(any(t<0 | t>1))
       stop("Probability should between 0 and 1.", call.=FALSE)
+   t[t==0]<- 1e-300
+   t[t==1]<- 1 - 1e-300
 
    t<- as.double(t)
    x<- as.double(x)
@@ -150,7 +158,7 @@ qqPlot.default <- function(y, x = "norm", ...,
    if(confidence){
       if(confidence<0 || confidence>1)
          stop("confidence should be between 0 and 1.", call.=FALSE)
-      if(nsx*nsy > 5e+6){
+      if(1.0*nsx*nsy > 5e+6){# 1.0 avoids integer overflow
          ka <- qkolm(confidence, nsx, nsy)
       }else ka<- qk(confidence, nsx, nsy) # exact
       pxL <- px - ka; pxL[pxL<0] <- 0
