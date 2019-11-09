@@ -1,4 +1,4 @@
-c NOTE: this is copied from R-3.4.0
+c NOTE: this is copied from R-3.4.0 (with revision)
 
 c
 c     dqrfit is a subroutine to compute least squares solutions
@@ -79,8 +79,8 @@ c     abs(x(1,1)/x(k,k)).
 c
 c     dqrfit uses the linpack routines dqrdc and dqrsl.
 c
-      subroutine dqrls(x,n,p,y,ny,tol,b,rsd,qty,k,jpvt,qraux,work)
-      integer n,p,ny,k,jpvt(p)
+      subroutine dqrls(x,n,p,y,tol,b,rsd,qty,k,jpvt,qraux,work)
+      integer n,p,k,jpvt(p)
       double precision x(n,p),y(n),tol,b(p),rsd(n),
      .                 qty(n),qraux(p),work(p)
 c

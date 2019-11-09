@@ -13,10 +13,9 @@
 
 #include "QTLRelR.h"
 
-typedef long long LONGLONG;
-
 ////////////////////////////////////////////////////
 
+/*
 static int stopIt = 0;
 static void userInt(int sig){
 	switch (sig) {
@@ -29,6 +28,7 @@ static void userInt(int sig){
 //       default:
     }
 }
+*/
 
 /*
 void itoa(int i,char buff[],int base=10);

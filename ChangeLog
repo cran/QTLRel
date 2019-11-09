@@ -1,6 +1,8 @@
 
-2018/06/10 improves speed by directly calling fortran code for model fitting
-2017/12/10 improves speed on 'estVC' in case of one variance component
+2019/11/4 fix warnings from gcc
+2019/10/21 replace a few pieces of FORTRAN code
+2018/06/10 improve speed by directly calling fortran code for model fitting
+2017/12/10 improve speed on 'estVC' in case of one variance component
 2017/10/02 modify 'pedRecode' to allow inbred founders
 2017/08/15 use 'malloc' to assure successful creation of large vectors
 2016/02/01 modify 'pedF8' in examples to produce desired identify coefficients

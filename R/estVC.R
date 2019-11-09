@@ -1,6 +1,6 @@
 
-machineEps<- (.Machine$double.eps)^(2/4)
-inf<- max(1e+38,sqrt(.Machine$double.xmax))
+machineEps<- (.Machine$double.eps)^(2/3)
+inf<- min(1e+38,sqrt(.Machine$double.xmax))
 
 # one of the main functions, Nelder-Mead method
 estVC <-
@@ -93,7 +93,7 @@ est.VC <-
       d <- eW$values
       if(min(d) < .Machine$double.eps){
          pd<- FALSE
-         cat("'W' not positive definite.\n")
+         cat("Warning: matrix not in full rank!\n")
 
          d[d < .Machine$double.eps]<- Inf
       }
@@ -128,6 +128,31 @@ est.VC <-
       tmp/2
    }
 
+   fct.2<- function(y, x, v, pp, intv=c(-25,12), tol=machineEps){
+      oo<- optimize(optfct.2, interval=intv, pp, maximum=FALSE, tol=machineEps)
+
+      n<- match("E",names(v))
+      dlt<- exp(oo$minimum) # note: this can't be too large
+      H<- v[[-n]]*dlt + v[[n]]
+      # rH<- solve(H)
+      dd<- pp$eH$value*dlt + 1
+      rH<- sweep(pp$eH$vectors, 2, dd, "/") %*% t(pp$eH$vectors)
+      pXrH<- t(x)%*%rH
+      b<- solve(pXrH%*%x,pXrH%*%y)
+      R<- y - x%*%b
+         R<- t(R)%*%rH%*%R
+      ptmp<- rep(NA, 2)
+         ptmp[n]<- R/ny
+         ptmp[-n]<- dlt*ptmp[n]
+      ptmp<- c(b, ptmp)
+
+      oo<- list(value=oo$objective, par=ptmp, eH=pp$eH)
+
+      rm(dlt,n,H,dd,rH,pXrH,b,R,ptmp)
+
+      oo
+   }
+
    optfct<- function(par,y,x,v){
       ny<- length(y)
       nv<- length(v)
@@ -152,6 +177,7 @@ est.VC <-
 
       tmp
    }
+
    optfct.b<- function(vp,y,x,v){
       ny<- length(y)
       nv<- length(v)
@@ -162,18 +188,25 @@ est.VC <-
       }
       if(!all(is.finite(S)))
          return(inf)
+      if(FALSE){
+         # it is slower to use lmGls
+         dd<- eigen(S,symmetric=T)
+            uu<- dd$vec
+            dd<- abs(dd$val)
+            dd[dd<machineEps]<- machineEps
+         yy<- t(uu)%*%y
+            yy<- as.matrix(yy)
+         xx<- t(uu)%*%x
+            xx<- as.matrix(xx)
+         b<- lm.wfit(x=xx,y=yy,w=1/dd)$coef
+            b[!is.finite(b)]<- 0
+         b
+      }else{
+         invS<- solve(S)
+         tXinvS<- t(x)%*%invS
+         b<- solve(tXinvS%*%x, tXinvS%*%y)
+      }
 
-      # it is slower to use lmGls
-      dd<- eigen(S,symmetric=T)
-         uu<- dd$vec
-         dd<- abs(dd$val)
-         dd[dd<machineEps]<- machineEps
-      yy<- t(uu)%*%y
-         yy<- as.matrix(yy)
-      xx<- t(uu)%*%x
-         xx<- as.matrix(xx)
-      b<- lm.wfit(x=xx,y=yy,w=1/dd)$coef
-         b[!is.finite(b)]<- 0
       b
    }
    optfct.v<- function(par,bp,y,x,v){
@@ -199,6 +232,102 @@ est.VC <-
       tmp
    }
 
+   initparf<- function(y, x, v, nit=nit, opt=1){
+      olm<- lm(y~.-1, data=data.frame(y=y,x))
+      vr<- var(olm$res)*(ny-1)/ny
+      initpar<- c(olm$coef, rep(vr,nv))
+      if(opt==1){
+         for(i in 1:nv){
+            if(match("E",names(v))==i)
+               next
+            initpar[nb+i]<- initpar[nb+i]/mean(diag(v[[i]]))
+         }
+         rm(i)
+      }else{
+         j<- match("E", names(v))
+         pt<- 0
+         for(i in 1:nv){
+            if(i == j) next
+            vt<- list(Tmp=v[[i]], E=v[[j]])
+            ppt<- ppfct(y=y, x=x, v=vt)
+            ot<- fct.2(y=y, x=x, v=vt, pp=ppt, intv=c(-25,12), tol=machineEps)
+            initpar[nb+i]<- ot$par[nb+1]
+            pt<- c(pt, ot$par[nb+2])
+            rm(vt,ppt,ot)
+         }
+         initpar[nb+j]<- mean(pt, na.rm = FALSE)
+         rm(j,pt)
+      }
+      rm(olm,vr)
+      ppar<- initpar
+      for(i in 1:nv){
+         ppar[nb+i]<- log(ppar[nb+i]+machineEps)
+         rm(i)
+      }
+
+      ppar
+   }
+
+   oof<- function(ppar, y, x, v, nb=nb, nv=nv, nit=nit){
+      val<- inf
+      if(missing(nit)) cnt<- 25 else
+         cnt<- nit
+      lmt<- ppar[-(1:nb)]
+         names(lmt)<- names(v)
+      while(cnt>nit*1/2){
+         # the following is much better than optim("Nelder-Mead")
+         ppar[1:nb]<- optfct.b(ppar[-(1:nb)], y, x, v)
+         oo<- nlminb(ppar[-c(1:nb)], optfct.v, bp=ppar[1:nb], y=y, x=x, v=v,
+            lower=-19, upper=pmin(12,lmt+7))
+         if(length(grep("Error",oo))>0){
+            break
+         }
+         oo$value<- oo$objective
+         cnt<- cnt-1
+         if(abs(val-oo$val) < machineEps^0.75 && max(abs(ppar[-c(1:nb)]-oo$par)) < machineEps^0.5)
+            break
+         val<- oo$value
+         ppar[-c(1:nb)]<- oo$par
+      }
+
+      cntr<- control
+         cntr$maxit<- 500
+         cntr$ndeps<- rep(1e-5, nb+nv)
+         cntr$factr<- 1e5
+      mtd<- "L-BFGS-B"
+      while(cnt>0){
+         lmt<- ppar[-(1:nb)]
+         lw<- pmax(lmt - 5, -19)
+            lw<- c(ppar[(1:nb)] - 25, lw)
+         up<- pmin(lmt + 5, 12)
+            up<- c(ppar[(1:nb)] + 25, up)
+         oo<- try(
+            optim(ppar, optfct, y=y, x=x, v=v, method=mtd, control=cntr, hessian=FALSE,
+               lower=lw, upper=up), silent=TRUE
+         )
+         if(length(grep("Error",oo))>0){
+            mtd<- "Nelder-Mead"
+            cntr$maxit<- 100
+            cntr$reltol<- machineEps
+            next
+         }
+         cnt<- cnt-1
+         if(abs(val-oo$val) < machineEps^0.75 && max(abs(ppar-oo$par)) < machineEps^0.5)
+            break
+         val<- oo$value
+         ppar<- oo$par
+      }
+      if(cnt == 0){
+         cat("   Optimization might have failed. Another run with 'initpar' being the resulting parameter values should be helpful.\a\n")
+      }
+
+      for(i in 1:nv){
+         oo$par[nb+i]<- exp(oo$par[nb+i])
+      }
+
+      oo
+   }
+
    ISDIAG<- FALSE
    EDIAG<- 1
    ny<- length(y)
@@ -218,8 +347,6 @@ est.VC <-
             v$E<- diag(ny)
       }
    }
-   olm<- lm(y~.-1, data=data.frame(y=y,x))
-   vr<- var(olm$res)*(ny-1)/ny
    nv<- length(v)
       idx<- rep(TRUE,nv)
       for(n in 1:nv)
@@ -228,85 +355,39 @@ est.VC <-
       nv<- length(v)
    rm(idx)
 
-   if(missing(initpar)){
-      initpar<- c(olm$coef, rep(vr,nv))
-      if(nv > 2) for(n in 1:nv){# skip nv = 2 due to optfct.2()
-         if(match("E",names(v))==n)
-            next
-         initpar[nb+n]<- initpar[nb+n]/mean(diag(v[[n]]))
+   if(nv == 2){
+      if(ny > 5000){
+         warning("The sample size is large so it may take a while to finish...
+         You might consider using other software.")
+      }else if(ny > 3000){
+         warning("This may take a while...Please be patient.")
       }
+      pp<- ppfct(y=y,x=x,v=v)
+      oo<- fct.2(y=y, x=x, v=v, pp=pp, intv=c(-25,12), tol=machineEps)
    }else{
-      if(length(initpar) < nb+length(v))
-         initpar<- c(initpar,vr)
-   }
-
-   if(nv != 2){
       if(ny > 1500){
-         warning("The sample size is large so it may take time to finish...
+         warning("The sample size is large so it may take a while to finish...
          You might consider using other software.")
       }else if(ny > 900){
          warning("This may take a while...Please be patient.")
       }
-      for(i in 1:nv){
-         initpar[nb+i]<- log(initpar[nb+i])
-      }
-      rm(i)
+      if(missing(initpar)){
+         pparTmp<- initparf(y, x, v, nit=nit, opt=1)
+         oo<- oof(pparTmp, y, x, v, nb=nb, nv=nv, nit=nit)
+      }else{
+         if(length(initpar) != nb+nv)
+            stop(paste("initpar: ", nb+nv, " parameters only!", sep=""), call.=FALSE)
+         for(i in 1:nv) if(initpar[nb+i] < 0)
+            stop("initpar: negative variance components?!", call.=FALSE)
+         rm(i)
 
-      lmt<- initpar[-(1:nb)]
-         names(lmt)<- names(v)
-      pparTmp<- initpar
-         oo<- nlminb(pparTmp[-c(1:nb)], optfct.v, bp=pparTmp[1:nb], y=y, x=x, v=v,
-            lower=-19, upper=pmin(12,lmt+7))
-         pparTmp[-c(1:nb)]<- oo$par
-      lmt<- pparTmp[-(1:nb)]
-         names(lmt)<- names(v)
-      val<- inf
-      if(missing(nit)) cnt<- 25 else
-         cnt<- nit
-      while(cnt>0){
-         pparTmp[1:nb]<- optfct.b(pparTmp[-(1:nb)], y, x, v)
-         oo<- nlminb(pparTmp[-c(1:nb)], optfct.v, bp=pparTmp[1:nb], y=y, x=x, v=v,
-            lower=-19, upper=pmin(12,lmt+7))
-            oo$value<- oo$objective
-         if(abs(val-oo$val) < machineEps && max(abs(pparTmp[-c(1:nb)]-oo$par)) < machineEps^0.75)
-            cnt<- 0
-         pparTmp[-c(1:nb)]<- oo$par
-         val<- oo$value
-         cnt<- cnt-1
-      }
-      if(cnt == 0){
-         cat("   Warning: optimization possibly failed. A larger 'nit' should be helpful.\a\n")
-      }
-
-      control$maxit<- 100
-      oo<- optim(pparTmp, optfct, y=y, x=x, v=v, method="Nelder-Mead",
-            control=control, hessian=FALSE)
+         pparTmp<- initpar
          for(i in 1:nv){
-            oo$par[nb+i]<- exp(oo$par[nb+i])
+            pparTmp[nb+i]<- log(pparTmp[nb+i]+machineEps)
+            rm(i)
          }
-   }else{
-      pp<- ppfct(y=y,x=x,v=v)
-      oo<- optimize(optfct.2, interval=c(-25,12), pp, maximum=FALSE, tol=machineEps)
-
-      n<- match("E",names(v))
-      dlt<- exp(oo$minimum) # note: this can't be too large
-      H<- v[[-n]]*dlt + v[[n]]
-      # rH<- solve(H)
-      dd<- pp$eH$value*dlt + 1
-      rH<- sweep(pp$eH$vectors, 2, dd, "/") %*% t(pp$eH$vectors)
-      pXrH<- t(x)%*%rH
-      b<- solve(pXrH%*%x,pXrH%*%y)
-      R<- y - x%*%b
-         R<- t(R)%*%rH%*%R
-      ptmp<- initpar[-(1:nb)]
-         ptmp[n]<- R/ny
-         ptmp[-n]<- dlt*ptmp[n]
-      initpar[1:nb]<- as.vector(b)
-      initpar[-(1:nb)]<- ptmp
-
-      oo<- list(value=oo$objective, par=initpar, eH=pp$eH)
-
-      rm(dlt,n,H,dd,rH,pXrH,b,R,ptmp)
+         oo<- oof(pparTmp, y, x, v, nb=nb, nv=nv, nit=nit)
+      }
    }
 
    if(ISDIAG){
@@ -340,8 +421,10 @@ est.VC <-
       ppar<- oo$par
       for(i in 1:nv)
          ppar[nb+i]<- pmax(ppar[nb+i], 1e-5)
-      control$ndeps<- rep(5e-6,length(ppar))
-      oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=control)
+      cntr<- control
+      if(is.null(cntr$ndeps)) cntr$ndeps<- rep(5e-6,length(ppar)) else
+         cntr$ndeps<- pmin(cntr$ndeps, 5e-6)
+      oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=cntr)
    }
 
    if(nv == 2){
@@ -370,10 +453,7 @@ blup<- function(object)
 
 blup.VC<- function(object){
 # best linear unbiased prediction (BLUP) for all effects
-# y: ny by 1 matrix
-# x: design matrix including overall mean !!!
-# object: object from estBVG
-# v: list of variance components corresponding object$par[-c(1:nb)]
+# object: object from estVC
    ny<- nrow(object$y)
    nb<- ncol(object$x)
    nv<- length(object$v)
@@ -389,7 +469,7 @@ blup.VC<- function(object){
 
    out<- vector("list",nv)
    rr<- object$y-object$x%*%object$par[1:nb]
-   rd<- solve(S)%*%rr
+   rd<- solve(S,rr)
    out[[1]]<- sweep(object$x,2,object$par[1:nb],"*")
       names(out)[1]<- "fixed"
    for(i in 1:nv){

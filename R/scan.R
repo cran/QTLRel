@@ -99,15 +99,11 @@ scanOne.0 <-
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+1),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+1,p+1),
          b = double(p+1),
          r0 = double(n),
          r1 = double(n),
-         x1 = mat.or.vec(n,p),
-         x2 = double(n),
-         xty = double(p),
-         qty = double(p+1),
+         xx = mat.or.vec(n,p+1),
+         qty = double(n),
          qraux = double(p+1),
          work = mat.or.vec(p+1,2),
          PACKAGE = "QTLRel"
@@ -152,15 +148,11 @@ scanOne.0 <-
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+nc+1),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+nc+1,p+nc+1),
          b = double(p+nc+1),
          r0 = double(n),
          r1 = double(n),
-         x1 = mat.or.vec(n,p),
-         x2 = mat.or.vec(n,nc+1),
-         xty = double(p),
-         qty = double(p+nc+1),
+         xx = mat.or.vec(n,p+nc+1),
+         qty = double(n),
          qraux = double(p+nc+1),
          work = mat.or.vec(p+nc+1,2),
          PACKAGE = "QTLRel"
@@ -221,7 +213,7 @@ scanOne.1 <-
          str<- c(str,cns2)
 
       rm(k, prdat, oTmp, cns2); gc()
-print(dim(xg))
+
       y<- as.vector(y)
       n<- nrow(xx)
       p<- ncol(xx)
@@ -241,15 +233,11 @@ print(dim(xg))
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+nl),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+nl,p+nl),
          b = double(p+nl),
          r0 = double(n),
          r1 = double(n),
-         x1 = mat.or.vec(n,p),
-         x2 = mat.or.vec(n,nl),
-         xty = double(p),
-         qty = double(p+nl),
+         xx = mat.or.vec(n,p+nl),
+         qty = double(n),
          qraux = double(p+nl),
          work = mat.or.vec(p+nl,2),
          PACKAGE = "QTLRel"
@@ -302,15 +290,11 @@ print(dim(xg))
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+nc*nl+nl),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+nc*nl+nl,p+nc*nl+nl),
          b = double(p+nc*nl+nl),
          r0 = double(n),
          r1 = double(n),
-         x1 = mat.or.vec(n,p),
-         x2 = mat.or.vec(n,nc*nl+nl),
-         xty = double(p),
-         qty = double(p+nc*nl+nl),
+         xx = mat.or.vec(n,p+nc*nl+nl),
+         qty = double(n),
          qraux = double(p+nc*nl+nl),
          work = mat.or.vec(p+nc*nl+nl,2),
          PACKAGE = "QTLRel"
@@ -402,6 +386,7 @@ scanOne.2 <-
       n<- nrow(xx)
       p<- ncol(xx)
       ng<- dim(xg)[2]
+      #save(y,n,p,ng,xx,xg,hinvCov,file="tt.RData"); q("no")
       if(nl < 1){
          stop("'gdat': something wrong?")
       }else if(nl == 1) ot<- .Fortran("sc10",
@@ -417,15 +402,11 @@ scanOne.2 <-
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+1),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+1,p+1),
          b = double(p+1),
          r0 = double(n),
          r1 = double(n),
-         x1 = mat.or.vec(n,p),
-         x2 = double(n),
-         xty = double(p),
-         qty = double(p+1),
+         xx = mat.or.vec(n,p+1),
+         qty = double(n),
          qraux = double(p+1),
          work = mat.or.vec(p+1,2),
          PACKAGE = "QTLRel"
@@ -443,15 +424,11 @@ scanOne.2 <-
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+nl),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+nl,p+nl),
          b = double(p+nl),
          r0 = double(n),
          r1 = double(n),
-         x1 =  mat.or.vec(n,p),
-         x2 =  mat.or.vec(n,nl),
-         xty = double(p),
-         qty = double(p+nl),
+         xx =  mat.or.vec(n,p+nl),
+         qty = double(n),
          qraux = double(p+nl),
          work = mat.or.vec(p+nl,2),
          PACKAGE = "QTLRel"
@@ -507,7 +484,6 @@ scanOne.2 <-
       n<- nrow(xx)
       p<- ncol(xx)
       ng<- dim(xg)[2]
-
       if(nl < 1){
          stop("'gdat': something wrong?")
       }else if(nl ==1) ot<- .Fortran("sc11",
@@ -525,15 +501,11 @@ scanOne.2 <-
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+nc+1),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+nc+1,p+nc+1),
          b = double(p+nc+1),
          r0 = double(n),
          r1 = double(n),
-         x1 = mat.or.vec(n,p),
-         x2 = mat.or.vec(n,nc+1),
-         xty = double(p),
-         qty = double(p+nc+1),
+         xx = mat.or.vec(n,p+nc+1),
+         qty = double(n),
          qraux = double(p+nc+1),
          work = mat.or.vec(p+nc+1,2),
          PACKAGE = "QTLRel"
@@ -553,15 +525,11 @@ scanOne.2 <-
          v = double(ng),
          opt = as.integer(opt),
          pvt = 1L:(p+nc*nl+nl),
-         xtx = mat.or.vec(p,p),
-         qr = mat.or.vec(p+nc*nl+nl,p+nc*nl+nl),
          b = double(p+nc*nl+nl),
          r0 = double(n),
          r1 = double(n),
-         x1 =  mat.or.vec(n,p),
-         x2 =  mat.or.vec(n,nc*nl+nl),
-         xty = double(p),
-         qty = double(p+nc*nl+nl),
+         xx =  mat.or.vec(n,p+nc*nl+nl),
+         qty = double(n),
          qraux = double(p+nc*nl+nl),
          work = mat.or.vec(p+nc*nl+nl,2),
          PACKAGE = "QTLRel"
@@ -638,12 +606,13 @@ scanOne.default<-
          pv<- scanOne.1(y=y,x=x,prdat=prdat,hinvCov=hinvCov,intc=intc,test=test)
       }
    }else{
+      gdat<- as.matrix(gdat)
       if(any(is.na(gdat)))
          stop("There are missing genotypes...", call.=FALSE)
       if(numGeno){
          idx<- FALSE
       }else{
-         tb<- sort(union(as.matrix(gdat),NULL))
+         tb<- sort(union(gdat,NULL))
          tbf<- NULL
          for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
             if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
@@ -652,8 +621,7 @@ scanOne.default<-
       }
       if(sum(idx)>0){
          if(rmv){
-            gdat<- as.matrix(gdat)
-            tb<- sort(union(as.matrix(gdat),NULL))
+            tb<- sort(union(gdat,NULL))
             tbf<- NULL
             for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
                if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
@@ -866,12 +834,13 @@ scanTwo.default<-
    if(!is.null(prdat)){
       pv<- scanTwo.1(y=y,x=x,prdat=prdat,cov=cov)
    }else{
+      gdat<- as.matrix(gdat)
       if(any(is.na(gdat)))
          stop("There are missing genotypes...", call.=FALSE)
       if(numGeno){
          idx<- FALSE
       }else{
-         tb<- sort(union(as.matrix(gdat),NULL))
+         tb<- sort(union(gdat,NULL))
          tbf<- NULL
          for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
             if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)
@@ -880,8 +849,7 @@ scanTwo.default<-
       }
       if(sum(idx)>0){
          if(rmv){
-            gdat<- as.matrix(gdat)
-            tb<- sort(union(as.matrix(gdat),NULL))
+            tb<- sort(union(gdat,NULL))
             tbf<- NULL
             for(ii in tb) tbf<- rbind(tbf,colSums(gdat==ii))
                if(sum(tbf)!=nrow(gdat)*ncol(gdat)) stop("Error occurred.", call.=FALSE)

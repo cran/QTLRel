@@ -51,7 +51,7 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr){
             GetRNGstate();
             u =  unif_rand();
             PutRNGstate();
-            if(u<rr[j]) jj += 1; jj %= 2;
+            if(u<rr[j]){jj += 1; jj %= 2;}
             data[i*nc*2+j*2] = data[ii*nc*2+j*2+jj];
          }
       }
@@ -67,7 +67,7 @@ void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr){
             GetRNGstate();
             u =  unif_rand();
             PutRNGstate();
-            if(u<rr[j]) jj += 1; jj %= 2;
+            if(u<rr[j]){jj += 1;jj %= 2;}
             data[i*nc*2+j*2+1] = data[ii*nc*2+j*2+jj];
          }
       }
@@ -125,7 +125,7 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr){
                GetRNGstate();
                u =  unif_rand();
                PutRNGstate();
-               if(u<rr[j]) jj += 1; jj %= 2;
+               if(u<rr[j]){jj += 1; jj %= 2;}
                data[i*nc*2+j*2+1] = data[ii*nc*2+j*2+jj];
             }
          }
@@ -145,7 +145,7 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr){
                GetRNGstate();
                u =  unif_rand();
                PutRNGstate();
-               if(u<rr[j]) jj += 1; jj %= 2;
+               if(u<rr[j]){jj += 1; jj %= 2;}
                data[i*nc*2+j*2] = data[ii*nc*2+j*2+jj];
             }
          }
@@ -161,7 +161,7 @@ void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr){
                GetRNGstate();
                u =  unif_rand();
                PutRNGstate();
-               if(u<rr[j]) jj += 1; jj %= 2;
+               if(u<rr[j]){jj += 1; jj %= 2;}
                data[i*nc*2+j*2+1] = data[ii*nc*2+j*2+jj];
             }
          }

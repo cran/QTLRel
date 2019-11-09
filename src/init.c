@@ -48,19 +48,17 @@ static const R_CMethodDef cMethods[] = {
     {NULL, NULL, 0}
 };
 
-static const
-R_FortranMethodDef fMethods[] = {
-   {"sc10", (DL_FUNC) &F77_NAME(sc10), 23},
-   {"sc11", (DL_FUNC) &F77_NAME(sc11), 25},
-   {"sc20", (DL_FUNC) &F77_NAME(sc20), 24},
-   {"sc21", (DL_FUNC) &F77_NAME(sc21), 26},
+static const R_FortranMethodDef fMethods[] = {
+   {"sc10", (DL_FUNC) &F77_NAME(sc10), 19},
+   {"sc11", (DL_FUNC) &F77_NAME(sc11), 21},
+   {"sc20", (DL_FUNC) &F77_NAME(sc20), 20},
+   {"sc21", (DL_FUNC) &F77_NAME(sc21), 22},
    {"dsyev", (DL_FUNC) &F77_NAME(dsyev), 9},
    {"dsyevr", (DL_FUNC) &F77_NAME(dsyevr), 21},
    {NULL, NULL, 0}
 };
 
-static const
-R_CallMethodDef callMethods[] = {
+static const R_CallMethodDef callMethods[] = {
    //{"Cdqrls", (DL_FUNC) &Cdqrls, 4},
    NULL
 };
