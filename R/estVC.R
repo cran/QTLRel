@@ -110,9 +110,6 @@ est.VC <-
       S<- x%*%ginv(t(x)%*%x)%*%t(x)
          S<- diag(1,ny) - S
       eS<- eigen(S%*%v[[-n]]%*%S, symmetric=TRUE)
-         idx<- abs(eS$values) > machineEps
-         eS$values<- eS$values[idx]
-         eS$vectors<- eS$vectors[,idx]
 
       U<- t(eS$vector)
       eta<- U%*%y
@@ -131,6 +128,7 @@ est.VC <-
    fct.2<- function(y, x, v, pp, intv=c(-25,12), tol=machineEps){
       oo<- optimize(optfct.2, interval=intv, pp, maximum=FALSE, tol=machineEps)
 
+      ny<- pp$ny
       n<- match("E",names(v))
       dlt<- exp(oo$minimum) # note: this can't be too large
       H<- v[[-n]]*dlt + v[[n]]
@@ -209,6 +207,7 @@ est.VC <-
 
       b
    }
+
    optfct.v<- function(par,bp,y,x,v){
       ny<- length(y)
       nv<- length(v)
@@ -357,19 +356,17 @@ est.VC <-
 
    if(nv == 2){
       if(ny > 5000){
-         warning("The sample size is large so it may take a while to finish...
-         You might consider using other software.")
+         cat("   May take a long time due to large sample size...\n")
       }else if(ny > 3000){
-         warning("This may take a while...Please be patient.")
+         cat("   May take a while due to large sample size. Please be patient...\n")
       }
       pp<- ppfct(y=y,x=x,v=v)
       oo<- fct.2(y=y, x=x, v=v, pp=pp, intv=c(-25,12), tol=machineEps)
    }else{
       if(ny > 1500){
-         warning("The sample size is large so it may take a while to finish...
-         You might consider using other software.")
+         cat("   May take a long time due to large sample size...\n")
       }else if(ny > 900){
-         warning("This may take a while...Please be patient.")
+         cat("   May take a while due to large sample size. Please be patient...\n")
       }
       if(missing(initpar)){
          pparTmp<- initparf(y, x, v, nit=nit, opt=1)

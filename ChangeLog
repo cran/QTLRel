@@ -1,5 +1,6 @@
 
-2019/11/4 fix warnings from gcc
+2020/01/31 fix confusion in some labels
+2019/11/04 fix warnings from gcc
 2019/10/21 replace a few pieces of FORTRAN code
 2018/06/10 improve speed by directly calling fortran code for model fitting
 2017/12/10 improve speed on 'estVC' in case of one variance component

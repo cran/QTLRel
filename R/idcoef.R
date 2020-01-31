@@ -116,8 +116,8 @@ ped.local.no<- function(ped,oids){
       idx<- match(ids,ped$id)
          idx<- ped$generation[idx]<gens[n]
       jj<- match(ids[!idx],ped$id)
-         jj<- is.element(ped$id,ped$sire[jj]) |
-              is.element(ped$id,ped$dam[jj])
+         jj<- is.element(ped$id,ped$father[jj]) |
+              is.element(ped$id,ped$mother[jj])
       ids<- union(ids[idx],ped$id[jj])
       idx<- is.element(ped$id,ids)
       ii<- rbind(idx,ii)
@@ -244,7 +244,7 @@ kinship<- function(ped,ids,all=TRUE,msg=TRUE){
    if(any(is.na(idx)))
          stop("Check ids for errors.", call.=FALSE)
 
-   ped<- ped[,c("id","sire","dam")]
+   ped<- ped[,c("id","father","mother")]
    ksp<- matrix(-999.9,nrow=nrow(ped),ncol=nrow(ped))
    out<- .C("kinshipc",
             ped = as.integer(t(ped)),
@@ -274,17 +274,17 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
    pedS<- ped
    ped<- pedRecode(ped=ped,ids=ids,all=TRUE,msg=TRUE)
       ped$id<- sapply(ped$id,as.character)
-      idx<- ped$sire < 0
-      sire<- sapply(ped$sire,as.character)
+      idx<- ped$father < 0
+      father<- sapply(ped$father,as.character)
       if(any(idx))
-         sire[idx]<- paste(sire[idx],"i",sep="")
-         ped$sire<- sire
-      idx<- ped$dam < 0
-      dam<- sapply(ped$dam,as.character)
+         father[idx]<- paste(father[idx],"i",sep="")
+         ped$father<- father
+      idx<- ped$mother < 0
+      mother<- sapply(ped$mother,as.character)
       if(any(idx))
-         dam[idx]<- paste(dam[idx],"i",sep="")
-         ped$dam<- dam
-   rm(sire,dam,idx)
+         mother[idx]<- paste(mother[idx],"i",sep="")
+         ped$mother<- mother
+   rm(father,mother,idx)
    ped.No<- ped.local.no(ped,oids=ids)
       pedN<- rowSums(ped.No)
    if(missing(inter)){
@@ -347,7 +347,7 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
          if(n==2) top<- -999
          if(n<length(gr)){
             idTmp<- pedTmp$id[match(idBot,pedTmp$old)]
-            pedTmp<- pedTmp[,c("id","sire","dam")]
+            pedTmp<- pedTmp[,c("id","father","mother")]
             tmp<- .C("phicw",
                      pedigree = as.integer(t(pedTmp)),
                            nr = as.integer(nrow(pedTmp)),
@@ -361,7 +361,7 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
          }else{
             idx<- match(ids,ped$old)
             idTmp<- pedTmp$id[match(ped$id[idx],pedTmp$old)]
-            pedTmp<- pedTmp[,c("id","sire","dam")]
+            pedTmp<- pedTmp[,c("id","father","mother")]
             idcf<- rep(-999.9,length(ids)*(length(ids)+1)/2*9)
             idcf<- .C("phicr",
                       pedigree = as.integer(t(pedTmp)),

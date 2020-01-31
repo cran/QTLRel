@@ -10,7 +10,7 @@
 
 .hapSim<- function(ped,gmap,ids,hap,method=c("Haldane","Kosambi"),genotype=FALSE){
    ped<- pedRecode(ped,ids=ids,all=TRUE,msg=FALSE)
-   idx<- ped$sire <= 0 | ped$dam <= 0 # founders
+   idx<- ped$father <= 0 | ped$mother <= 0 # founders
    if(any(idx)){
       pedTmp<- ped[idx,]
       idTmp<- trim(sapply(pedTmp$old.id,as.character))
@@ -96,7 +96,7 @@
 }
 
 .hapSim0<- function(pedd,gmap,chr,hap,genotype){
-   pedd<- pedd[,c("id","sire","dam","sex")]
+   pedd<- pedd[,c("id","father","mother","sex")]
    if(is.numeric(pedd[,"sex"])){
       pedd[,"sex"]<- pedd[,"sex"]==1
    }else{

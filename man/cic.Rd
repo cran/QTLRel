@@ -11,7 +11,7 @@ cic(ped, ids, inter, df=3, ask = FALSE, msg = FALSE)
 }
 \arguments{
   \item{ped}{
-A pedigree, which is a data frame (id, sire, dam, ...). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ... If "sex" is included, male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If a founder is inbred, its ID should be tagged by character 'i' (e.g. 1i, 2i, etc.). Note: 0 is reserved for unknown \code{sire}, \code{dam} or \code{sex}.
+A pedigree, which is a data frame (id, father/sire, mother/dam, ...). If given, "generation" can be numeric 0, 1, 2, ... or non-numeric "F0", "F1", "F2", ... If "sex" is included, male should be "M", "Male" or 1, and female should be "F", "Female" or 2 (other than 0 and 1). If a founder is inbred, its ID should be tagged by character 'i' (e.g. 1i, 2i, etc.). Note: 0 is reserved for unknown \code{father}, \code{mother} or \code{sex}.
 }
   \item{ids}{
 IDs of the individuals for which to calculate the Jacquard condensed identity coefficients. If missing, all individuals in the pedigree \code{ped} will be considered.

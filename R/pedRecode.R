@@ -3,6 +3,31 @@
 # recode the pedigree #
 #######################
 
+chechPedColNames<- function(ped){
+   if(is.element("sire",colnames(ped))){
+      if(is.element("father",colnames(ped)))
+         stop("Only either 'father' or 'sire' represents paternal parent", call.=FALSE)
+      idx<- match("sire",colnames(ped))
+      colnames(ped)[idx]<- "father"
+   }else if(!is.element("father",colnames(ped))){
+      stop("'father/sire' missing", call.=FALSE)
+   }
+   if(is.element("dam",colnames(ped))){
+      if(is.element("mother",colnames(ped)))
+         stop("Only either 'mother' or 'dam' represents maternal parent", call.=FALSE)
+      idx<- match("dam",colnames(ped))
+      colnames(ped)[idx]<- "mother"
+   }else if(!is.element("mother",colnames(ped))){
+      stop("'mother/dam' missing", call.=FALSE)
+   }
+
+   if(!is.element("id",colnames(ped))){
+      stop("'id' missing...", call.=FALSE)
+   }
+
+   as.data.frame(ped)
+}
+
 pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
 # ped: pedigree (id, father, mother,...) or  (id, generation, father, mother,...)
 #    missing values in father or mother represented by 0 or NA
@@ -26,25 +51,21 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       list(idx=idx, values=-ii[idx])
    }
 
-   ped<- as.data.frame(ped)
-   if(is.null(ped$id)){
-      stop("'id' missing...", call.=FALSE)
-   }else{
-      if(is.numeric(ped$id) | is.complex(ped$id)){
-         idTmp<- sapply(Re(ped$id),as.character)
-         idx<- Im(ped$id) != 0
-         if(any(idx)){
-            idTmp[idx]<- sapply(ped$id[idx],as.character)
-         }
-         ped$id<- idTmp
+   ped<- chechPedColNames(ped)
+   if(is.numeric(ped$id) | is.complex(ped$id)){
+      idTmp<- sapply(Re(ped$id),as.character)
+      idx<- Im(ped$id) != 0
+      if(any(idx)){
+         idTmp[idx]<- sapply(ped$id[idx],as.character)
       }
-      ped$id<- trimws(ped$id)
+      ped$id<- idTmp
    }
+   ped$id<- trimws(ped$id)
    if(is.null(ped$father)){
-      if(is.null(ped$sire)){
+      if(is.null(ped$father)){
          stop("'father/sire' missing...", call.=FALSE)
       }else{
-         nTmp<- match("sire",colnames(ped))
+         nTmp<- match("father",colnames(ped))
          colnames(ped)[nTmp]<- "father"
          rm(nTmp)
       }
@@ -60,10 +81,10 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       ped$father<- trimws(ped$father)
    }
    if(is.null(ped$mother)){
-      if(is.null(ped$dam)){
+      if(is.null(ped$mother)){
          stop("'mother/dam' missing...", call.=FALSE)
       }else{
-         nTmp<- match("dam",colnames(ped))
+         nTmp<- match("mother",colnames(ped))
          colnames(ped)[nTmp]<- "mother"
          rm(nTmp)
       }

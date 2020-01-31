@@ -49,8 +49,8 @@ function(cross)
   ped <- data.frame(id=c(parents, id),
                     sex=factor(c("M","F","M","F",as.character(sex)), levels=c("F","M")),
                     generation=factor(c("F0","F0","F1","F1",rep("F2", n.ind)), levels=c("F0","F1","F2")),
-                    sire=c(0, 0, parents[1], parents[1], rep(parents[3], n.ind)),
-                    dam=c(0, 0, parents[2], parents[2], rep(parents[4], n.ind)),
+                    father=c(0, 0, parents[1], parents[1], rep(parents[3], n.ind)),
+                    mother=c(0, 0, parents[2], parents[2], rep(parents[4], n.ind)),
                     family=factor(c("F0","F0","F1","F1",rep("F1-1", n.ind)), levels=c("F0","F1","F1-1")))
 
   # combine genotypes into gdat
