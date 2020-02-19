@@ -1,5 +1,7 @@
-c NOTE: this is copied from R-3.4.0 (with revision)
-
+c
+c     Adapted from dqrls.f in R 3.6.2. Using mydqrls.f avoids calling
+c        dqrls.f instead
+c
 c
 c     dqrfit is a subroutine to compute least squares solutions
 c     to the system
@@ -79,10 +81,10 @@ c     abs(x(1,1)/x(k,k)).
 c
 c     dqrfit uses the linpack routines dqrdc and dqrsl.
 c
-      subroutine dqrls(x,n,p,y,tol,b,rsd,qty,k,jpvt,qraux,work)
+      subroutine mydqrls(x,n,p,y,tol,b,rsd,qty,k,jpvt,qraux,work)
       integer n,p,k,jpvt(p)
       double precision x(n,p),y(n),tol,b(p),rsd(n),
-     .                 qty(n),qraux(p),work(p)
+     .                 qty(n),qraux(p),work(2*p)
 c
 c     internal variables.
 c
@@ -95,7 +97,8 @@ c
 c     solve the truncated least squares problem for each rhs.
 c
       if(k .gt. 0) then
-         call dqrsl(x,n,n,k,qraux,y,rsd,qty,b,rsd,rsd,1110,info)
+         call dqrsl(x,n,n,k,qraux,y(1),rsd(1),qty(1),
+     1        b(1),rsd(1),rsd(1),1110,info)
       else
          do 35 i=1,n
              rsd(i) = y(i)

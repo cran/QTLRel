@@ -69,7 +69,7 @@ c     null model
       do 85 k=1,np
          pvt(k) = k
    85 continue
-      call dqrls(xx,n,p,y,tol,b,r0,qty,k0,pvt,qraux,work)
+      call mydqrls(xx,n,p,y,tol,b,r0,qty,k0,pvt,qraux,work)
 c
 c     scan the genome xg
       do 390 j=1, ng
@@ -106,7 +106,7 @@ c
          do 320 k=1, np
             pvt(k) = k
   320    continue
-         call dqrls(xx,n,np,y,tol,b,r1,qty,k1,pvt,qraux,work)
+         call mydqrls(xx,n,np,y,tol,b,r1,qty,k1,pvt,qraux,work)
 c
          do 330 k=1, k1
             coef(j,pvt(k)) = b(k)

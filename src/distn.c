@@ -1,6 +1,5 @@
 #include <R.h>
-#include "nmath.h"
-#include "dpq.h"
+#include <Rmath.h> //replace nmath.h & dpq.h
 #include <limits.h>
 
 /*
