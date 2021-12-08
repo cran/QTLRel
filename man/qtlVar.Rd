@@ -46,7 +46,7 @@ v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
 gdtmp<- geno
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 # rung 'genoProb'
-prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8,
    gr=8, method="Haldane", msg=TRUE)
 # estimate variance components
 o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
@@ -55,11 +55,9 @@ o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 pv.hk<- scanOne(y=pheno$bwt, x=pheno$sex, prdat=prDat, vc=o)
 
 # run 'qtlVar'
-qef<- NULL
-for(n in 1:length(pv.hk$par))
-   qef<- rbind(qef,pv.hk$par[[n]][c("a","d")])
+qef<- pv.hk$par[,c("a","d")]
    qef<- as.data.frame(qef)
-qtlVar(qef,prDat$pr)[1:3]
+qv<- qtlVar(qef,prDat$pr)
 }
 }
 

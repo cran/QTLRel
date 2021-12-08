@@ -7,7 +7,7 @@ chechPedColNames<- function(ped){
    if(is.element("sire",colnames(ped))){
       if(is.element("father",colnames(ped)))
          stop("Only either 'father' or 'sire' represents paternal parent", call.=FALSE)
-      idx<- match("sire",colnames(ped))
+      idx<- match("sire",tolower(colnames(ped)))
       colnames(ped)[idx]<- "father"
    }else if(!is.element("father",colnames(ped))){
       stop("'father/sire' missing", call.=FALSE)
@@ -15,7 +15,7 @@ chechPedColNames<- function(ped){
    if(is.element("dam",colnames(ped))){
       if(is.element("mother",colnames(ped)))
          stop("Only either 'mother' or 'dam' represents maternal parent", call.=FALSE)
-      idx<- match("dam",colnames(ped))
+      idx<- match("dam",tolower(colnames(ped)))
       colnames(ped)[idx]<- "mother"
    }else if(!is.element("mother",colnames(ped))){
       stop("'mother/dam' missing", call.=FALSE)
@@ -59,6 +59,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          idTmp[idx]<- sapply(ped$id[idx],as.character)
       }
       ped$id<- idTmp
+      rm(idTmp, idx)
    }
    ped$id<- trimws(ped$id)
    if(is.null(ped$father)){
@@ -77,6 +78,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
             idTmp[idx]<- sapply(ped$father[idx],as.character)
          }
          ped$father<- idTmp
+         rm(idTmp, idx)
       }
       ped$father<- trimws(ped$father)
    }
@@ -96,6 +98,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
             idTmp[idx]<- sapply(ped$mother[idx],as.character)
          }
          ped$mother<- idTmp
+         rm(idTmp, idx)
       }
       ped$mother<- trimws(ped$mother)
    }
@@ -107,12 +110,14 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          nch<- sapply(idEx,nchar)
          idx<- tolower( substr(idEx,nch,nch) ) != "i"
          idEx<- idEx[idx]
+         rm(nch, idx)
       if(length(idEx) > 0){
          cns<- colnames(ped)
          mtr<- matrix(NA,nrow=length(idEx),ncol=length(cns))
          if(!is.null(ped$generation)){
             idx<- match("generation",cns)
             mtr[,idx]<- rep("-999", length(idEx))
+            rm(idx)
          }
          if(!is.null(ped$sex)){
             sx<- rep("M", length(idEx))
@@ -120,7 +125,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
                sx[idx]<- "F"
             idx<- match("sex",cns)
             mtr[,idx]<- sx
-            rm(sx)
+            rm(sx, idx)
          }
          idx<- match("id",cns)
          mtr[,idx]<- idEx
@@ -128,7 +133,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          mtr[,idx]<- 0
          ped<- rbind(mtr,as.matrix(ped))
          rownames(ped)<- NULL
-         rm(cns,mtr,idx)
+         rm(cns, mtr, idx)
       }
       rm(idEx)
       ped<- as.data.frame(ped)
@@ -171,6 +176,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          cat("   Above IDs are out of range and ignored!\a\n")
       }
       ids<- ids[!idx]
+      rm(idx)
 
       idTmp<- ids
       idx<- rep(FALSE,nrow(ped))
@@ -184,7 +190,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          if(sum(idxTmp)==sum(idx)) break
       }
       ped<- ped[idx,]
-      rm(idTmp,idx,idxTmp)
+      rm(idTmp, idx, idxTmp)
    }
 
    if(is.null(ped$generation))
@@ -199,7 +205,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       cat("   Repeated IDs were excluded!\a\n")
    }
    ped<- ped[idx,]
-   rm(idx,ids)
+   rm(idx, ids)
 
    # new code
    ped$generation<- reorder(factor(ped$generation))
@@ -249,6 +255,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
                        sex=trimws(ped$sex),
                        generation=ped$generation,
                        old.id=ped$id)
+      rm(idx, father, mother)
       ii<- match(sapply(ped$father,as.character),ped$id)
          ii<- ii[!is.na(ii)]
       if(length(ii)>0){
@@ -261,7 +268,9 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
             cat("   --------------------------------------\n")
             cat("   Above should be male(s)...\a\n\n")
          }
+         rm(idx)
       }
+      rm(ii)
       jj<- match(sapply(ped$mother,as.character),ped$id)
          jj<- jj[!is.na(jj)]
       if(length(jj)>0){
@@ -275,6 +284,14 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
             cat("   --------------------------------------\n")
             cat("   Above should be female(s)...\a\n\n")
          }
+         rm(idx)
+      }
+      rm(jj)
+      fms<- intersect(sapply(ped$father, as.character), sapply(ped$mother, as.character))
+         fms<- setdiff(fms, c(0,NA))
+      if(length(fms) > 0){
+         print(fms)
+         cat("   Above are both father and mother?\a\n\n")
       }
    }
    idx<- (ped$father > ped$id) | (ped$mother > ped$id)
@@ -361,8 +378,11 @@ pedRecode.0<- function(ped,msg){
       }
    }
    jj<- match("id",colnames(out))
-   out<- cbind(id=out[,jj],generation=out$generation,out[-c(1,jj)])
-   rownames(out)<- 1:nrow(out)
+   out<- cbind(id=out[,jj],generation=out$generation,out[,-c(1,jj)])
+      idx<- (is.na(out$father) | out$father == 0) & 
+            (is.na(out$mother) | out$mother == 0)
+      if(any(idx)) out$generation[idx]<- 0
+      rm(idx)
 
    out$generation<- reorder(factor(out$generation))
    out$id<- reorder(factor(out$id))
@@ -370,6 +390,7 @@ pedRecode.0<- function(ped,msg){
    out$mother<- reorder(factor(out$mother))
 
    out<- out[order(out$generation,out$id,out$father,out$mother),]
+   rownames(out)<- NULL
    out
 }
 

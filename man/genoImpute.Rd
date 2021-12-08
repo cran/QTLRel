@@ -7,7 +7,7 @@ Impute Genotypic Data
 Impute missing genotypic data in advance intercross lines (AIL).
 }
 \usage{
-genoImpute(gdat, gmap, prd = NULL, step = Inf, gr = 2, pos = NULL,
+genoImpute(gdat, gmap, step, prd = NULL, gr = 2, pos = NULL,
    method = c("Haldane", "Kosambi"), na.str = "NA", msg = FALSE)
 }
 \arguments{
@@ -17,11 +17,11 @@ Genotype data. Should be a matrix or a data frame, with each row representing an
   \item{gmap}{
 A genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
 }
+  \item{step}{
+Optional. If specified, it is the maximum distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation. If missing, only
+}
   \item{prd}{
 An object from \code{\link{genoProb}} if not \code{NULL}. See "details" for more information.
-}
-  \item{step}{
-The maximum distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
 }
   \item{gr}{
 The generation under consideration.
@@ -65,8 +65,7 @@ gdatF8[1:5,1:5]
 # run 'genoProb'
 gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", msg=TRUE)
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, gr=8, method="Haldane", msg=TRUE)
 
 # imputation based on 'genoProb' object
 tmp<- genoImpute(prd=prDat)
@@ -79,13 +78,11 @@ sum(is.na(tmp))
 tmp[1:5,1:5]
 
 # imputation based on genotype data
-tmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
-   gr=8, na.str=NA)
+tmp<- genoImpute(gdatF8, gmap=gmapF8, gr=8, na.str=NA)
 sum(is.na(tmp))
 tmp[1:5, 1:5]
 # set "msg=TRUE" for more information
-tmp<- genoImpute(gdatF8, gmap=gmapF8, step=Inf,
-   gr=8, na.str=NA, msg=TRUE)
+tmp<- genoImpute(gdatF8, gmap=gmapF8, gr=8, na.str=NA, msg=TRUE)
 sum(is.na(tmp))
 tmp[1:5, 1:5]
 }

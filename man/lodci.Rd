@@ -17,7 +17,7 @@ A data frame with components (chr, dist, y, ...), where "chr" is the chromosome 
 Threshold. Reported support intervals cover at least one scanning locus where \code{llk$y > cv}.
 }
   \item{lod}{
-\code{lod} (1.5 by default) LOD support intervals are reported when \code{llk$y} is converted to LOD score.
+LOD (specified by \code{lod}, which is 1.5 by default) support intervals to be reported when \code{llk$y} is converted to LOD score.
 }
   \item{drop}{
 3 by default. See "details".
@@ -47,7 +47,7 @@ v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
 gdtmp<- geno
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 # run 'genoProb'
-prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8,
    gr=8, method="Haldane", msg=TRUE)
 # estimate variance components
 o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
@@ -56,7 +56,7 @@ o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 llk.hk<- scanOne(y=pheno$bwt, x=pheno$sex, vc=o, prdat=prDat)
 
 # extract LOD support intervals
-tmp<- data.frame(y=llk.hk$p, chr=llk.hk$chr, dist=llk.hk$dist)
+tmp<- data.frame(y=llk.hk$LRT, chr=llk.hk$chr, dist=llk.hk$dist)
 lodci(tmp, cv=10, lod=1.5, drop=3)
 }
 }

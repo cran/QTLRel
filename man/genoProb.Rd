@@ -7,8 +7,8 @@ Probability of a Genotype.
 Calculate the probability of a genotype at a locus conditional on the genotypes of its flanking markers in advance intercross lines (AIL).
 }
 \usage{
-genoProb(gdat, gmap, step = Inf, gr = 2, pos = NULL, method=c("Haldane",
-   "Kosambi"), msg = FALSE)
+genoProb(gdat, gmap, step, gr = 2, pos = NULL, method=c("Haldane", "Kosambi"),
+   msg = FALSE)
 }
 \arguments{
   \item{gdat}{
@@ -18,7 +18,7 @@ Genotype data. Should be a matrix or a data frame, with each row representing an
 A genetic map. Should be data frame (snp, chr, dist,...), where "snp" is the SNP (marker) name, "chr" is the chromosome where the "snp" is, and "dist" is the genetic distance in centi-Morgan (cM) from the left of the chromosome.
 }
   \item{step}{
-The maximum "cumulative" distance (in cM) between two adjacent loci for which the probabilities are calculated. The distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
+Optional. If specified, it is the maximum "cumulative" genetic distance (in cM) between two adjacent loci for which the probabilities are calculated. The genetic distance corresponds to the "cumulative" recombination rate at \code{gr}-th generation.
 }
   \item{gr}{
 The generation under consideration.
@@ -34,7 +34,7 @@ A logical variable. If TRUE, certain information will be printed out during calc
 }
 }
 \details{
-The "cumulative" genetic distance between any two adjacent loci for which probabilities are calculated is not larger than \code{step}. If \code{step = Inf}, probabilities will only be calculated at loci in both the columns of \code{gdat} and the rows of \code{gmap}. If \code{step} is small, a large set of putative loci will be considered, including all loci defined by the columns of \code{gdat} and the rows of \code{gmap}. 
+The "cumulative" genetic distance between any two adjacent loci for which probabilities are calculated is not larger than \code{step}. If \code{step} is missing or \code{step = Inf}, probabilities will only be calculated at loci in both the columns of \code{gdat} and the rows of \code{gmap}. If \code{step} is small, a large set of putative loci will be considered, including all loci defined by the columns of \code{gdat} and the rows of \code{gmap}. 
 }
 \value{
 Probabilities for genotypes as well as genetic map information (snp,chr,dist)
@@ -55,8 +55,7 @@ gdtmp<- gdatF8
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
 # In case an individual is not imputable, then
 # one needs to assign genotypes manually
-prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", msg=TRUE)
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, gr=8, method="Haldane", msg=TRUE)
 prDat$pr[1:5,,1:5]
 }
 }

@@ -81,7 +81,7 @@ geno<- gdatF8[ii,]
 ii<- match(rownames(pheno), rownames(gmF8$AA))
 v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
 
-gdat.imp<- genoImpute(geno, gmap=gmapF8, step=Inf,
+gdat.imp<- genoImpute(geno, gmap=gmapF8,
    gr=8, na.str=NA)
 # estimate variance components
 o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
@@ -89,12 +89,12 @@ o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 # run 'genoProb'
 gdtmp<- geno
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8,
    gr=8, method="Haldane", msg=TRUE)
 
 # genome scan
 llk.hk<- scanOne(y=pheno$bwt, x=pheno$sex, prdat=prDat, vc=o)
-xin<- llk.hk$p > 10
+xin<- llk.hk$LRT > 10
 
 # run 'mAIC' based on genome scan results
 mg<- mAIC(y=pheno$bwt, x=pheno$sex, prdat=prDat, vc=o, xin=xin,

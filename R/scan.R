@@ -54,8 +54,6 @@ scanOne.0 <-
             test = c("None","F","LRT"))
 {
 # prdat$pr: n by ? by ? matrix, allele probabilities
-# vc: object from estVC or aicVC
-# test: "LRT", "F" or "Cp"
    test<- match.arg(test)
 
    snp<- prdat$snp
@@ -180,8 +178,6 @@ scanOne.1 <-
             test = c("None","F","LRT"))
 {
 # prdat$pr: n by 3 by ? matrix, conditional probabilities
-# vc: object from estVC or aicVC
-# test: "LRT", "F" or "Cp"
    test<- match.arg(test)
 
    snp<- prdat$snp
@@ -325,9 +321,7 @@ scanOne.2 <-
             test = c("None","F","LRT"))
 {
 # gdat: n by ? matrix, marker data. Markers in columes!!!
-# vc: object from estVC or aicVC
 # intc: covariates that interact with QTL
-# test: "LRT", "F" or "Cp"
    test<- match.arg(test)
    opt<- switch(test,
        "None" = 1,
@@ -664,7 +658,7 @@ print.scanOne <-
       cat("Coefficients:\n")
       print(x$par[idx,])
       cat("... ...\n\n")
-   }else if(length(tt$p)>0){
+   }else if(length(tt$pval)>0){
       idx<- 1:min(5,length(tt$pval))
 
       cat("Test statistic (P-value):\n")

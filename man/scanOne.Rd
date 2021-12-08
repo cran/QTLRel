@@ -4,7 +4,7 @@
 Genome Scan for QTL
 }
 \description{
-Evaluate likelihood ratio test statistics or P-values at scanning loci along the genome.
+Likelihood ratio tests or F tests at scanning loci over the genome.
 }
 \usage{
 scanOne(y, x, gdat, prdat = NULL, vc = NULL, intc = NULL,
@@ -13,15 +13,15 @@ scanOne(y, x, gdat, prdat = NULL, vc = NULL, intc = NULL,
 }
 \arguments{
   \item{y}{
-A numeric vector or a numeric matrix of one column (representing a phenotype for instance).
+A numeric vector or a numeric matrix of one column, representing a phenotype.
 }
   \item{x}{
 A data frame or matrix, representing covariates if not missing.
 }
   \item{gdat}{
-Genotype data. Commonly, should be a matrix or a data frame, with each row representing an observation and each column a marker locus. The column names should be marker names. Optional if an object \code{prdat} from \code{\link{genoProb}} is used as an argument.
+Genotype data. It should be a matrix or a data frame, with each row being a sample and each column a locus. The column names should be marker names. It is ignored if an object \code{prdat} from \code{\link{genoProb}} is used as an argument.
 
-If \code{gdat} is not numeric, there can be more than three genotypes. However, all scanning loci should have the same number of genotypes. Otherwise, we can split \code{gdat} into sub-matrices that each have the same number of genotypes and run the analysis for these sub-matrices one after another.
+If \code{gdat} is not numeric, there can be more than three genotypes and all scanning loci should have the same number of genotypes.
 }
   \item{prdat}{
 An object from \code{\link{genoProb}}, or in the same form. It should have a class "addEff" if allelic effects are assumed to be additive (see example below).
@@ -42,13 +42,13 @@ Whether to treat numeric coding of genotypes as numeric. If true, \code{minorGen
 Specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
 }
   \item{rmv}{
-A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL.
+A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL if any locci have a genotype frequency smaller than \code{minorGenoFreq}.
 }
 }
 \details{
-The test at a scanning locus under the assumption of no QTL effect versus the assumption of QTL effect is performed by conditioning on the estimated polygenic genetic variance-covariance matrix. Normality is assumed for the random effects.
+The test at a scanning locus under the null hypothesis of no QTL effect is performed by conditioning on the polygenic genetic variance-covariance. Normality is assumed for the random effects.
 
-It is possible to extend the Haley-Knott approach to multiple-allelic cases under the assumption that allele effects are all additive. Then, \code{prdat} should be provided and be of class "addEff".
+It is possible to extend the Haley-Knott approach to multiple-allelic cases under the assumption that allelic effects are all additive. Then, \code{prdat} should be provided and be of class "addEff".
 }
 \value{
 A list with at least the following components:
@@ -79,8 +79,7 @@ v<- list(A=gmF8$AA[ii,ii], D=gmF8$DD[ii,ii])
 o<- estVC(y=pheno$bwt, x=pheno$sex, v=v)
 
 # impute missing genotypes
-gdtmp<- genoImpute(geno, gmap=gmapF8, step=Inf,
-        gr=8, na.str=NA, msg=FALSE)
+gdtmp<- genoImpute(geno, gmap=gmapF8, gr=8, na.str=NA, msg=FALSE)
 # genome scan and plotting
 lrt<- scanOne(y=pheno$bwt, x=pheno$sex, gdat=gdtmp, vc=o)
 lrt
@@ -89,8 +88,7 @@ plot(lrt,gmap=gmapF8)
 # Haley-Knott method
 gdtmp<- geno; unique(unlist(gdtmp))
    gdtmp<- replace(gdtmp,is.na(gdtmp),0)
-prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, step=Inf,
-   gr=8, method="Haldane", msg=TRUE)
+prDat<- genoProb(gdat=gdtmp, gmap=gmapF8, gr=8, method="Haldane", msg=TRUE)
 pv.hk<- scanOne(y=pheno$bwt, intc=pheno$sex, prdat=prDat, vc=o, test="F")
 pv.hk
 plot(pv.hk, gmap=gmapF8)

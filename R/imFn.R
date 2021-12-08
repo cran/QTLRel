@@ -2,7 +2,7 @@
 genoProb <-
    function(gdat,
             gmap,
-            step=Inf,
+            step,
             gr=2,
             pos=NULL,
             method=c("Haldane","Kosambi"),
@@ -14,8 +14,8 @@ genoProb <-
 genoImpute <-
    function(gdat,
             gmap,
+            step,
             prd=NULL,
-            step=Inf,
             gr=2,
             pos=NULL,
             method=c("Haldane","Kosambi"),
@@ -97,7 +97,7 @@ rFn<- function(r,n=2){
 genoProb.default <-
    function(gdat,
             gmap,
-            step=Inf,
+            step,
             gr=2,
             pos,
             method=c("Haldane","Kosambi"),
@@ -108,6 +108,8 @@ genoProb.default <-
 # gmap: genetic map (snp,chr,recRate,d,dist) with dist in cM
 # pos: postions to calculate P(Q|MN), (chr,dist,snp) with dist in cM
 # gr: gr-th generation of AIL
+   if(missing(step)) step<- Inf
+   if(step <= 0) stop("step: should be positive", call.=FALSE)
    gmap$chr<- reorder(factor(gmap$chr))
       gmap<- gmap[order(gmap$chr,gmap$dist),]
    snp<- intersect(colnames(gdat),gmap$snp)
@@ -285,13 +287,15 @@ genoPos<- function(gmap,step=2,gr=34,method=c("Haldane","Kosambi")){
 genoImpute.default <-
    function(gdat,
             gmap,
-            step=Inf,
+            step,
             gr=2,
             pos=NULL,
             method=c("Haldane","Kosambi"),
             na.str="NA",
             msg=FALSE)
 {
+   if(missing(step)) step<- Inf
+   if(step <= 0) stop("step: should be positive", call.=FALSE)
    if(!is.matrix(gdat) && !is.data.frame(gdat))
       stop("Genetype data should be in a matrix or a data frame.", call.=FALSE)
    gdat<- as.matrix(gdat)

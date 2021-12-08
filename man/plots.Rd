@@ -69,7 +69,7 @@ plot(llk, gmap=gmapF8) # gmap is needed
 
 # plotting in another way
 idx<- match(colnames(gdat.imp), gmapF8$snp)
-tmp<- data.frame(chr=gmapF8$chr[idx],dist=gmapF8$dist[idx],y=llk$pval)
+tmp<- data.frame(chr=gmapF8$chr[idx],dist=gmapF8$dist[idx],y=llk$LRT)
 plotit(tmp, main="Mapping Plot", xlab="Chromosome", ylab="LRT",
    col=as.integer(tmp$ch)\%\%2+2,type="p")
 }
