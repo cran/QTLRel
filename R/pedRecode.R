@@ -25,7 +25,7 @@ chechPedColNames<- function(ped){
       stop("'id' missing...", call.=FALSE)
    }
 
-   as.data.frame(ped)
+   as.data.frame(ped, stringsAsFactors=FALSE)
 }
 
 pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
@@ -63,13 +63,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
    }
    ped$id<- trimws(ped$id)
    if(is.null(ped$father)){
-      if(is.null(ped$father)){
-         stop("'father/sire' missing...", call.=FALSE)
-      }else{
-         nTmp<- match("father",colnames(ped))
-         colnames(ped)[nTmp]<- "father"
-         rm(nTmp)
-      }
+      stop("'father/sire' missing...", call.=FALSE)
    }else{
       if(is.numeric(ped$father) | is.complex(ped$father)){
          idTmp<- sapply(Re(ped$father),as.character)
@@ -83,13 +77,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       ped$father<- trimws(ped$father)
    }
    if(is.null(ped$mother)){
-      if(is.null(ped$mother)){
-         stop("'mother/dam' missing...", call.=FALSE)
-      }else{
-         nTmp<- match("mother",colnames(ped))
-         colnames(ped)[nTmp]<- "mother"
-         rm(nTmp)
-      }
+      stop("'mother/dam' missing...", call.=FALSE)
    }else{
       if(is.numeric(ped$mother) | is.complex(ped$mother)){
          idTmp<- sapply(Re(ped$mother),as.character)
@@ -136,7 +124,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          rm(cns, mtr, idx)
       }
       rm(idEx)
-      ped<- as.data.frame(ped)
+      ped<- as.data.frame(ped, stringsAsFactors=FALSE)
    }
    pedSave<- ped
 
@@ -193,9 +181,15 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       rm(idTmp, idx, idxTmp)
    }
 
-   if(is.null(ped$generation))
+   if(is.null(ped$generation)){
       ped<- pedRecode.0(ped,msg)
-   ped$generation<- trimws(ped$generation)
+   }else if(!is.numeric(ped$generation)){
+      Tmp<- sapply(ped$generation, as.character)
+         Tmp<- trimws(Tmp)
+      ped$generation<- Tmp
+         ped$generation<- reorder(factor(ped$generation))
+      rm(Tmp)
+   }
    ids<- paste(ped$generation,ped$id,sep="~")
    uids<- unique(ids)
       idx<- match(uids,ids)
@@ -208,15 +202,12 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
    rm(idx, ids)
 
    # new code
-   ped$generation<- reorder(factor(ped$generation))
    ped$id<- reorder(factor(ped$id))
    ped$father<- reorder(factor(ped$father))
    ped$mother<- reorder(factor(ped$mother))
    ped<- ped[order(ped$generation,ped$id,ped$father,ped$mother),]
-   idd<- data.frame(index=c(0,0),id=c(NA,0))
-      idd<- rbind(idd,data.frame(index=1:nrow(ped),id=ped$id))
-   ### recode here
-
+   idd<- data.frame(index=c(0,0), id=c(NA,0), stringsAsFactors=FALSE)
+      idd<- rbind(idd,data.frame(index=1:nrow(ped), id=ped$id, stringsAsFactors=FALSE))
    # recode IDs
    if(is.null(ped$sex)){
       idx<- match(sapply(ped$father,as.character),idd$id)
@@ -235,7 +226,8 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
                        father=father,
                        mother=mother,
                        generation=ped$generation,
-                       old.id=ped$id)
+                       old.id=sapply(ped$id,as.character),
+                       stringsAsFactors=FALSE)
    }else{
       idx<- match(sapply(ped$father,as.character),idd$id)
          idx[is.na(idx)]<- 1
@@ -254,7 +246,8 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
                        mother=mother,
                        sex=trimws(ped$sex),
                        generation=ped$generation,
-                       old.id=ped$id)
+                       old.id=sapply(ped$id,as.character),
+                       stringsAsFactors=FALSE)
       rm(idx, father, mother)
       ii<- match(sapply(ped$father,as.character),ped$id)
          ii<- ii[!is.na(ii)]
@@ -325,9 +318,9 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
 }
 
 # create "generation"
-pedRecode.0<- function(ped,msg){
+pedRecode.0<- function(ped,msg=TRUE){
 # ped: data frame (id,father,mother,...)
-   ped<- as.data.frame(ped)
+   ped<- as.data.frame(ped, stringsAsFactors=FALSE)
       ped$generation<- NULL
    if(is.null(ped$id)){
       stop("'id' missing...", call.=FALSE)
@@ -346,51 +339,32 @@ pedRecode.0<- function(ped,msg){
       ped<- ped[!idx,]
    }
 
-   nr<- nrow(ped)
-   ii<- matrix(TRUE,nrow=1,ncol=nr)
-   ii0<- ii
-   while(1){
-      ii0<- is.element(ped$id,ped$father[ii0]) |
-            is.element(ped$id,ped$mother[ii0])
-      if(any(ii0)){
-         ii<- rbind(ii0,ii)
-      }else break
-   }
-# no offspring or parents
-#   idx<- is.element(ped$id,ped$father) |
-#         is.element(ped$id,ped$mother)  |
-#         is.element(ped$father,ped$id) |
-#         is.element(ped$mother,ped$id)
-#   ii[1,]<- ii[1,] | !idx
-
-   idx<- ii[1,]
-   idx0<- idx
-   jj<- 0
-   out<- cbind(generation=jj,ped[idx,])
-   if(nrow(ii)>1){
-      for(n in 2:nrow(ii)){
-         idx0<- idx0 | ii[n-1,]
-         idx<- ii[n,] & !idx0
-         if(any(idx)){
-            jj<- jj+1
-            out<- rbind(out,cbind(generation=jj,ped[idx,]))
-         }
+   # max possible generation
+   mxGf<- function(ped){
+      jj<- 0
+      pedT<- ped
+      idx<- is.element(pedT$father, pedT$id) | is.element(pedT$mother, pedT$id)
+      while(any(idx)){
+         jj<- jj + 1
+         pedT<- pedT[idx,]
+         idx<- is.element(pedT$father, pedT$id) | is.element(pedT$mother, pedT$id)
       }
+      cbind(generation=jj, pedT)
+   }
+
+   pedT<- ped
+   idx<- rep(TRUE, nrow(ped))
+   out<- NULL
+   while(any(idx)){
+      pedT<- mxGf(ped[idx,])
+      out<- rbind(pedT, out)
+      if(pedT$generation[1] == 0) break
+      idx<- !is.element(ped$id, out$id)
    }
    jj<- match("id",colnames(out))
    out<- cbind(id=out[,jj],generation=out$generation,out[,-c(1,jj)])
-      idx<- (is.na(out$father) | out$father == 0) & 
-            (is.na(out$mother) | out$mother == 0)
-      if(any(idx)) out$generation[idx]<- 0
-      rm(idx)
-
-   out$generation<- reorder(factor(out$generation))
-   out$id<- reorder(factor(out$id))
-   out$father<- reorder(factor(out$father))
-   out$mother<- reorder(factor(out$mother))
-
-   out<- out[order(out$generation,out$id,out$father,out$mother),]
-   rownames(out)<- NULL
+      out<- out[order(out$generation,out$id,out$father,out$mother),]
+      rownames(out)<- NULL
    out
 }
 

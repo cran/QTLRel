@@ -1,5 +1,5 @@
-7716f9d8f8bf7642fee39381944d69ae *ChangeLog
-b82c8c0c07a4583a3f3d7bafadab3ecc *DESCRIPTION
+9706362f9de2b374c6d9231c0c5ecad8 *ChangeLog
+81a012964512028980d20696b0ff3827 *DESCRIPTION
 3af19633711a393d947e3cae82b7ad55 *NAMESPACE
 f1d3573141c9bdcd2b3ab3da01564d6d *R/aic.R
 299825d295cbba74d54ecce44f1b6ceb *R/eigen_sym.R
@@ -11,7 +11,7 @@ f0632ed840ba0c5e72a9dcd3a3967cea *R/idcoef.R
 11604d2b2c583c8108d10ec686e700c9 *R/imFn.R
 aee44548aad6f9f3b92cfd86a0b0bbee *R/lodci.R
 9e2b5983942b4e235bb103b3f8d2105e *R/nullSim.R
-18d9a39e8a287fa7a3136fbe8506dea4 *R/pedRecode.R
+1086be8f1d73a5351d2263b25216f351 *R/pedRecode.R
 7788f898dc74ca426e3cfc032d45eded *R/plots.R
 1f84acacc4c44c6ef4515833db98f8ef *R/qqPlot.R
 b52514b9b9013ae2fdddfee35da55621 *R/qtl2rel.R
@@ -21,9 +21,9 @@ e7c14cd802e07324d1a0ccdce4d06866 *R/rem.R
 1b762ee196fa02bcf8c8e51cdaa962d7 *R/zzz.R
 af5afcc91c28f08f6a0451b9e6b52685 *data/datalist
 ccc16469cd2540996889cb8b742cc8df *data/miscEx.RData
-2ee3417fc74a2e2955d24b5505e72513 *inst/CITATION
+0cf95e4a451b6e179526b59b13edea97 *inst/CITATION
 ae4830b216886e17f1717eeac01b78b2 *inst/doc/QTLRel_Tutorial.R
-e75abc410ca687d512b3925c2fb9beb7 *inst/doc/QTLRel_Tutorial.pdf
+71ee9abc5a2f4a9576c55edb7e7715f9 *inst/doc/QTLRel_Tutorial.pdf
 6d095ed07108546d8b43b6954e5600c5 *inst/doc/index.html
 9308b6d4f1d1abc870b25d4a892390b0 *man/aicVC.Rd
 1b67421639ef6e8ebaa4224a91479012 *man/blup.Rd
