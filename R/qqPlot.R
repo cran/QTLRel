@@ -2,15 +2,15 @@
 
 pk<- function(z, nx, ny = Inf){ # from R "stats"
    if(nx==Inf || ny==Inf){
-      pp <- .C("pkolmogorov2x",
-               p = as.double(z),
+      pp <- .Call("pkolmogorov2x",
+               as.double(z),
                as.integer(min(nx,ny)),
-               PACKAGE="QTLRel")$p
+               PACKAGE="QTLRel")
    }else{
-      pp <- .C("psmirnov2x",
-               p = as.double(z),
+      pp <- .Call("psmirnov2x",
+               as.double(z),
                as.integer(nx), as.integer(ny),
-               PACKAGE="QTLRel")$p
+               PACKAGE="QTLRel")
    }
 
    max(min(pp,1),0)
@@ -77,24 +77,6 @@ Fn. <- function(t,x){
    colMeans(xm)
 }
 
-qFn. <- function(t,x){
-   if(any(t<0 | t>1))
-      stop("Probability should between 0 and 1.", call.=FALSE)
-   t[t==0]<- 1e-300
-   t[t==1]<- 1 - 1e-300
-
-   tmp<- Fn.0(x)
-   nt<- length(t)
-   pm <- matrix(tmp$p,nrow=length(tmp$p),ncol=nt)
-      pm<- sweep(pm,2,t,">=")
-   xm<- matrix(tmp$x,nrow=length(tmp$x),ncol=nt)
-      xm[!pm]<- Inf
-   qq <- apply(xm,2,min)
-      qq[t==1] <- 1e+300
-      qq[qq < -1e+300] <- -1e+300
-   qq
-}
-
 Fn <- function(t,x){
    t<- as.double(t)
    x<- as.double(x)
@@ -109,9 +91,6 @@ Fn <- function(t,x){
 qFn <- function(t,x){
    if(any(t<0 | t>1))
       stop("Probability should between 0 and 1.", call.=FALSE)
-   t[t==0]<- 1e-300
-   t[t==1]<- 1 - 1e-300
-
    t<- as.double(t)
    x<- as.double(x)
       x<- sort(x, decreasing = FALSE) # must sort to call "qFn"

@@ -1,3 +1,6 @@
+2022/06/17 accommodate to new R-devel
+2022/06/15 revise a piece of code in idcoef to correctly fetch free disk
+   information in a windows system; fix a few typos in domentation
 2022/03/08 some changes in function pedRecode
 2022/02/07 minor changes in citEntry items
 2021/12/07 some minor revisions

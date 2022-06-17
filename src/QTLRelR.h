@@ -12,6 +12,7 @@
 **************************/
 
 #define _FILE_OFFSET_BITS 64 //must on top
+#define NO_S_TYPEDEFS
 
 #include <R_ext/Error.h>
 #include <R_ext/Memory.h>
@@ -22,6 +23,7 @@
    #define _(String) (String)
 #endif
 #include <R.h>
+#include <Rinternals.h>
 #include <Rmath.h>
 #include <R_ext/Print.h> // for Rprintf
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)

@@ -17,8 +17,8 @@ extern void gen_Matrix(double*, int*, int*, int*, double*, double*, double*, dou
 //imFn.c
 extern void conGenoPrc(int*, int*, double*, double*, int*, int*, int*, int*, double*, int*);
 //ks.c
-extern void pkolmogorov2x(double *x, Sint *n);
-extern void psmirnov2x(double *x, Sint *m, Sint *n);
+extern SEXP pKolmogorov2x(SEXP statistic, SEXP sn);
+extern SEXP pSmirnov2x(SEXP statistic, SEXP snx, SEXP sny);
 //qqplot.c
 extern void Fnc(double*, int*, double*, int*);
 extern void kolm(double*, int*);
@@ -38,8 +38,6 @@ static const R_CMethodDef cMethods[] = {
     {"phicr",           (DL_FUNC) &phicr,              9},
     {"gen_Matrix",      (DL_FUNC) &gen_Matrix,         9},
     {"conGenoPrc",      (DL_FUNC) &conGenoPrc,        10},
-    {"pkolmogorov2x",   (DL_FUNC) &pkolmogorov2x,      2},
-    {"psmirnov2x",      (DL_FUNC) &psmirnov2x,         3},
     {"Fnc",             (DL_FUNC) &Fnc,                4},
     {"kolm",            (DL_FUNC) &kolm,               2},
     {"qFnc",            (DL_FUNC) &qFnc,               4},
@@ -59,8 +57,10 @@ static const R_FortranMethodDef fMethods[] = {
 };
 
 static const R_CallMethodDef callMethods[] = {
-   //{"Cdqrls", (DL_FUNC) &Cdqrls, 4},
-   NULL
+    {"pkolmogorov2x",   (DL_FUNC) &pKolmogorov2x,      2},
+    {"psmirnov2x",      (DL_FUNC) &pSmirnov2x,         3},
+    //{"Cdqrls", (DL_FUNC) &Cdqrls, 4},
+    {NULL, NULL, 0}
 };
 
 void R_init_QTLRel(DllInfo *dll)

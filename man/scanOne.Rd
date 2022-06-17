@@ -42,7 +42,7 @@ Whether to treat numeric coding of genotypes as numeric. If true, \code{minorGen
 Specify the minimum tolerable minor genotype frequency at a scanning locus if \code{gdat} is used.
 }
   \item{rmv}{
-A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL if any locci have a genotype frequency smaller than \code{minorGenoFreq}.
+A logical variable. If true, then the scanning locus will be skipped if the minor genotype frequency at the locus is smaller than \code{minorGenoFreq}. Otherwise, the scanning process will stop and return with NULL if any loci have a genotype frequency smaller than \code{minorGenoFreq}.
 }
 }
 \details{

@@ -33,7 +33,7 @@ estVC.default <-
    if(!is.null(dim(y))){
       if(length(dim(y))>2) stop("y: may be wrong.", call.=FALSE)
       if(dim(y)[2]>1)
-         cat("   Warning: y: only the fisrt column will be analyzed.\a\n")
+         cat("   Warning: y: only the first column will be analyzed.\a\n")
       y<- y[,1]
    }
    xyf<- function(formula, data, contrasts = NULL){

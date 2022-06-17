@@ -63,6 +63,8 @@ bsf<- function(ped, id, generations=99){
    pd
 }
 
+library(gdata)
+
 pedF8<- read.table("data/pedigree.txt", header=TRUE, check.names=FALSE)
    pedF8<- pedF8[-c(1:2),]
    pedF8$sire[1:2]<- "1i"

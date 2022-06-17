@@ -60,13 +60,15 @@ freeSpace<- function(){
        k<- a[length(a)-2]
        k<- as.double(k)/2^10 # in Mb
     }else if(os.type=="windows"){
-       cat("   You may need administrator's privilidge to run this program.\a\n")
+       cat("   You may need administrator's privilege to run this program.\a\n")
        a<- system("fsutil volume diskfree c:",intern=T)
        n<- c(nchar(a[1]),
              nchar(strsplit(a[1],":")[[1]][2]),
              nchar(strsplit(a[1],"\r")[[1]][2]))
        k<- substring(a[1],n[1]-n[2]+1)
-       k<- as.double(k)/2^20 # in Mb
+          k<- strsplit(trimws(k), " ")[[1]][[1]]
+          k<- gsub(",", "", k)
+          k<- as.double(k)/2^20 # in Mb
     }
     k
 }
@@ -325,7 +327,7 @@ cicTmp<- function(ped,ids,inter,df=3,ask=TRUE,msg=TRUE){
    on.exit({
       unlink(DIR,recursive=TRUE,force=TRUE)
       if(length(dir(pattern=paste("\\",DIR,sep=""),all.files=TRUE))>0)
-         cat(paste("  You may mannually remove folder '", DIR, "'\a\n",sep=""))
+         cat(paste("  You may manually remove folder '", DIR, "'\a\n",sep=""))
    })
    str<- paste(DIR,"/idcoef",sep="")
    if(length(gr)<2){

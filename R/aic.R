@@ -563,7 +563,7 @@ mAIC.default <-
 
    if(is.matrix(y) || is.data.frame(y)){
       if(dim(y)[2]>1)
-         cat("   Warning: y: only the first column will be analzed.\a\n")
+         cat("   Warning: y: only the first column will be analyzed.\a\n")
       y<- y[,1]
    }
    if(!missing(x)){
@@ -907,7 +907,7 @@ mAIC.HK <-
 
    if(is.matrix(y) || is.data.frame(y)){
       if(dim(y)[2]>1)
-         cat("   Warning: y: only the first column will be analzed.\a\n")
+         cat("   Warning: y: only the first column will be analyzed.\a\n")
       y<- y[,1]
    }
    if(!missing(x)){
