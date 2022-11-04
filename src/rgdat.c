@@ -2,8 +2,8 @@
 #include "QTLRelR.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 
-void rgeno1();
-void rgeno2();
+void rgeno1(int* data,int nr,int nc,int ninit,int* pedd,double* rr);
+void rgeno2(int* data,int nr,int nc,int ninit,int* pedd,double* rr,int xchr);
 //extern "C"{
    void rgdata(int* gdata,int *nr,int *nc,int* ninit,int* pedigree,double* recomb){
       rgeno1(gdata,*nr,*nc,*ninit,pedigree,recomb);

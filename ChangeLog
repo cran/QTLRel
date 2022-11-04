@@ -1,3 +1,5 @@
+2022/11/03 fixed warnings on "-Wstrict-prototypes"
+2022/08/04 revise estVC for two variance components
 2022/06/17 accommodate to new R-devel
 2022/06/15 revise a piece of code in idcoef to correctly fetch free disk
    information in a windows system; fix a few typos in domentation

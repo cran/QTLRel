@@ -9,6 +9,7 @@ estVC <-
             v = list(E=diag(length(y))),
             initpar,
             nit = 25,
+            method = c("ML", "REML"),
             control = list(),
             hessian = FALSE)
 {
@@ -21,6 +22,7 @@ estVC.default <-
             v,
             initpar,
             nit = 25,
+            method = c("ML", "REML"),
             control = list(),
             hessian = FALSE)
 {
@@ -61,6 +63,7 @@ estVC.default <-
           v = v,
           initpar = initpar,
           nit = nit,
+          method = match.arg(method),
           control = control,
           hessian = hessian)
 }
@@ -71,6 +74,7 @@ est.VC <-
             v,
             initpar,
             nit,
+            method,
             control,
             hessian)
 {
@@ -111,23 +115,39 @@ est.VC <-
          S<- diag(1,ny) - S
       eS<- eigen(S%*%v[[-n]]%*%S, symmetric=TRUE)
 
-      U<- t(eS$vector)
+      q<- ncol(x)
+      U<- t(eS$vector[,1:(ny-q)])
       eta<- U%*%y
 
       list(ny=ny, eta=eta, eH=eH, eS=eS)
    }
 
-   optfct.2<- function(par,pp){# assume E = diag(1,n)
-      dd<- pp$eS$value*exp(par)+1
+   optfct.2.ml<- function(par,pp){# assume E = diag(1,n)
+      nq<- length(pp$eta)
+      dd<- pp$eS$value[1:nq]*exp(par) + 1
       tmp<- -pp$ny*log(pp$ny/2/pi) + pp$ny
          tmp<- tmp + pp$ny*log(sum(pp$eta^2/dd))
-         tmp<- tmp + sum(log(pp$eH$value*exp(par)+1))
+         tmp<- tmp + sum(log(pp$eH$value*exp(par) + 1))
+      tmp/2
+   }
+
+   optfct.2.reml<- function(par,pp){# assume E = diag(1,n)
+      nq<- length(pp$eta)
+      dd<- pp$eS$value[1:nq]*exp(par) + 1
+      tmp<- -nq*log(nq/2/pi) + nq
+         tmp<- tmp + nq*log(sum(pp$eta^2/dd))
+         tmp<- tmp + sum(log(pp$eH$value[1:nq]*exp(par) + 1))
       tmp/2
    }
 
    fct.2<- function(y, x, v, pp, intv=c(-25,12), tol=machineEps){
-      oo<- optimize(optfct.2, interval=intv, pp, maximum=FALSE, tol=machineEps)
-
+      if(method == "ML"){
+         oo<- optimize(optfct.2.ml, interval=intv, pp, maximum=FALSE, tol=machineEps)
+      }else if(method == "REML"){
+         oo<- optimize(optfct.2.reml, interval=intv, pp, maximum=FALSE, tol=machineEps)
+      }else{
+         stop("Method in estVC can only be either 'ML' or 'REML'", call.=FALSE)
+      }
       ny<- pp$ny
       n<- match("E",names(v))
       dlt<- exp(oo$minimum) # note: this can't be too large
@@ -249,7 +269,16 @@ est.VC <-
             if(i == j) next
             vt<- list(Tmp=v[[i]], E=v[[j]])
             ppt<- ppfct(y=y, x=x, v=vt)
-            ot<- fct.2(y=y, x=x, v=vt, pp=ppt, intv=c(-25,12), tol=machineEps)
+            #ot<- fct.2(y=y, x=x, v=vt, pp=ppt, intv=c(-25, 12), tol=machineEps)
+            llk<- Inf
+            Itv<- c(-25, -9, -6.5, -4.5, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4.5, 6.5, 9, 12)
+            for(l in 1:(length(Itv)-1)){
+               oTmp<- fct.2(y=y, x=x, v=vt, pp=ppt, intv=c(Itv[l],Itv[l+1]+0.05), tol=machineEps)
+               if(oTmp$value < llk){
+                  ot<- oTmp
+                  llk<- oTmp$value
+               }
+            }
             initpar[nb+i]<- ot$par[nb+1]
             pt<- c(pt, ot$par[nb+2])
             rm(vt,ppt,ot)
@@ -354,14 +383,23 @@ est.VC <-
       nv<- length(v)
    rm(idx)
 
-   if(nv == 2){
+   if(nv == 2 && missing(initpar)){
       if(ny > 5000){
          cat("   May take a long time due to large sample size...\n")
       }else if(ny > 3000){
          cat("   May take a while due to large sample size. Please be patient...\n")
       }
       pp<- ppfct(y=y,x=x,v=v)
-      oo<- fct.2(y=y, x=x, v=v, pp=pp, intv=c(-25,12), tol=machineEps)
+      #oo<- fct.2(y=y, x=x, v=v, pp=pp, intv=c(-25, 12), tol=machineEps)
+      llk<- Inf
+      Itv<- c(-25, -9, -6.5, -4.5, -3, -2, -1, -0.5, 0, 0.5, 1, 2, 3, 4.5, 6.5, 9, 12)
+      for(l in 1:(length(Itv)-1)){
+         oTmp<- fct.2(y=y, x=x, v=v, pp=pp, intv=c(Itv[l],Itv[l+1]+0.05), tol=machineEps)
+         if(oTmp$value < llk){
+            oo<- oTmp
+            llk<- oTmp$value
+         }
+      }
    }else{
       if(ny > 1500){
          cat("   May take a long time due to large sample size...\n")
@@ -424,7 +462,7 @@ est.VC <-
       oo$hessian<- -optimHess(ppar, hessf, y=y, x=x, v=v, control=cntr)
    }
 
-   if(nv == 2){
+   if(nv == 2 && missing(initpar)){
       n<- match("E",names(v))
       pTmp<- oo$par[-c(1:nb)]
       dd<- pp$eH$value*pTmp[-n] + pTmp[n]

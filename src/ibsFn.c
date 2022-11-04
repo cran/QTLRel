@@ -11,9 +11,9 @@
 #include "QTLRelR.h"
 #include <R_ext/Utils.h> //R_CheckUserInterrupt(void)
 
-void ibsPr();
-void ibsFn();
-void deltaFn();
+void ibsPr(double*** prA,int nr,int nc,double** ibs);
+void ibsFn(int** gdat,int nr,int nc,double** ibs);
+void deltaFn(int** gdat,int nr,int nc,double** delta);
 
 /*
    gdat: nr by nc array, genetoype data, 1-AA,2-AB,3-BB,0-missing

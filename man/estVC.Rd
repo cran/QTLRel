@@ -8,7 +8,7 @@ Estimate model parameters for covariates, genetic variance components and residu
 }
 \usage{
 estVC(y, x, v = list(E=diag(length(y))), initpar, nit = 25,
-   control = list(), hessian = FALSE)
+   method = c("ML", "REML"), control = list(), hessian = FALSE)
 }
 \arguments{
   \item{y}{
@@ -23,10 +23,13 @@ A list of matrices representing variance components of interest. Note: \code{E} 
 \code{v} can be provided as a single matrix, representing a variance component other than \code{E}.
 }
   \item{initpar}{
-Optional initial parameter values.
+Optional initial parameter values. When provided, \code{\link{optim}} will be called for optimization, which may take time but is good for checking of the result (see details for more).
 }
   \item{nit}{
 Maximum number of iterations for optimization. Ignored if there are not more than two variance components.
+}
+  \item{method}{
+Either maximum likelihood (ML) or restricted maximum likelihood (REML).
 }
   \item{control}{
 A list of control parameters to be passed to \code{\link{optim}}.
@@ -36,7 +39,7 @@ Logical. Should a numerically differentiated Hessian matrix be returned?
 }
 }
 \details{
-The optimization function \code{\link{optim}} is adopted in the above function to estimate the parameters and maximum likelihood. Several optimization methods are available for the optimization algorithm in \code{\link{optim}}, but we recommend "Nelder-Mead" for the sake of stability. Alternatively, one may choose other options, e.g., "BFGS" to initialize and speed up the estimation procedure and then the procedure will automatically turn to "Nelder-Mead" for final results.
+The optimization function \code{\link{optim}} is adopted in the above function to estimate the parameters and maximum likelihood. Several optimization methods are available for the optimization algorithm in \code{\link{optim}}, but we recommend "Nelder-Mead" for the sake of stability. Alternatively, one may choose other options, e.g., "BFGS" to initialize and speed up the estimation procedure and then the procedure will automatically turn to "Nelder-Mead" for final results. If there is only one variance component (other than \code{E}), \code{\link{optimize}} will be used for optimization unless \code{initpar} is provided.
 
 Normality is assumed for the random effects. Input data should be free of missing values.
 }

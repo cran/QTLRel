@@ -37,16 +37,16 @@ LONGLONG jj;
 LONGLONG o0[4];
 LONGLONG o[4];
 
-void nfunc();
-void checkages();
-void kship();
-double phi2();
-double phi3();
-double phi4();
-double phi22();
-void idcoefw();
-void idcoefr();
-void genMatr();
+void nfunc(int nid, int nth, int * nn);
+void checkages(int *a, int *b);
+void kship(int** ped, int nr, double** kc);
+double phi2(int a, int b, int** ped, int* top, FILE** ifs);
+double phi3(int a, int b, int c, int** ped, int* top, FILE** ifs);
+double phi4(int a, int b, int c, int d, int** ped, int* top, FILE** ifs);
+double phi22(int a, int b, int c, int d, int** ped, int* top, FILE** ifs);
+void idcoefw(int** ped, int nr, int* id, int nid, int* top, FILE** ifs, FILE** of);
+void idcoefr(int** ped, int nr, int* id, int nid, int* top, FILE** ifs, double* idcf,int verbose);
+void genMatr(double** idcf, int nn, double** ksp, double** DD, double** AD, double** HH, double** MH);
 
 /*************************************************************************
    pedigree: nr by nc array with (id,father,mother,...)
