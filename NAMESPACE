@@ -3,7 +3,7 @@ useDynLib(QTLRel, .registration = TRUE)
 export(aicVC,mAIC,
 	blup,estVC,
 	scanOne,scanTwo,qtlVar,nullSim,gls,eigen.sym,
-	lodci,.lodci,
+	lodci,
 	genoProb,genoImpute,genoPos,rem,
 	pedRecode,hapSim,genoSim,
 	pkolm,qkolm,qqPlot,plotit,plot.scanTwo,

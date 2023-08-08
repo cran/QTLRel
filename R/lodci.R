@@ -1,80 +1,80 @@
 
 # search for LOD intervals #
 
-.lodci<- function(llk,cv=0,lod=1.5,drop=3,index){
+lodci<- function(llk,cv=0,lod=1.5,drop=3){
 # llk: data.frame(dist,y,...)
 # cv: a peak if llk$y>=cv
 # drop: in case of multiple peaks, a peak if drop drop LOD on both sides
-   nn<- nrow(llk)
-   out<- NULL
-   midx<- NULL
-   nL<- nM<- nR<- 1
-   xL<- xM<- xR<- llk$y[1]
-   flag<- TRUE
-   for(n in 1:nn){
-      x0<- llk$y[n]
-      if(x0>xM){
-         nM<- n
-         xM<- x0
+   .lodci<- function(llk,cv=0,lod=1.5,drop=3,index){
+      nn<- nrow(llk)
+      out<- NULL
+      midx<- NULL
+      nL<- nM<- nR<- 1
+      xL<- xM<- xR<- llk$y[1]
+      flag<- TRUE
+      for(n in 1:nn){
+         x0<- llk$y[n]
+         if(x0>xM){
+            nM<- n
+            xM<- x0
 
-         ii<- nL:n
-         llkTmp<- llk[ii,]
-         nL<- max(ii[llkTmp$y == min(llkTmp$y)])
-         xL<- llk$y[nL]
-         if(xM-xL >= drop && !flag){
-            flag<- TRUE
-         }
-      }else{
-         if(flag){
-            if(xM-x0 >= drop && xM>= cv){
-               ii<- nL:nM
-               llkTmp<- llk[ii,]
-               if(any(llkTmp$y <= xM-lod)){
-                  nL<- max(ii[llkTmp$y <= xM-lod])
-               }else nL<- max(ii[llkTmp$y == min(llkTmp$y)])
-               xL<- llk$y[nL]
-
-               ii<- nM:n
-               llkTmp<- llk[ii,]
-               if(any(llkTmp$y <= xM-lod)){
-                  nR<- min(ii[llkTmp$y <= xM-lod])
-               }else nR<- min(ii[llkTmp$y == min(llkTmp$y)])
-               xR<- llk$y[nR]
-
-               out<- rbind(out,c(llk$dist[nL],llk$dist[nR]))
-               midx<- c(midx,index[nM])
-               nL<- nM<- nR<- n
-               xL<- xM<- xR<- x0
-               flag<- FALSE
+            ii<- nL:n
+            llkTmp<- llk[ii,]
+            nL<- max(ii[llkTmp$y == min(llkTmp$y)])
+            xL<- llk$y[nL]
+            if(xM-xL >= drop && !flag){
+               flag<- TRUE
             }
-         }else if(x0<=xL){
-            nL<- n
-            xL<- xM<- x0
+         }else{
+            if(flag){
+               if(xM-x0 >= drop && xM>= cv){
+                  ii<- nL:nM
+                  llkTmp<- llk[ii,]
+                  if(any(llkTmp$y <= xM-lod)){
+                     nL<- max(ii[llkTmp$y <= xM-lod])
+                  }else nL<- max(ii[llkTmp$y == min(llkTmp$y)])
+                  xL<- llk$y[nL]
+
+                  ii<- nM:n
+                  llkTmp<- llk[ii,]
+                  if(any(llkTmp$y <= xM-lod)){
+                     nR<- min(ii[llkTmp$y <= xM-lod])
+                  }else nR<- min(ii[llkTmp$y == min(llkTmp$y)])
+                  xR<- llk$y[nR]
+
+                  out<- rbind(out,c(llk$dist[nL],llk$dist[nR]))
+                  midx<- c(midx,index[nM])
+                  nL<- nM<- nR<- n
+                  xL<- xM<- xR<- x0
+                  flag<- FALSE
+               }
+            }else if(x0<=xL){
+               nL<- n
+               xL<- xM<- x0
+            }
          }
       }
+      if(flag && xM>=cv && xM-min(xL,llk$y[n]) >= drop){
+         ii<- nL:nM
+         llkTmp<- llk[ii,]
+         if(any(llkTmp$y <= xM-lod)){
+            nL<- max(ii[llkTmp$y <= xM-lod])
+         }else nL<- max(ii[llkTmp$y == min(llkTmp$y)])
+         xL<- llk$y[nL]
+
+         ii<- nM:n
+         llkTmp<- llk[ii,]
+         if(any(llkTmp$y <= xM-lod)){
+            nR<- min(ii[llkTmp$y <= xM-lod])
+         }else nR<- min(ii[llkTmp$y == min(llkTmp$y)])
+         xR<- llk$y[nR]
+
+         out<- rbind(out,c(llk$dist[nL],llk$dist[nR]))
+         midx<- c(midx,index[nM])
+      }
+      if(!is.null(out)) data.frame(lower=out[,1],upper=out[,2],index=midx) else out
    }
-   if(flag && xM>=cv && xM-min(xL,llk$y[n]) >= drop){
-      ii<- nL:nM
-      llkTmp<- llk[ii,]
-      if(any(llkTmp$y <= xM-lod)){
-         nL<- max(ii[llkTmp$y <= xM-lod])
-      }else nL<- max(ii[llkTmp$y == min(llkTmp$y)])
-      xL<- llk$y[nL]
 
-      ii<- nM:n
-      llkTmp<- llk[ii,]
-      if(any(llkTmp$y <= xM-lod)){
-         nR<- min(ii[llkTmp$y <= xM-lod])
-      }else nR<- min(ii[llkTmp$y == min(llkTmp$y)])
-      xR<- llk$y[nR]
-
-      out<- rbind(out,c(llk$dist[nL],llk$dist[nR]))
-      midx<- c(midx,index[nM])
-   }
-   if(!is.null(out)) data.frame(lower=out[,1],upper=out[,2],index=midx) else out
-}
-
-lodci<- function(llk,cv=0,lod=1.5,drop=3){
    chrs<- unique(llk$ch)
    out<- data.frame(chr=NULL,lower=NULL,upper=NULL,index=NULL)
    for(n in 1:length(chrs)){

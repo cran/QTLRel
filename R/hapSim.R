@@ -9,7 +9,28 @@
 # the follow code generate genotype data chrosomome by chromosome
 
 .hapSim<- function(ped,gmap,ids,hap,method=c("Haldane","Kosambi"),genotype=FALSE){
-   ped<- pedRecode(ped,ids=ids,all=TRUE,msg=FALSE)
+   if(!missing(ids)){
+      ids<- trim(ids)
+      if(length(ids)==0)
+         stop("ids not correctly specified.", call.=FALSE)
+   }
+   if(!is.element("pedRecode", class(ped))){
+      pedS<- ped
+      ped<- pedRecode(pedS,ids=ids,all=TRUE,msg=FALSE)
+      idx<- ped$father <= 0 | ped$mother <= 0
+      if(sum(idx) > 2){
+         cat("   More than two founders? Please check these records:\n")
+         cat("--------------------------------------\n")
+         print(pedS[match(ped$old.id, pedS$id),])
+      }
+   }else{
+      idx<- ped$father <= 0 | ped$mother <= 0
+      if(sum(idx) > 2){
+         cat("   More than two founders? Please check these records:\n")
+         cat("--------------------------------------\n")
+         print(ped[idx,])
+      }
+   }
    idx<- ped$father <= 0 | ped$mother <= 0 # founders
    if(any(idx)){
       pedTmp<- ped[idx,]
@@ -51,9 +72,6 @@
       stop("Genetic map should be a data frame (snp,chr,dist,...).", call.=FALSE)
    }
    if(!missing(ids)){
-      ids<- trim(ids)
-      if(length(ids)==0)
-         stop("ids not correctly specified.", call.=FALSE)
       ii<- match(ids,ped$old.id)
       if(any(is.na(ii)))
          stop("Check ids for error.", call.=FALSE)
@@ -116,7 +134,7 @@
       gdat[1:ninit,]<- hap[,rep(idx,rep(2,length(idx)))]
    }
    if(genotype && nrow(hap) > 2){
-      stop("You need to get genotypes manually unless there are more than two founders.", call.=FALSE)
+      stop("You need to get genotypes manually when there are more than two founders.", call.=FALSE)
    }
    out<- .C("rgdata2",
             gdata = as.integer(t(gdat)),

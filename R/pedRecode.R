@@ -313,6 +313,8 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       stop("Check the above for errors regarding generations...", call.=FALSE)
    }
    rownames(ped)<- 1:nrow(ped)
+   
+   class(ped)<- c(class(ped), "pedRecode")
 
    ped
 }

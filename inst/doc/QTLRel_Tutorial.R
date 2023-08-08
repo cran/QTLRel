@@ -256,13 +256,19 @@ for(n in 1:ntimes){
 }
 
 # gene dropping
-pedR<- pedRecode(pedF8) # recode the pedigree
-ids<- rownames(gdatTmpImputed) # relevant individual IDs
+ids<- rownames(gdatTmp) # relevant individual IDs
+   ids<- setdiff(ids, pedF8$id[pedF8$sire == "32089"])
+idx<- match(ids, rownames(gdatTmp))
+pdTmp<- pdatTmp[idx,]
+idx<- match(ids, rownames(gmF8$AA))
+vcTmp<- estVC(y = pdTmp[,"bwt"], x = pdTmp[,c("sex","age")],
+   v=list(AA=gmF8$AA[idx,idx], DD=gmF8$DD[idx,idx]))
+pedR<- pedRecode(pedF8, ids=ids) # recode the pedigree
 cvMtrGD<- NULL
 for(n in 1:ntimes){
-   gdatTmp<- genoSim(pedR, gmapF8, ids=ids)
-   tmp<- scanOne(y=pdatTmp[,"bwt"],x=pdatTmp[,c("sex","age")],
-       gdat=gdatTmp, vc=vc)
+   gdTmp<- genoSim(pedR, gmapF8, ids=ids)
+   tmp<- scanOne(y=pdTmp[,"bwt"], x=pdTmp[,c("sex","age")],
+       gdat=gdTmp, vc=vcTmp)
    cvMtrGD<- rbind(cvMtrGD,tmp$LRT)
    cat(n,"/",ntimes,"\r")
 }
@@ -304,7 +310,8 @@ dev.off()
 # lod ci
 Tmp<- data.frame(chr=lrtHK$chr,
                  dist=lrtHK$dist,
-                 y=lrtHK$LRT/(2*log(10))) # convert to LOD
+                 y=lrtHK$LRT/(2*log(10)),
+                 stringsAsFactors=TRUE) # convert to LOD
    Tmp$chr<- reorder(Tmp$chr)
    Tmp<- Tmp[order(Tmp$chr,Tmp$dist),] # order by chromosome and distance
 lc<- lodci(Tmp,cv=3.2,lod=1.5,drop=1.5)
@@ -357,12 +364,13 @@ png("bwt_qqint.png",width=640)
 par(mfrow=c(1,2))
 plot(qqInt.1/(2*log(10)),
    gmap=gmapF8[match(rownames(qqInt.1),gmapF8$snp),],
-   main="Body Weight: Epistasis (A)\n\n",xlab="",ylab="")
+   main="Body Weight: Epistasis (A)\n\n",
+   xlab="", ylab="", col=heat.colors(12, rev=TRUE))
 plot(qqInt.2/(2*log(10)),
-   gmap=data.frame(snp=prDat$snp,chr=prDat$chr,dist=prDat$dist),
-   main="Body Weight: Epistasis (B)\n\n",xlab="",ylab="")
+   gmap=data.frame(snp=prDat$snp, chr=prDat$chr, dist=prDat$dist),
+   main="Body Weight: Epistasis (B)\n\n",
+   xlab="", ylab="", col=heat.colors(12, rev=TRUE))
 dev.off()
-
 
 ###################################################
 # the end #

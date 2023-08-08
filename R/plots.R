@@ -1,10 +1,38 @@
 
-plot.scanOne<- function(x,...){
+plot.scanOne<- function(x, ...){
+   plot.lrt<- function(lrt, cv, ...){
+   # lrt: data.frame(y,chr,dist,...)
+      lrt$chr<- reorder(factor(lrt$chr))
+      lrt<- lrt[order(lrt$chr,lrt$dist),]
+
+      chr<- unique(lrt$chr)
+         nchr<- length(chr)
+      for(i in 1:nchr){
+         idx<- lrt$chr==chr[i]
+         lrt$dist[idx]<- diff(c(0,lrt$dist[idx]))
+      }
+      lrt$dist<- cumsum(lrt$dist)
+
+      plot(range(lrt$dist),range(lrt$y),type="n",xaxt="n",...)
+
+      points(lrt$dist,lrt$y,type="p",...)
+      idx<- c(TRUE,lrt$chr[-length(lrt$chr)]!=lrt$chr[-1])
+      min.p<- lrt$dist[idx]
+      min.p<- c(min.p,max(lrt$dist))
+
+      if(!is.null(cv)) abline(h=cv,col=2,lty=4)
+      abline(v=min.p,lty=3,lwd=0.1)
+      pos<- (min.p[-1]+min.p[-c(nchr+1)])/2
+      axis(1,at=pos,labels=chr,tick=T,las=2)
+   }
+
    xTmp<- list(...)
    if(is.null(xTmp$cex)) xTmp$cex<- 0.5
    if(is.null(xTmp$main)) xTmp$main<- ""
-   if(is.null(xTmp$xlab)) xlab<- "Chromosome"
-   cv<- xTmp$cv
+   if(is.null(xTmp$xlab)) xTmp$xlab<- "Chromosome"
+   if(!is.null(xTmp$ylab)){
+      cat("   Note: ylab supplied but ignored...\n")
+   }
 
    if(is.null(x$LRT)) lrt<- data.frame(y=x$pval) else
       lrt<- data.frame(y=x$LRT)
@@ -18,50 +46,30 @@ plot.scanOne<- function(x,...){
       lrt$chr=x$chr
       lrt$dist=x$dist
    }
+   if(is.null(xTmp$col)){
+      col<- NULL
+      chr<- unique(lrt$chr)
+         nchr<- length(chr)
+      for(i in 1:nchr){
+         idx<- lrt$chr==chr[i]
+         col<- c(col,rep(i%%2 + 3,sum(idx)))
+      }
+   }else{
+      col<- xTmp$col
+   }
    if(is.element("None",class(x))){
       lrt$y<- x$LRT/(2*log(10))
-      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,ylim=xTmp$ylim,xlab=xlab,ylab="LOD")
+      plot.lrt(lrt, cv=xTmp$cv, cex=xTmp$cex, col=col, ylim=xTmp$ylim, main=xTmp$main,
+         xlab=xTmp$xlab, ylab="LOD")
    }else{
       lrt$y<- -log10(x$pval)
-      plot.lrt(lrt,cv,cex=xTmp$cex,main=xTmp$main,ylim=xTmp$ylim,
-         xlab=xlab,ylab=expression(paste(-log[10],"(p-value)")))
+      plot.lrt(lrt, cv=xTmp$cv, cex=xTmp$cex, col=col, ylim=xTmp$ylim, main=xTmp$main,
+         xlab=xTmp$xlab, ylab=expression(paste(-log[10],"(p-value)")))
    }
 }
 
-plot.lrt<- function(lrt,cv,...){
-# lrt: data.frame(y,chr,dist,...)
-   lrt$chr<- reorder(factor(lrt$chr))
-   lrt<- lrt[order(lrt$chr,lrt$dist),]
-
-   chr<- unique(lrt$chr)
-      nchr<- length(chr)
-   for(i in 1:nchr){
-      idx<- lrt$chr==chr[i]
-      lrt$dist[idx]<- diff(c(0,lrt$dist[idx]))
-   }
-   lrt$dist<- cumsum(lrt$dist)
-
-   plot(range(lrt$dist),range(lrt$y),type="n",xaxt="n",...)
-
-   col<- NULL
-   for(i in 1:nchr){
-      idx<- lrt$chr==chr[i]
-      col<- c(col,rep(i%%2 + 3,sum(idx)))
-   }
-   lines(lrt$dist,lrt$y,type="p",col=col,...)
-   idx<- c(TRUE,lrt$chr[-length(lrt$chr)]!=lrt$chr[-1])
-   min.p<- lrt$dist[idx]
-   min.p<- c(min.p,max(lrt$dist))
-
-   if(!missing(cv)) abline(h=cv,col=2,lty=4,...)
-   abline(v=min.p,lty=3,lwd=0.1)
-   pos<- (min.p[-1]+min.p[-c(nchr+1)])/2
-   axis(1,at=pos,labels=chr,tick=T,las=2)
-}
-
-
-plotit<- function(lrt,cv,bychr=FALSE,chr.labels=TRUE,
-   type="p",lty=NULL,col=NULL,pch=NULL,cex=NULL,...){
+plotit<- function(lrt, cv, bychr=FALSE, chr.labels=TRUE,
+   type="p", lty=NULL, col=NULL, pch=NULL, cex=NULL, ...){
 # lrt: data.frame(y,chr,dist,group,...)
    hh<- NULL
    if(!missing(cv) && !is.null(cv)) hh<- cv
@@ -176,8 +184,7 @@ plotit<- function(lrt,cv,bychr=FALSE,chr.labels=TRUE,
    }
 }
 
-
-plot.scanTwo<- function(x,...){
+plot.scanTwo<- function(x, ...){
 # x: object of scanTwo
 # a genetic map 'gmap' is needed
    lst<- list(...)
@@ -200,15 +207,20 @@ plot.scanTwo<- function(x,...){
       xat<- c(xat,mean(range(dst[gmap$chr==chr])))
    }
 
+   if(is.null(lst$col)){
+      col<- terrain.colors(12)
+   }else{
+      col<- lst$col
+   }
    scale<- max(dst)/(max(rv)-min(rv))*0.75
    image(x=dst,y=dst,z=v,axes=F,xlab=lst$xlab,xlim=c(-2,max(dst)),
       ylim=c(0,max(dst)+2),ylab=lst$ylab,
-      main=lst$main,col=terrain.colors(12))
+      main=lst$main,col=col)
    image(x=max(dst)*c(19/20,1),y=(rv-min(rv))*scale,z=matrix(rv,nrow=1),
-      col=terrain.colors(12),add=TRUE)
-   axis(4,at=(rv-min(rv))*scale,labels=rv,pos=max(dst)*19.5/20,tick=FALSE)
-   axis(2,at=xat,labels=chrs,tick=F,pos=max(dst)*0.025)
-   axis(3,at=xat,labels=chrs,tick=F,pos=max(dst)*0.975)
+      col=col,add=TRUE)
+   axis(4,at=(rv-min(rv))*scale,labels=rv,pos=par("usr")[2]*0.985,tick=FALSE)
+   axis(2,at=xat,labels=chrs,tick=F,line=-0.75)
+   axis(3,at=xat,labels=chrs,tick=F,line=-0.75)
    mtext("Chromosomes",2,line=1.5)
    mtext("Chromosomes",3,line=1.25,at=0)
    col<- 0
