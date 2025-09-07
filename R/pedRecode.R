@@ -91,6 +91,8 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       ped$mother<- trimws(ped$mother)
    }
 
+   oldIds<- unique(ped$id)
+   
    if(all){
       idEx<- union(sapply(ped$father,as.character),sapply(ped$mother,as.character))
          idEx<- setdiff(idEx,sapply(ped$id,as.character))
@@ -120,18 +122,18 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          idx<- match(c("father","mother"),cns)
          mtr[,idx]<- 0
          ped<- rbind(mtr,as.matrix(ped))
-         rownames(ped)<- NULL
          rm(cns, mtr, idx)
       }
       rm(idEx)
       ped<- as.data.frame(ped, stringsAsFactors=FALSE)
    }
+   rownames(ped)<- NULL
    pedSave<- ped
 
    idx<- is.na(ped$id) | ped$id==0 | ped$id=="0"
    if(any(idx) && msg){
       print(ped[idx,])
-      cat("   Above individuals with N/A IDs were removed.\a\n")
+      cat("   Above individuals with N/A IDs were removed.\a\n\n")
       ped<- ped[!idx,]
    }
    rm(idx)
@@ -150,8 +152,9 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
    }
    if(any(idx) && msg){
       print(ped[idx,])
-      cat("   Above founder lines were removed.\a\n")
+      cat("   Above founder lines were removed.\a\n\n")
       ped<- ped[!idx,]
+      rownames(ped)<- NULL
    }
    rm(idx)
 
@@ -161,7 +164,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       idx<- !is.element(ids,ped$id)
       if(any(idx) && msg){
          print(ids[idx])
-         cat("   Above IDs are out of range and ignored!\a\n")
+         cat("   Above IDs are out of range and ignored!\a\n\n")
       }
       ids<- ids[!idx]
       rm(idx)
@@ -178,11 +181,13 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          if(sum(idxTmp)==sum(idx)) break
       }
       ped<- ped[idx,]
+      rownames(ped)<- NULL
       rm(idTmp, idx, idxTmp)
    }
 
    if(is.null(ped$generation)){
       ped<- pedRecode.0(ped,msg)
+      rownames(ped)<- NULL
    }else if(!is.numeric(ped$generation)){
       Tmp<- sapply(ped$generation, as.character)
          Tmp<- trimws(Tmp)
@@ -196,7 +201,7 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
    if(length(uids)<length(ids) && msg){
       cat("   The following samples are repeated:\a\n")
       print(ped[-idx,c("id","generation","father","mother")])
-      cat("   Repeated IDs were excluded!\a\n")
+      cat("   Repeated IDs were excluded!\a\n\n")
    }
    ped<- ped[idx,]
    rm(idx, ids)
@@ -253,8 +258,9 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          ii<- ii[!is.na(ii)]
       if(length(ii)>0){
          idx<- !is.element(ped$sex[ii], c("0", "1", "M", "Male"))
-            idx<- unique(ii[idx])
+            idx<- idx & is.element(ped$old.id[ii], oldIds)
          if(any(idx) && msg){
+            idx<- unique(ii[idx])
             cat("   Suppose 1, M or Male stands for male...\n")
             cat("   --------------------------------------\n")
             print(ped[idx,])
@@ -267,10 +273,11 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
       jj<- match(sapply(ped$mother,as.character),ped$id)
          jj<- jj[!is.na(jj)]
       if(length(jj)>0){
-         idx<- is.element(ped$sex[jj], c("1", "M", "Male"))
+         idx<- is.element(ped$sex[jj], c("0", "1", "M", "Male"))
             # idx<- idx | is.na(ped$sex[jj])
-            idx<- unique(jj[idx])
+            idx<- idx & is.element(ped$old.id[jj], oldIds)
          if(any(idx) && msg){
+            idx<- unique(jj[idx])
             cat("   Suppose !0, !1, !M and !Male stands for female...\n")
             cat("   --------------------------------------\n")
             print(ped[idx,])
@@ -284,7 +291,9 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          fms<- setdiff(fms, c(0,NA))
       if(length(fms) > 0){
          print(fms)
-         cat("   Above are both father and mother?\a\n\n")
+         cat("   Above are both father and mother (see below for old IDs)?\a\n")
+         print(ped$old.id[match(fms,ped$id)])
+         cat("\a\n\n")
       }
    }
    idx<- (ped$father > ped$id) | (ped$mother > ped$id)
@@ -309,10 +318,11 @@ pedRecode <- function(ped,ids,all=TRUE,msg=TRUE){
          pedTmp$father<- ped$old[match(sapply(pedTmp$father,as.character),ped$id)]
          pedTmp$mother<- ped$old[match(sapply(pedTmp$mother,as.character),ped$id)]
       pedTmp$old.id<- NULL
+      rownames(pedTmp)<- NULL
       print(pedTmp)
       stop("Check the above for errors regarding generations...", call.=FALSE)
    }
-   rownames(ped)<- 1:nrow(ped)
+   rownames(ped)<- NULL
    
    class(ped)<- c(class(ped), "pedRecode")
 
@@ -337,7 +347,7 @@ pedRecode.0<- function(ped,msg=TRUE){
    idx<- is.na(ped$id) | ped$id==0 | ped$id=="0"
    if(any(idx) && msg){
       print(ped[idx,])
-      cat("   Above individuals with N/A IDs were removed.\n")
+      cat("   Above individuals with N/A IDs were removed.\n\n")
       ped<- ped[!idx,]
    }
 
@@ -354,11 +364,17 @@ pedRecode.0<- function(ped,msg=TRUE){
       cbind(generation=jj, pedT)
    }
 
-   pedT<- ped
+   pedS<- pedT<- ped
    idx<- rep(TRUE, nrow(ped))
    out<- NULL
    while(any(idx)){
       pedT<- mxGf(ped[idx,])
+      if(setequal(pedT$id, pedS$id)){
+         err<- "Something seems odd, e.g., recursive breeding...\n"
+            err<- paste(err, "   Or any unsual symbols are used for N/A but I don't know? Em...", sep="")
+         stop(err, call. = FALSE)
+      }
+      pedS<- pedT
       out<- rbind(pedT, out)
       if(pedT$generation[1] == 0) break
       idx<- !is.element(ped$id, out$id)

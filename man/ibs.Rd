@@ -18,7 +18,7 @@ Genotype data with genotypes ("AA", "AB", "BB", or, 1, 2, 3) and without missing
 A matrix G with G[,j] being the j-th Jacquard identity coefficients.
 }
 \note{
-Currently only support the two-allele data.
+Currently only support the biallelic data.
 }
 \seealso{
 \code{\link{genMatrix}}

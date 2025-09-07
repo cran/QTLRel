@@ -1,5 +1,5 @@
-2d50625124806ea85ff41ea35fdc7331 *ChangeLog
-b63d436878aca68bc251c9c5f70ff666 *DESCRIPTION
+88c35e5d146724bc882001b3bee64e12 *ChangeLog
+d152d6b00d85d021e8af08a5a3233ad4 *DESCRIPTION
 9503b78fb4dd020dd64e1eaf04cb166f *NAMESPACE
 e2f814361e378170884e31d3102e29b6 *R/aic.R
 299825d295cbba74d54ecce44f1b6ceb *R/eigen_sym.R
@@ -11,7 +11,7 @@ a84390f042f89703cd6366e21463b605 *R/ibsFn.R
 11604d2b2c583c8108d10ec686e700c9 *R/imFn.R
 8f9ab0e592548eed2169f3998d41d082 *R/lodci.R
 9e2b5983942b4e235bb103b3f8d2105e *R/nullSim.R
-b97755d3a8f030e6369647da45ef6f02 *R/pedRecode.R
+5ac173060205b9d893e8250f9152fba7 *R/pedRecode.R
 a3fa65c03a464cb425a42372c48c9846 *R/plots.R
 ecd44e00aecb0a879bf8932a196f59b2 *R/qqPlot.R
 b52514b9b9013ae2fdddfee35da55621 *R/qtl2rel.R
@@ -20,10 +20,10 @@ e7c14cd802e07324d1a0ccdce4d06866 *R/rem.R
 f2f60aea1197458bd9a51aed4fa58e5d *R/scan.R
 1b762ee196fa02bcf8c8e51cdaa962d7 *R/zzz.R
 af5afcc91c28f08f6a0451b9e6b52685 *data/datalist
-62893b513399c933849e2d1051fd5aa1 *data/miscEx.RData
+50682afa6c5fb67616af1a63e7e683f8 *data/miscEx.RData
 44f5ab7aa818827027e0a68c59154e02 *inst/CITATION
 e4a63a03b252c51789fa57cd649989ea *inst/doc/QTLRel_Tutorial.R
-11b87ea7837c98fadc01f826071f536d *inst/doc/QTLRel_Tutorial.pdf
+dd764a0d556093eb2d3b44dd5b3edf64 *inst/doc/QTLRel_Tutorial.pdf
 6d095ed07108546d8b43b6954e5600c5 *inst/doc/index.html
 4e216e0ab362f8be2e2a38a934cefa2d *man/aicVC.Rd
 1b67421639ef6e8ebaa4224a91479012 *man/blup.Rd
@@ -36,7 +36,7 @@ af1eaef90901e4c50b86475c7364a1d2 *man/estVC.Rd
 2084dd3751b597b7a021e31e38bd1dc0 *man/genoSim.Rd
 40e0606d2f44c9d0478513d2d0097e70 *man/gls.Rd
 75148e1e223b6f6d82ccb54873841930 *man/hapSim.Rd
-4da70a5175ae70eeab198890d80cf567 *man/ibs.Rd
+30a06db517125456b6987cb713d519d2 *man/ibs.Rd
 0393f4e21cb6030262b28409423e0d37 *man/kinship.Rd
 da070523f803f8278a7082122186787d *man/lodci.Rd
 0f72a5819f538e20641b2c88e9374672 *man/mAIC.Rd
